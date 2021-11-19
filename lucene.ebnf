@@ -1,4 +1,4 @@
-ucene_query = { white_space } node {node} | { white_space } | EOF ;
+lucene_query = { white_space } node {node} | { white_space } | EOF ;
 
 node = operator_exp EOF 
        | operator_exp group_exp { operator_exp } { node } 
