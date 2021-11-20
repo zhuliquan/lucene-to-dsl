@@ -8,6 +8,12 @@ type Term struct {
 	SimpleTerm *SimpleTerm `parser:"| @@" json:"simple_term"`
 }
 
+// func (t *Term) IsWillcard() bool {
+
+// }
+
+// func (t *Term) Boost()
+
 func (t *Term) String() string {
 	if t == nil {
 		return ""
@@ -46,7 +52,14 @@ func (t *PhraseTerm) String() string {
 	if t == nil {
 		return ""
 	} else if t.Value != "" {
-		return t.Value[1 : len(t.Value)-1]
+		var res = "\" " + t.Value[1:len(t.Value)-1] + " \""
+		if t.Fuzzy != "" {
+			res += " " + t.Fuzzy
+		}
+		if t.Boost != "" {
+			res += " " + t.Boost
+		}
+		return res
 	} else {
 		return ""
 	}
@@ -65,16 +78,29 @@ func (t *PhraseTerm) isWildCard() bool {
 }
 
 type SimpleTerm struct {
-	Value []string `parser:"@(IDENT|WILDCARD|MATH_OPERATOR)+" json:"value"`
+	Value []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
 	Fuzzy string   `parser:"@FUZZY?" json:"fuzzy"`
 	Boost string   `parser:"@BOOST?" json:"boost"`
 }
 
 func (t *SimpleTerm) String() string {
-	return strings.Join(t.Value, "")
+	if t == nil {
+		return ""
+	} else if len(t.Value) != 0 {
+		var res = strings.Join(t.Value, "#")
+		if t.Fuzzy != "" {
+			res += " " + t.Fuzzy
+		}
+		if t.Boost != "" {
+			res += " " + t.Boost
+		}
+		return res
+	} else {
+		return ""
+	}
 }
 
-func (t *SimpleTerm) isWildCard() bool {
+func (t *SimpleTerm) isWildcard() bool {
 	for i := 0; i < len(t.Value); i++ {
 		if t.Value[i] == "?" || t.Value[i] == "*" {
 			return true
