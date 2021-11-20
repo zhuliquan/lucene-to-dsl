@@ -15,7 +15,7 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "IDENT",
-		Pattern: `([^\!\s:\|\&"\?\*\\\^~\(\)\{\}\[\]\+-\/]|\.|(\\(\s|:|\&|\||\?|\*|\\|\^|~|\(|\)|\!|\[|\]|\{|\}|\+|-|\/)))+`,
+		Pattern: `([^-\!\s:\|\&"\?\*\\\^~\(\)\{\}\[\]\+\/><=]|\.|(\\(\s|:|\&|\||\?|\*|\\|\^|~|\(|\)|\!|\[|\]|\{|\}|\+|-|\/|>|<|=)))+`,
 	},
 	{
 		Name:    "STRING",
@@ -27,7 +27,15 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "COLON",
-		Pattern: `:([<|>]=?)?`,
+		Pattern: `:([<>]=?)?`,
+	},
+	{
+		Name:    "PLUS",
+		Pattern: `\+`,
+	},
+	{
+		Name:    "MINUS",
+		Pattern: `-`,
 	},
 	{
 		Name:    "FUZZY",
@@ -42,16 +50,40 @@ var rules = []stateful.Rule{
 		Pattern: `[\?\*]`,
 	},
 	{
-		Name:    "BRACKET",
-		Pattern: `[\(\)\[\]\{\}]`,
+		Name:    "LPAREN",
+		Pattern: `\(`,
 	},
 	{
-		Name:    "BOOL_OPERATOR",
-		Pattern: `[!\&\|]`,
+		Name:    "RPAREN",
+		Pattern: `\)`,
 	},
 	{
-		Name:    "MATH_OPERATOR",
-		Pattern: `[-\+\*\/]`,
+		Name:    "LBRACK",
+		Pattern: `\[`,
+	},
+	{
+		Name:    "RBRACK",
+		Pattern: `\]`,
+	},
+	{
+		Name:    "LBRACE",
+		Pattern: `\{`,
+	},
+	{
+		Name:    "RBRACE",
+		Pattern: `\}`,
+	},
+	{
+		Name:    "AND",
+		Pattern: `\&`,
+	},
+	{
+		Name:    "OR",
+		Pattern: `\|`,
+	},
+	{
+		Name:    "NOT",
+		Pattern: `!`,
 	},
 }
 
@@ -67,18 +99,26 @@ func init() {
 }
 
 type Token struct {
-	EOL           string `parser:"  @EOL" json:"eol"`
-	WHITESPACE    string `parser:"| @WHITESPACE" json:"whitespace"`
-	IDENT         string `parser:"| @IDENT" json:"ident"`
-	STRING        string `parser:"| @STRING" json:"string"`
-	REGEXP        string `parser:"| @REGEXP" json:"regexp"`
-	COLON         string `parser:"| @COLON" json:"colon"`
-	FUZZY         string `parser:"| @FUZZY" json:"fuzzy"`
-	BOOST         string `parser:"| @BOOST" json:"boost"`
-	WILDCARD      string `parser:"| @WILDCARD" json:"wildcard"`
-	BRACKET       string `parser:"| @BRACKET" json:"bracket"`
-	BOOL_OPERATOR string `parser:"| @BOOL_OPERATOR" json:"bool_operator"`
-	MATH_OPERATOR string `parser:"| @MATH_OPERATOR" json:"math_operator"`
+	EOL        string `parser:"  @EOL" json:"eol"`
+	WHITESPACE string `parser:"| @WHITESPACE" json:"whitespace"`
+	IDENT      string `parser:"| @IDENT" json:"ident"`
+	STRING     string `parser:"| @STRING" json:"string"`
+	REGEXP     string `parser:"| @REGEXP" json:"regexp"`
+	COLON      string `parser:"| @COLON" json:"colon"`
+	PLUS       string `parser:"| @PLUS" json:"plus"`
+	MINUS      string `parser:"| @MINUS" json:"minus"`
+	FUZZY      string `parser:"| @FUZZY" json:"fuzzy"`
+	BOOST      string `parser:"| @BOOST" json:"boost"`
+	WILDCARD   string `parser:"| @WILDCARD" json:"wildcard"`
+	LPAREN     string `parser:"| @LPAREN" json:"lparen"`
+	RPAREN     string `parser:"| @RPAREN" json:"rparen"`
+	LBRACK     string `parser:"| @LBRACK" json:"lbrack"`
+	RBRACK     string `parser:"| @RBRACK" json:"rbrack"`
+	LBRACE     string `parser:"| @LBRACE" json:"lbrace"`
+	RBRACE     string `parser:"| @RBRACE" json:"rbrace"`
+	AND        string `parser:"| @AND" json:"and"`
+	SOR        string `parser:"| @OR" json:"sor"`
+	NOT        string `parser:"| @NOT" json:"not"`
 }
 
 func (t *Token) String() string {
@@ -96,18 +136,34 @@ func (t *Token) String() string {
 		return t.REGEXP
 	} else if t.COLON != "" {
 		return t.COLON
+	} else if t.PLUS != "" {
+		return t.PLUS
+	} else if t.MINUS != "" {
+		return t.MINUS
 	} else if t.FUZZY != "" {
 		return t.FUZZY
 	} else if t.BOOST != "" {
 		return t.BOOST
 	} else if t.WILDCARD != "" {
 		return t.WILDCARD
-	} else if t.BRACKET != "" {
-		return t.BRACKET
-	} else if t.BOOL_OPERATOR != "" {
-		return t.BOOL_OPERATOR
-	} else if t.MATH_OPERATOR != "" {
-		return t.MATH_OPERATOR
+	} else if t.LPAREN != "" {
+		return t.LPAREN
+	} else if t.RPAREN != "" {
+		return t.RPAREN
+	} else if t.LBRACK != "" {
+		return t.LBRACK
+	} else if t.RBRACK != "" {
+		return t.RBRACK
+	} else if t.LBRACE != "" {
+		return t.LBRACE
+	} else if t.RBRACE != "" {
+		return t.RBRACE
+	} else if t.AND != "" {
+		return t.AND
+	} else if t.SOR != "" {
+		return t.SOR
+	} else if t.NOT != "" {
+		return t.NOT
 	} else {
 		return ""
 	}
