@@ -1,4 +1,4 @@
-package internal
+package query
 
 // bool operator ("AND" / "OR" / "NOT") or ("and" / "or" / "not") or ("&&" / "||" / "!")
 type BoolOper struct {
