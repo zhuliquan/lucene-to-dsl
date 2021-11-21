@@ -43,7 +43,7 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "BOOST",
-		Pattern: `\^(0*[1-9][0-9]*)?`,
+		Pattern: `\^(\d+\.?\d+)`,
 	},
 	{
 		Name:    "WILDCARD",
