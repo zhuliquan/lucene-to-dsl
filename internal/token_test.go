@@ -64,7 +64,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "TestScan03",
-			input: `\!\:.\ \\:(you OR !& \!\&*\** [{ you\[\]+ you?}])^0.9~9~ouo |`,
+			input: `\!\:.\ \\:(you OR !& \!\&*\** [{ you\[\]+ you?}])^090~9~ouo |`,
 			want: []*Token{
 				{IDENT: `\!\:.\ \\`},
 				{COLON: ":"},
@@ -92,7 +92,7 @@ func TestLexer(t *testing.T) {
 				{RBRACE: "}"},
 				{RBRACK: "]"},
 				{RPAREN: ")"},
-				{BOOST: `^0.9`},
+				{BOOST: `^090`},
 				{FUZZY: `~9`},
 				{FUZZY: `~`},
 				{IDENT: "ouo"},
