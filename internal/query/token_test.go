@@ -36,13 +36,21 @@ func TestLexer(t *testing.T) {
 	var testCases = []testCase{
 		{
 			name:  "TestScan01",
-			input: `\ \ \:7 8+9`,
+			input: `\ \ \:7:>8908 8+9 x:>=90`,
 			want: []*Token{
 				{IDENT: `\ \ \:7`},
+				{COLON: ":"},
+				{COMPARE: ">"},
+				{IDENT: "8908"},
 				{WHITESPACE: " "},
 				{IDENT: "8"},
 				{PLUS: "+"},
 				{IDENT: "9"},
+				{WHITESPACE: " "},
+				{IDENT: "x"},
+				{COLON: ":"},
+				{COMPARE: ">="},
+				{IDENT: "90"},
 			},
 		},
 		{
@@ -64,10 +72,12 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "TestScan03",
-			input: `\!\:.\ \\:(you OR !& \!\&*\** [{ you\[\]+ you?}])^090~9~ouo |`,
+			input: `\!\:.\ \\:<=<(you OR !& \!\&*\** [{ you\[\]+ you?}])^090~9~ouo |`,
 			want: []*Token{
 				{IDENT: `\!\:.\ \\`},
 				{COLON: ":"},
+				{COMPARE: "<="},
+				{COMPARE: "<"},
 				{LPAREN: "("},
 				{IDENT: "you"},
 				{WHITESPACE: " "},

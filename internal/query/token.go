@@ -27,7 +27,11 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "COLON",
-		Pattern: `:([<>]=?)?`,
+		Pattern: `:`,
+	},
+	{
+		Name:    "COMPARE",
+		Pattern: `[<>]=?`,
 	},
 	{
 		Name:    "PLUS",
@@ -105,6 +109,7 @@ type Token struct {
 	STRING     string `parser:"| @STRING" json:"string"`
 	REGEXP     string `parser:"| @REGEXP" json:"regexp"`
 	COLON      string `parser:"| @COLON" json:"colon"`
+	COMPARE    string `parser:"| @COMPARE" json:"compare"`
 	PLUS       string `parser:"| @PLUS" json:"plus"`
 	MINUS      string `parser:"| @MINUS" json:"minus"`
 	FUZZY      string `parser:"| @FUZZY" json:"fuzzy"`
@@ -136,6 +141,8 @@ func (t *Token) String() string {
 		return t.REGEXP
 	} else if t.COLON != "" {
 		return t.COLON
+	} else if t.COMPARE != "" {
+		return t.COMPARE
 	} else if t.PLUS != "" {
 		return t.PLUS
 	} else if t.MINUS != "" {
