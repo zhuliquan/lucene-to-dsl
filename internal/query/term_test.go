@@ -67,32 +67,79 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm10",
 			input: `[1 TO 2]`,
-			want:  &Term{RangeTerm: &RangeTerm{LBRACKET: "[", LValue: []string{"1"}, TO: "TO", RValue: []string{"2"}, RBRACKET: "]"}},
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "[",
+				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				TO:       "TO",
+				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RBRACKET: "]"},
+			},
 		},
 		{
 			name:  "TestTerm11",
 			input: `[1 TO 2 }`,
-			want:  &Term{RangeTerm: &RangeTerm{LBRACKET: "[", LValue: []string{"1"}, TO: "TO", RValue: []string{"2"}, RBRACKET: "}"}},
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "[",
+				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				TO:       "TO",
+				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RBRACKET: "}",
+			}},
 		},
 		{
 			name:  `TestTerm12`,
 			input: `{ 1 TO 2}`,
-			want:  &Term{RangeTerm: &RangeTerm{LBRACKET: "{", LValue: []string{"1"}, TO: "TO", RValue: []string{"2"}, RBRACKET: "}"}},
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "{",
+				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				TO:       "TO",
+				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RBRACKET: "}",
+			}},
 		},
 		{
 			name:  `TestTerm13`,
 			input: `{ 1 TO 2]`,
-			want:  &Term{RangeTerm: &RangeTerm{LBRACKET: "{", LValue: []string{"1"}, TO: "TO", RValue: []string{"2"}, RBRACKET: "]"}},
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "{",
+				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				TO:       "TO",
+				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RBRACKET: "]",
+			}},
 		},
 		{
 			name:  `TestTerm14`,
 			input: `[10 TO *]`,
-			want:  &Term{RangeTerm: &RangeTerm{LBRACKET: "[", LValue: []string{"10"}, TO: "TO", RValue: []string{"*"}, RBRACKET: "]"}},
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "[",
+				LValue:   &RangeValue{SimpleValue: []string{"10"}},
+				TO:       "TO",
+				RValue:   &RangeValue{InfinityVal: "*"},
+				RBRACKET: "]",
+			}},
 		},
 		{
 			name:  `TestTerm15`,
 			input: `{* TO 2012-01-01}`,
-			want:  &Term{RangeTerm: &RangeTerm{LBRACKET: "{", LValue: []string{"*"}, TO: "TO", RValue: []string{"2012", "-", "01", "-", "01"}, RBRACKET: "}"}},
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "{",
+				LValue:   &RangeValue{InfinityVal: "*"},
+				TO:       "TO",
+				RValue:   &RangeValue{SimpleValue: []string{"2012", "-", "01", "-", "01"}},
+				RBRACKET: "}",
+			}},
+		},
+		{
+			name:  `TestTerm16`,
+			input: `{* TO "2012-01-01 09:08:16"}`,
+			want: &Term{RangeTerm: &RangeTerm{
+				LBRACKET: "{",
+				LValue:   &RangeValue{InfinityVal: "*"},
+				TO:       "TO",
+				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+				RBRACKET: "}",
+			}},
 		},
 	}
 

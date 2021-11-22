@@ -7,8 +7,8 @@ import (
 )
 
 type Term struct {
-	PhraseTerm *PhraseTerm `parser:"  @@" json:"phrase_term"`
-	RegexpTerm *RegexpTerm `parser:"| @@" json:"regexp_term"`
+	RegexpTerm *RegexpTerm `parser:"  @@" json:"regexp_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
 	SimpleTerm *SimpleTerm `parser:"| @@" json:"simple_term"`
 	RangeTerm  *RangeTerm  `parser:"| @@" json:"range_term"`
 }
@@ -126,7 +126,7 @@ func (t *PhraseTerm) haveWildcard() bool {
 }
 
 func (t *PhraseTerm) fuzziness() int {
-	if t == nil || t.Fuzzy == "" {
+	if t == nil || len(t.Fuzzy) == 0 {
 		return 0
 	} else if t.Fuzzy == "~" {
 		return 1
@@ -137,9 +137,9 @@ func (t *PhraseTerm) fuzziness() int {
 }
 
 func (t *PhraseTerm) boost() float64 {
-	if t == nil || t.Boost == "" {
+	if t == nil {
 		return 1.0
-	} else if t.Boost != "" {
+	} else if len(t.Boost) != 0 {
 		var v, _ = strconv.ParseFloat(t.Boost[1:], 64)
 		return v
 	} else {
@@ -158,10 +158,10 @@ func (t *SimpleTerm) String() string {
 		return ""
 	} else if len(t.Value) != 0 {
 		var res = strings.Join(t.Value, "")
-		if t.Fuzzy != "" {
+		if len(t.Fuzzy) != 0 {
 			res += " " + t.Fuzzy
 		}
-		if t.Boost != "" {
+		if len(t.Boost) != 0 {
 			res += " " + t.Boost
 		}
 		return res
@@ -183,7 +183,7 @@ func (t *SimpleTerm) haveWildcard() bool {
 }
 
 func (t *SimpleTerm) fuzziness() int {
-	if t == nil || t.Fuzzy == "" {
+	if t == nil || len(t.Fuzzy) == 0 {
 		return 0
 	} else if t.Fuzzy == "~" {
 		return 1
@@ -194,9 +194,9 @@ func (t *SimpleTerm) fuzziness() int {
 }
 
 func (t *SimpleTerm) boost() float64 {
-	if t == nil || t.Boost == "" {
+	if t == nil {
 		return 1.0
-	} else if t.Boost != "" {
+	} else if len(t.Boost) != 0 {
 		var v, _ = strconv.ParseFloat(t.Boost[1:], 64)
 		return v
 	} else {
@@ -205,18 +205,38 @@ func (t *SimpleTerm) boost() float64 {
 }
 
 type Bound struct {
-	LeftInclude  string `json:"left_include"`
-	LeftExclude  string `json:"left_exclude"`
-	RightInclude string `json:"right_include"`
-	RightExclude string `json:"right_exclude"`
+	LeftInclude  *RangeValue `json:"left_include"`
+	LeftExclude  *RangeValue `json:"left_exclude"`
+	RightInclude *RangeValue `json:"right_include"`
+	RightExclude *RangeValue `json:"right_exclude"`
+}
+
+type RangeValue struct {
+	PhraseValue string   `parser:"  @STRING" json:"phrase_value"`
+	InfinityVal string   `parser:"| @('*')" json:"infinity_val"`
+	SimpleValue []string `parser:"| @(IDENT|PLUS|MINUS)+" json:"simple_value"`
+}
+
+func (v *RangeValue) String() string {
+	if v == nil {
+		return ""
+	} else if len(v.PhraseValue) != 0 {
+		return v.PhraseValue
+	} else if len(v.InfinityVal) != 0 {
+		return v.InfinityVal
+	} else if len(v.SimpleValue) != 0 {
+		return strings.Join(v.SimpleValue, "")
+	} else {
+		return ""
+	}
 }
 
 type RangeTerm struct {
-	LBRACKET string   `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
-	LValue   []string `parser:"@(IDENT|WILDCARD|PLUS|MINUS)+" json:"left_value"`
-	TO       string   `parser:"WHITESPACE+ @(\"TO\") WHITESPACE+"`
-	RValue   []string `parser:"@(IDENT|WILDCARD|PLUS|MINUS)+" json:"right_value"`
-	RBRACKET string   `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
+	LBRACKET string      `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
+	LValue   *RangeValue `parser:"@@" json:"left_value"`
+	TO       string      `parser:"WHITESPACE+ @(\"TO\") WHITESPACE+"`
+	RValue   *RangeValue `parser:"@@" json:"right_value"`
+	RBRACKET string      `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
 }
 
 func (t *RangeTerm) ToBound() *Bound {
@@ -224,13 +244,13 @@ func (t *RangeTerm) ToBound() *Bound {
 		return nil
 	} else {
 		if t.LBRACKET == "[" || t.RBRACKET == "]" {
-			return &Bound{LeftInclude: strings.Join(t.LValue, ""), RightInclude: strings.Join(t.RValue, "")}
+			return &Bound{LeftInclude: t.LValue, RightInclude: t.RValue}
 		} else if t.LBRACKET == "[" || t.RBRACKET == "}" {
-			return &Bound{LeftInclude: strings.Join(t.LValue, ""), RightExclude: strings.Join(t.RValue, "")}
+			return &Bound{LeftInclude: t.LValue, RightExclude: t.RValue}
 		} else if t.LBRACKET == "{" || t.RBRACKET == "]" {
-			return &Bound{LeftExclude: strings.Join(t.LValue, ""), RightInclude: strings.Join(t.RValue, "")}
+			return &Bound{LeftExclude: t.LValue, RightInclude: t.RValue}
 		} else if t.LBRACKET == "{" || t.RBRACKET == "}" {
-			return &Bound{LeftExclude: strings.Join(t.LValue, ""), RightExclude: strings.Join(t.RValue, "")}
+			return &Bound{LeftExclude: t.LValue, RightExclude: t.RValue}
 		} else {
 			return nil
 		}
@@ -241,6 +261,24 @@ func (t *RangeTerm) String() string {
 	if t == nil {
 		return ""
 	} else {
-		return fmt.Sprintf("%s %s TO %s %s", t.LBRACKET, strings.Join(t.LValue, ""), strings.Join(t.RValue, ""), t.RBRACKET)
+		return fmt.Sprintf("%s %s TO %s %s", t.LBRACKET, t.LValue.String(), t.RValue.String(), t.RBRACKET)
 	}
 }
+
+// type GroupTerm struct {
+// 	LParen 	`parser:"@"`
+// }
+
+// type GroupElemT struct {
+// 	SimpleTerm *SimpleTerm `parser:"  @@" json:"simple_term"`
+// 	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
+// }
+
+// type GroupJoin struct {
+
+// }
+
+// type GroupElemS struct {
+// 	WHITESPACE string `parser:"@@" json:""`
+
+// }
