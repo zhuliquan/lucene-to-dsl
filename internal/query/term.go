@@ -8,7 +8,7 @@ import (
 
 type Term struct {
 	RegexpTerm *RegexpTerm `parser:"  @@" json:"regexp_term"`
-	CompTerm   *CompTerm   `parser:"| @@" json:"compare_term"`
+	ComSymTerm *ComSymTerm `parser:"| @@" json:"com_sym_term"`
 	RangeTerm  *RangeTerm  `parser:"| @@" json:"range_term"`
 }
 
@@ -19,22 +19,22 @@ func (t *Term) isRegexp() bool {
 func (t *Term) haveWildcard() bool {
 	if t == nil {
 		return false
-	} else if t.CompTerm != nil {
-		return t.CompTerm.haveWildcard()
+	} else if t.ComSymTerm != nil {
+		return t.ComSymTerm.Term.haveWildcard()
 	} else {
 		return false
 	}
 }
 
 func (t *Term) isRange() bool {
-	return t != nil && (t.RangeTerm != nil || t.CompTerm.isRange())
+	return t != nil && (t.RangeTerm != nil || t.ComSymTerm.isRange())
 }
 
 func (t *Term) fuzziness() int {
 	if t == nil {
 		return 0
-	} else if t.CompTerm != nil {
-		return t.CompTerm.fuzziness()
+	} else if t.ComSymTerm != nil {
+		return t.ComSymTerm.Term.fuzziness()
 	} else {
 		return 0
 	}
@@ -43,8 +43,8 @@ func (t *Term) fuzziness() int {
 func (t *Term) boost() float64 {
 	if t == nil {
 		return 0.0
-	} else if t.CompTerm != nil {
-		return t.CompTerm.boost()
+	} else if t.ComSymTerm != nil {
+		return t.ComSymTerm.Term.boost()
 	} else {
 		return 1.0
 	}
@@ -55,8 +55,8 @@ func (t *Term) String() string {
 		return ""
 	} else if t.RegexpTerm != nil {
 		return t.RegexpTerm.String()
-	} else if t.CompTerm != nil {
-		return t.CompTerm.String()
+	} else if t.ComSymTerm != nil {
+		return t.ComSymTerm.Term.String()
 	} else if t.RangeTerm != nil {
 		return t.RangeTerm.String()
 	} else {
@@ -64,19 +64,29 @@ func (t *Term) String() string {
 	}
 }
 
-type BoolTerm struct {
-	Prefix string `parser:"@(MINUS|PLUS|NOT)" json:"prefix"`
-}
-
 // side range term
-type CompTerm struct {
-	CompareSym string      `parser:"@COMPARE?" json"compare_sym"`
-	PhraseTerm *PhraseTerm `parser:"  @@" json:"phrase_term"`
-	SimpleTerm *SimpleTerm `parser:"| @@" json:"simple_term"`
+type ComSymTerm struct {
+	Sym  string    `parser:"@COMPARE?" json"sym"`
+	Term *CompTerm `parser:"@@" json:"term"`
 }
 
-func (t *CompTerm) isRange() bool {
-	return t != nil && len(t.CompareSym) != 0
+func (t *ComSymTerm) isRange() bool {
+	return t != nil && len(t.Sym) != 0
+}
+
+func (t *ComSymTerm) String() string {
+	if t == nil {
+		return ""
+	} else if t.Term != nil {
+		return t.Sym + t.Term.String()
+	} else {
+		return ""
+	}
+}
+
+type CompTerm struct {
+	SimpleTerm *SimpleTerm `parser:"  @@" json:"simple_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
 }
 
 func (t *CompTerm) haveWildcard() bool {
@@ -118,18 +128,12 @@ func (t *CompTerm) boost() float64 {
 func (t *CompTerm) String() string {
 	if t == nil {
 		return ""
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.String()
+	} else if t.SimpleTerm != nil {
+		return t.PhraseTerm.String()
 	} else {
-		var res = ""
-		if len(t.CompareSym) != 0 {
-			res += t.CompareSym
-		}
-		if t.PhraseTerm != nil {
-			return res + t.PhraseTerm.String()
-		} else if t.SimpleTerm != nil {
-			return t.PhraseTerm.String()
-		} else {
-			return ""
-		}
+		return ""
 	}
 }
 
@@ -323,6 +327,14 @@ func (t *RangeTerm) String() string {
 	} else {
 		return fmt.Sprintf("%s %s TO %s %s", t.LBRACKET, t.LValue.String(), t.RValue.String(), t.RBRACKET)
 	}
+}
+
+// prefix term "+" / "-" / "!"
+// TODO: implement later
+type BoolTerm struct {
+	Prefix     string      `parser:"@(MINUS|PLUS|NOT)" json:"prefix"`
+	PhraseTerm *PhraseTerm `parser:"  @@" json:"phrase_term"`
+	SimpleTerm *SimpleTerm `parser:"| @@" json:"simple_term"`
 }
 
 // type GroupTerm struct {

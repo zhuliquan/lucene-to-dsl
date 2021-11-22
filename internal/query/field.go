@@ -15,8 +15,7 @@ func (f *Field) String() string {
 }
 
 type FieldTerm struct {
-	Field *Field `parser:"@@" json:"field"`
-	Colon string `parser:"@COLON" json:"colon"`
+	Field *Field `parser:"@@ COLON" json:"field"`
 	Term  *Term  `parser:"@@" json:"term"`
 }
 
@@ -26,6 +25,6 @@ func (f *FieldTerm) String() string {
 	} else if f.Field == nil || f.Term == nil {
 		return ""
 	} else {
-		return f.Field.String() + " " + f.Colon + " " + f.Term.String()
+		return f.Field.String() + " : " + f.Term.String()
 	}
 }
