@@ -22,22 +22,22 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm01",
 			input: `"dsada 78"`,
-			want:  &Term{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &Term{CompTerm: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 		},
 		{
 			name:  "TestTerm02",
 			input: `"dsada 78"^08`,
-			want:  &Term{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}},
+			want:  &Term{CompTerm: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}}},
 		},
 		{
 			name:  "TestTerm03",
 			input: `"dsada 78"~8`,
-			want:  &Term{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}},
+			want:  &Term{CompTerm: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}}},
 		},
 		{
 			name:  "TestTerm04",
 			input: `"dsada 78"~8^080`,
-			want:  &Term{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}},
+			want:  &Term{CompTerm: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}}},
 		},
 		{
 			name:  "TestTerm05",
@@ -47,22 +47,22 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm06",
 			input: `\/dsada\/\ dasda80980?*`,
-			want:  &Term{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want:  &Term{CompTerm: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}},
 		},
 		{
 			name:  "TestTerm07",
 			input: `\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &Term{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Boost: `^08`}},
+			want:  &Term{CompTerm: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Boost: `^08`}}},
 		},
 		{
 			name:  "TestTerm08",
 			input: `\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &Term{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`}},
+			want:  &Term{CompTerm: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`}}},
 		},
 		{
 			name:  "TestTerm09",
 			input: `\/dsada\/\ dasda80980?*\^\^~8^080`,
-			want:  &Term{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`, Boost: `^080`}},
+			want:  &Term{CompTerm: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`, Boost: `^080`}}},
 		},
 		{
 			name:  "TestTerm10",
@@ -140,6 +140,26 @@ func TestTerm(t *testing.T) {
 				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
 				RBRACKET: "}",
 			}},
+		},
+		{
+			name:  "TestTerm17",
+			input: `<="dsada 78"`,
+			want:  &Term{CompTerm: &CompTerm{CompareSym: "<=", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+		},
+		{
+			name:  "TestTerm18",
+			input: `<"dsada 78"^08`,
+			want:  &Term{CompTerm: &CompTerm{CompareSym: "<", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}}},
+		},
+		{
+			name:  "TestTerm19",
+			input: `>="dsada 78"~8`,
+			want:  &Term{CompTerm: &CompTerm{CompareSym: ">=", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}}},
+		},
+		{
+			name:  "TestTerm20",
+			input: `>"dsada 78"~8^080`,
+			want:  &Term{CompTerm: &CompTerm{CompareSym: ">", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}}},
 		},
 	}
 
