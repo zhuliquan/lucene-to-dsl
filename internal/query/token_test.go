@@ -55,7 +55,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "TestScan02",
-			input: `now-8d x:/[\d\s]+/ y:"dasda 8\ : +"`,
+			input: `now-8d x:/[\\d\\s]+/ y:"dasda 8\ : +"`,
 			want: []*Token{
 				{IDENT: "now"},
 				{MINUS: "-"},
@@ -63,7 +63,7 @@ func TestLexer(t *testing.T) {
 				{WHITESPACE: " "},
 				{IDENT: "x"},
 				{COLON: ":"},
-				{REGEXP: `/[\d\s]+/`},
+				{REGEXP: `/[\\d\\s]+/`},
 				{WHITESPACE: " "},
 				{IDENT: "y"},
 				{COLON: ":"},

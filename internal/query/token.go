@@ -23,7 +23,7 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "REGEXP",
-		Pattern: `\/([^"\/]|\\"|\\\/)+\/`,
+		Pattern: `\/([^\/\\]|\\\\|\\\/)+\/`,
 	},
 	{
 		Name:    "COLON",

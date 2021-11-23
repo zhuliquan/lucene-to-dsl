@@ -123,7 +123,7 @@ func (t *SRangeTerm) boost() float64 {
 	}
 }
 
-// a regexp term is surrounded be slash, for instance /\d+\.?\d+/
+// a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
 type RegexpTerm struct {
 	Value string `parser:"@REGEXP" json:"value"`
 }
