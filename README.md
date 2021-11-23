@@ -10,5 +10,5 @@ This package can parse lucene query and conver to dsl used by ES (ElasticSearch)
 - 6、support boost term, for instance `x:1^2` , `x:"dsada 8908"^3`
 - 7、support fuzzy query, for instance `x:for~2` , `x:"foo bar"~2`
 
-# Limitations
+## Limitations
 - 1、only support lucene query with field name, instead of query without field name (such as `foo OR bar`, `foo AND bar`).
