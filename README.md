@@ -3,7 +3,7 @@
 This package can parse lucene query and conver to dsl used by ES (ElasticSearch), this package is pure go package.
 ## Features
 - 1、support phrase term query, for instance `x:"foo bar"`.
-- 2、support regexp term query, for instance `x:/\d+\.\d+/`.
+- 2、support regexp term query, for instance `x:/\\d+\\.?\\d+/`.
 - 3、support bool operator （i.e. `AND`, `OR`, `NOT`, `&&`, `||`, `!`） join sub query, for instance `x:1 AND y:2`, `x:1 || y:2`.
 - 4、support bound range query,  for instance `x:[1 TO 2]`, `x:[1 TO 2}`.
 - 5、support side range query, for instance `x:>1` , `x:>=1` , `x:<1` , `x:<=1`.
