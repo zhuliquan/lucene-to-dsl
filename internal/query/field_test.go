@@ -22,22 +22,22 @@ func TestFieldTerm(t *testing.T) {
 		{
 			name:  "TestFieldTerm01",
 			input: `x:"dsada 78"`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}}},
 		},
 		{
 			name:  "TestFieldTerm02",
 			input: `x:"dsada 78"^08`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}}}},
 		},
 		{
 			name:  "TestFieldTerm03",
 			input: `x:"dsada 78"~8`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}}}},
 		},
 		{
 			name:  "TestFieldTerm04",
 			input: `x:"dsada 78"~8^080`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}}}},
 		},
 		{
 			name:  "TestFieldTerm05",
@@ -47,22 +47,22 @@ func TestFieldTerm(t *testing.T) {
 		{
 			name:  "TestFieldTerm06",
 			input: `x.z-y:\/dsada\/\ dasda80980?*`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x.z", "-", "y"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x.z", "-", "y"}}, Term: &Term{SRangeTerm: &SRangeTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}}},
 		},
 		{
 			name:  "TestFieldTerm07",
 			input: `x:\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Boost: `^08`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Boost: `^08`}}}},
 		},
 		{
 			name:  "TestFieldTerm08",
 			input: `x:\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`}}}},
 		},
 		{
 			name:  "TestFieldTerm09",
 			input: `x:\/dsada\/\ dasda80980?*\^\^~8^080`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`, Boost: `^080`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`, Boost: `^080`}}}},
 		},
 		{
 			name:  "TestFieldTerm10",
@@ -133,42 +133,42 @@ func TestFieldTerm(t *testing.T) {
 		{
 			name:  `TestFieldTerm16`,
 			input: `x:>89`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: ">", Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: ">", SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}},
 		},
 		{
 			name:  `TestFieldTerm17`,
 			input: `x:>=89`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: ">=", Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: ">=", SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}},
 		},
 		{
 			name:  `TestFieldTerm18`,
 			input: `x:<89`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: "<", Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: "<", SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}},
 		},
 		{
 			name:  `TestFieldTerm19`,
 			input: `x:<=89`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: "<=", Term: &CompTerm{SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: "<=", SimpleTerm: &SimpleTerm{Value: []string{"89"}}}}},
 		},
 		{
 			name:  `TestFieldTerm20`,
 			input: `x:>"890 0"`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: ">", Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: ">", PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}},
 		},
 		{
 			name:  `TestFieldTerm21`,
 			input: `x:>="890 0"`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: ">=", Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: ">=", PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}},
 		},
 		{
 			name:  `TestFieldTerm22`,
 			input: `x:<"890 0"`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: "<", Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: "<", PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}},
 		},
 		{
 			name:  `TestFieldTerm23`,
 			input: `x:<="890 0"`,
-			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{ComSymTerm: &ComSymTerm{Sym: "<=", Term: &CompTerm{PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}}},
+			want:  &FieldTerm{Field: &Field{Value: []string{"x"}}, Term: &Term{SRangeTerm: &SRangeTerm{Symbol: "<=", PhraseTerm: &PhraseTerm{Value: `"890 0"`}}}},
 		},
 		{
 			name:  `TestFieldTerm24`,

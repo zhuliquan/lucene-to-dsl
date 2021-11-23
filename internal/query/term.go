@@ -8,8 +8,22 @@ import (
 
 type Term struct {
 	RegexpTerm *RegexpTerm `parser:"  @@" json:"regexp_term"`
-	ComSymTerm *ComSymTerm `parser:"| @@" json:"com_sym_term"`
+	SRangeTerm *SRangeTerm `parser:"| @@" json:"ranges_term"`
 	RangeTerm  *RangeTerm  `parser:"| @@" json:"range_term"`
+}
+
+func (t *Term) String() string {
+	if t == nil {
+		return ""
+	} else if t.RegexpTerm != nil {
+		return t.RegexpTerm.String()
+	} else if t.SRangeTerm != nil {
+		return t.SRangeTerm.String()
+	} else if t.RangeTerm != nil {
+		return t.RangeTerm.String()
+	} else {
+		return ""
+	}
 }
 
 func (t *Term) isRegexp() bool {
@@ -19,22 +33,22 @@ func (t *Term) isRegexp() bool {
 func (t *Term) haveWildcard() bool {
 	if t == nil {
 		return false
-	} else if t.ComSymTerm != nil {
-		return t.ComSymTerm.Term.haveWildcard()
+	} else if t.SRangeTerm != nil {
+		return t.SRangeTerm.haveWildcard()
 	} else {
 		return false
 	}
 }
 
 func (t *Term) isRange() bool {
-	return t != nil && (t.RangeTerm != nil || t.ComSymTerm.isRange())
+	return t != nil && (t.RangeTerm != nil || t.SRangeTerm.isRange())
 }
 
 func (t *Term) fuzziness() int {
 	if t == nil {
 		return 0
-	} else if t.ComSymTerm != nil {
-		return t.ComSymTerm.Term.fuzziness()
+	} else if t.SRangeTerm != nil {
+		return t.SRangeTerm.fuzziness()
 	} else {
 		return 0
 	}
@@ -43,53 +57,37 @@ func (t *Term) fuzziness() int {
 func (t *Term) boost() float64 {
 	if t == nil {
 		return 0.0
-	} else if t.ComSymTerm != nil {
-		return t.ComSymTerm.Term.boost()
+	} else if t.SRangeTerm != nil {
+		return t.SRangeTerm.boost()
 	} else {
 		return 1.0
 	}
 }
 
-func (t *Term) String() string {
+// side range term: a term is behind of symbol ('>' / '<' / '>=' / '<=')
+type SRangeTerm struct {
+	Symbol     string      `parser:"@COMPARE?" json:"symbol"`
+	SimpleTerm *SimpleTerm `parser:"( @@ " json:"simple_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@)" json:"phrase_term"`
+}
+
+func (t *SRangeTerm) String() string {
 	if t == nil {
 		return ""
-	} else if t.RegexpTerm != nil {
-		return t.RegexpTerm.String()
-	} else if t.ComSymTerm != nil {
-		return t.ComSymTerm.Term.String()
-	} else if t.RangeTerm != nil {
-		return t.RangeTerm.String()
+	} else if t.PhraseTerm != nil {
+		return t.Symbol + t.PhraseTerm.String()
+	} else if t.SimpleTerm != nil {
+		return t.Symbol + t.SimpleTerm.String()
 	} else {
 		return ""
 	}
 }
 
-// side range term
-type ComSymTerm struct {
-	Sym  string    `parser:"@COMPARE?" json"sym"`
-	Term *CompTerm `parser:"@@" json:"term"`
+func (t *SRangeTerm) isRange() bool {
+	return t != nil && len(t.Symbol) != 0
 }
 
-func (t *ComSymTerm) isRange() bool {
-	return t != nil && len(t.Sym) != 0
-}
-
-func (t *ComSymTerm) String() string {
-	if t == nil {
-		return ""
-	} else if t.Term != nil {
-		return t.Sym + t.Term.String()
-	} else {
-		return ""
-	}
-}
-
-type CompTerm struct {
-	SimpleTerm *SimpleTerm `parser:"  @@" json:"simple_term"`
-	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
-}
-
-func (t *CompTerm) haveWildcard() bool {
+func (t *SRangeTerm) haveWildcard() bool {
 	if t == nil {
 		return false
 	} else if t.PhraseTerm != nil {
@@ -101,7 +99,7 @@ func (t *CompTerm) haveWildcard() bool {
 	}
 }
 
-func (t *CompTerm) fuzziness() int {
+func (t *SRangeTerm) fuzziness() int {
 	if t == nil {
 		return 0
 	} else if t.PhraseTerm != nil {
@@ -113,7 +111,7 @@ func (t *CompTerm) fuzziness() int {
 	}
 }
 
-func (t *CompTerm) boost() float64 {
+func (t *SRangeTerm) boost() float64 {
 	if t == nil {
 		return 0.0
 	} else if t.PhraseTerm != nil {
@@ -125,18 +123,7 @@ func (t *CompTerm) boost() float64 {
 	}
 }
 
-func (t *CompTerm) String() string {
-	if t == nil {
-		return ""
-	} else if t.PhraseTerm != nil {
-		return t.PhraseTerm.String()
-	} else if t.SimpleTerm != nil {
-		return t.PhraseTerm.String()
-	} else {
-		return ""
-	}
-}
-
+// a regexp term is surrounded be slash, for instance /\d+\.?\d+/
 type RegexpTerm struct {
 	Value string `parser:"@REGEXP" json:"value"`
 }
@@ -145,12 +132,13 @@ func (t *RegexpTerm) String() string {
 	if t == nil {
 		return ""
 	} else if t.Value != "" {
-		return t.Value[1 : len(t.Value)-1]
+		return t.Value
 	} else {
 		return ""
 	}
 }
 
+// phrase term: a series of terms be surrounded with quotation, for instance "foo bar".
 type PhraseTerm struct {
 	Value string `parser:"@STRING" json:"value"`
 	Fuzzy string `parser:"@FUZZY?" json:"fuzzy"`
@@ -161,12 +149,12 @@ func (t *PhraseTerm) String() string {
 	if t == nil {
 		return ""
 	} else if t.Value != "" {
-		var res = "\" " + t.Value[1:len(t.Value)-1] + " \""
+		var res = t.Value[1 : len(t.Value)-1]
 		if t.Fuzzy != "" {
-			res += " " + t.Fuzzy
+			res += t.Fuzzy
 		}
 		if t.Boost != "" {
-			res += " " + t.Boost
+			res += t.Boost
 		}
 		return res
 	} else {
@@ -211,6 +199,7 @@ func (t *PhraseTerm) boost() float64 {
 	}
 }
 
+// simple term: is a single term without escape char and whitespace
 type SimpleTerm struct {
 	Value []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
 	Fuzzy string   `parser:"@FUZZY?" json:"fuzzy"`
@@ -223,10 +212,10 @@ func (t *SimpleTerm) String() string {
 	} else if len(t.Value) != 0 {
 		var res = strings.Join(t.Value, "")
 		if len(t.Fuzzy) != 0 {
-			res += " " + t.Fuzzy
+			res += t.Fuzzy
 		}
 		if len(t.Boost) != 0 {
-			res += " " + t.Boost
+			res += t.Boost
 		}
 		return res
 	} else {
@@ -268,6 +257,7 @@ func (t *SimpleTerm) boost() float64 {
 	}
 }
 
+// range bound like this [1, 2] [1, 2) (1, 2] (1, 2)
 type Bound struct {
 	LeftInclude  *RangeValue `json:"left_include"`
 	LeftExclude  *RangeValue `json:"left_exclude"`
@@ -295,6 +285,7 @@ func (v *RangeValue) String() string {
 	}
 }
 
+//range term: a term is surrounded by brace / bracket, for instance [1 TO 2] / [1 TO 2} / {1 TO 2] / {1 TO 2}
 type RangeTerm struct {
 	LBRACKET string      `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
 	LValue   *RangeValue `parser:"@@" json:"left_value"`
@@ -329,12 +320,13 @@ func (t *RangeTerm) String() string {
 	}
 }
 
-// prefix term "+" / "-" / "!"
-// TODO: implement later
+// bool term: a term is behind of symbol ("+" / "-" / "!")
 type BoolTerm struct {
-	Prefix     string      `parser:"@(MINUS|PLUS|NOT)" json:"prefix"`
-	PhraseTerm *PhraseTerm `parser:"  @@" json:"phrase_term"`
-	SimpleTerm *SimpleTerm `parser:"| @@" json:"simple_term"`
+	BoolSymbol string      `parser:"@(MINUS|PLUS|NOT)" json:"prefix"`
+	PhraseTerm *PhraseTerm `parser:"( @@ " json:"phrase_term"`
+	SimpleTerm *SimpleTerm `parser:"| @@ " json:"simple_term"`
+	RegexpTerm *RegexpTerm `parser:"| @@ " json:"regexp_term"`
+	RangeTerm  *RangeTerm  `parser:"| @@)" json:"range_term"`
 }
 
 // type GroupTerm struct {
