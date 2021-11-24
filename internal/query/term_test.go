@@ -183,8 +183,8 @@ func TestTerm(t *testing.T) {
 		},
 		{
 			name:  "TestTerm25",
-			input: `/\\d+\\d+\\.\\d+.+/`,
-			want:  &Term{RegexpTerm: &RegexpTerm{Value: `/\\d+\\d+\\.\\d+.+/`}},
+			input: `/\d+\d+\.\d+.+/`,
+			want:  &Term{RegexpTerm: &RegexpTerm{Value: `/\d+\d+\.\d+.+/`}},
 		},
 	}
 
@@ -220,7 +220,7 @@ func TestTerm_isRegexp(t *testing.T) {
 		},
 		{
 			name:  "TestRegexpTerm02",
-			input: `/[1-9]+\\.\\d+/`,
+			input: `/[1-9]+\.\d+/`,
 			want:  true,
 		},
 		{
@@ -284,7 +284,7 @@ func TestTerm_isWildcard(t *testing.T) {
 		},
 		{
 			name:  "TestWildcard05",
-			input: `/[1-9]+\\.\\d+/`,
+			input: `/[1-9]+\.\d+/`,
 			want:  false,
 		},
 		{
@@ -336,7 +336,7 @@ func TestTerm_isRange(t *testing.T) {
 		},
 		{
 			name:  "TestRangeTerm02",
-			input: `/[1-9]+\\.\\d+/`,
+			input: `/[1-9]+\.\d+/`,
 			want:  false,
 		},
 		{
@@ -384,7 +384,7 @@ func TestTerm_fuzziness(t *testing.T) {
 		},
 		{
 			name:  "TestFuzzines02",
-			input: `/[1-9]+\\.\\d+/`,
+			input: `/[1-9]+\.\d+/`,
 			want:  0,
 		},
 		{
@@ -443,7 +443,7 @@ func TestTerm_boost(t *testing.T) {
 		},
 		{
 			name:  "TestBoost02",
-			input: `/[1-9]+\\.\\d+/`,
+			input: `/[1-9]+\.\d+/`,
 			want:  1.0,
 		},
 		{
@@ -602,8 +602,8 @@ func TestRegexpTerm(t *testing.T) {
 		},
 		{
 			name:  "RegexpTerm02",
-			input: `/\\d+\\\/\\d+\\.\\d+.+/`,
-			want:  &RegexpTerm{Value: `/\\d+\\\/\\d+\\.\\d+.+/`},
+			input: `/\d+\/\d+\.\d+.+/`,
+			want:  &RegexpTerm{Value: `/\d+\/\d+\.\d+.+/`},
 		},
 	}
 
