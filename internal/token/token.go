@@ -1,4 +1,4 @@
-package query
+package token
 
 import (
 	"github.com/alecthomas/participle/lexer/stateful"
