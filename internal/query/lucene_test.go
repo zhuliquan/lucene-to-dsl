@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
+	"github.com/zhuliquan/lucene-to-dsl/internal/token"
 )
 
 func TestLucene(t *testing.T) {
 	var luceneParser = participle.MustBuild(
 		&Lucene{},
-		participle.Lexer(Lexer),
+		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {

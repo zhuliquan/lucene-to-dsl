@@ -239,35 +239,6 @@ func (t *SRangeTerm) String() string {
 	return t.toDRangeTerm().String()
 }
 
-type RangeTerm struct {
-	SRangeTerm *SRangeTerm `parser:"  @@" json:"s_range_term"`
-	DRangeTerm *DRangeTerm `parser:"| @@" json:"d_range_term"`
-}
-
-func (t *RangeTerm) String() string {
-	if t == nil {
-		return ""
-	} else if t.SRangeTerm != nil {
-		return t.SRangeTerm.String()
-	} else if t.DRangeTerm != nil {
-		return t.DRangeTerm.String()
-	} else {
-		return ""
-	}
-}
-
-func (t *RangeTerm) ToBound() *Bound {
-	if t == nil {
-		return nil
-	} else if t.SRangeTerm != nil {
-		return t.SRangeTerm.ToBound()
-	} else if t.DRangeTerm != nil {
-		return t.DRangeTerm.ToBound()
-	} else {
-		return nil
-	}
-}
-
 // func (t *SRangeTerm) isRange() bool {
 // 	return t != nil && len(t.Symbol) != 0
 // }
