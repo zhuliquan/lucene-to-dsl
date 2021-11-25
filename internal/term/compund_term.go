@@ -35,10 +35,16 @@ func (t *RangeTerm) ToBound() *Bound {
 // bool term: a term is behind of symbol ("+" / "-" / "!")
 type PrefixTerm struct {
 	BoolSymbol string      `parser:"@(MINUS|PLUS|NOT)?" json:"prefix"`
-	SimpleTerm *SimpleTerm `parser:"( @@ " json:"simple_term"`
+	SimpleTerm *SingleTerm `parser:"( @@ " json:"simple_term"`
 	PhraseTerm *PhraseTerm `parser:"| @@ " json:"phrase_term"`
 	RangeTerm  *RangeTerm  `parser:"| @@)" json:"range_term"`
 }
+
+// func (t *PrefixTerm) String() string {
+// 	if t == nil {
+// 		return ""
+// 	} else if t.SimpleTerm
+// }
 
 type GroupTerm struct {
 	PreBoolTerms []PrefixTerm `parser:"LPAREN @@+ RPAREN" json:"pre-bool_terms"`
@@ -46,7 +52,7 @@ type GroupTerm struct {
 
 // a term with boost symbol like this foo^2 / "foo bar"^2 / [1 TO 2]^2 or nothing (default 1.0)
 type BoostTerm struct {
-	SimpleTerm  *SimpleTerm `parser:"( @@  " json:"simple_term"`
+	SingleTerm  *SingleTerm `parser:"( @@  " json:"simple_term"`
 	PhraseTerm  *PhraseTerm `parser:"| @@  " json:"phrase_term"`
 	RangeTerm   *RangeTerm  `parser:"| @@  " json:"range_term"`
 	GroupTerm   *GroupTerm  `parser:"| @@ )" json:"group_term"`
@@ -54,7 +60,7 @@ type BoostTerm struct {
 }
 
 type FuzzyTerm struct {
-	SimpleTerm  *SimpleTerm `parser:"( @@  " json:"simple_term"`
+	SingleTerm  *SingleTerm `parser:"( @@  " json:"simple_term"`
 	PhraseTerm  *PhraseTerm `parser:"| @@ )" json:"phrase_term"`
 	FuzzySymbol string      `parser:"( @FUZZY  " json:"fuzzy_symbol"`
 	BoostSymbol string      `parser:"| @BOOST)?" json:"boost_symbol"`
@@ -85,8 +91,8 @@ func (t *FuzzyTerm) Boost() float64 {
 func (t *FuzzyTerm) String() string {
 	if t == nil {
 		return ""
-	} else if t.SimpleTerm != nil {
-		return t.SimpleTerm.String() + t.FuzzySymbol + t.BoostSymbol
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.String() + t.FuzzySymbol + t.BoostSymbol
 	} else if t.PhraseTerm != nil {
 		return t.PhraseTerm.String() + t.FuzzySymbol + t.BoostSymbol
 	} else {

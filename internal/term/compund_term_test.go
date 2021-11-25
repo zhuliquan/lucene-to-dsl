@@ -28,16 +28,16 @@ func TestRangeTerm(t *testing.T) {
 		{
 			name:  "TestRangeTerm02",
 			input: `<=dsada\ 78`,
-			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", SimpleTerm: &SimpleTerm{Value: []string{`dsada\ 78`}}}},
+			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", SingleTerm: &SingleTerm{Value: []string{`dsada\ 78`}}}},
 		},
 		{
 			name:  "TestRangeTerm03",
 			input: `[1 TO 2]`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				TO:       "TO",
-				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}},
 		},
@@ -46,9 +46,9 @@ func TestRangeTerm(t *testing.T) {
 			input: `[1 TO 2 }`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				TO:       "TO",
-				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}},
 		},
@@ -57,9 +57,9 @@ func TestRangeTerm(t *testing.T) {
 			input: `{ 1 TO 2}`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				TO:       "TO",
-				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}},
 		},
@@ -68,9 +68,9 @@ func TestRangeTerm(t *testing.T) {
 			input: `{ 1 TO 2]`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &RangeValue{SimpleValue: []string{"1"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				TO:       "TO",
-				RValue:   &RangeValue{SimpleValue: []string{"2"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}},
 		},
@@ -79,7 +79,7 @@ func TestRangeTerm(t *testing.T) {
 			input: `[10 TO *]`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SimpleValue: []string{"10"}},
+				LValue:   &RangeValue{SingleValue: []string{"10"}},
 				TO:       "TO",
 				RValue:   &RangeValue{InfinityVal: "*"},
 				RBRACKET: "]",
@@ -92,7 +92,7 @@ func TestRangeTerm(t *testing.T) {
 				LBRACKET: "{",
 				LValue:   &RangeValue{InfinityVal: "*"},
 				TO:       "TO",
-				RValue:   &RangeValue{SimpleValue: []string{"2012", "-", "01", "-", "01"}},
+				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				RBRACKET: "}",
 			}},
 		},
@@ -156,22 +156,22 @@ func TestFuzzyTerm(t *testing.T) {
 		{
 			name:  "TestFuzzyTerm05",
 			input: `\/dsada\/\ dasda80980?*`,
-			want:  &FuzzyTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
 		},
 		{
 			name:  "TestFuzzyTerm06",
 			input: `\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &FuzzyTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`},
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`},
 		},
 		{
 			name:  "TestFuzzyTerm07",
 			input: `\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &FuzzyTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`},
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`},
 		},
 		{
 			name:  "TestFuzzyTerm08",
 			input: `\/dsada\/\ dasda80980?*\^\^~`,
-			want:  &FuzzyTerm{SimpleTerm: &SimpleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~`},
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~`},
 		},
 	}
 	for _, tt := range testCases {

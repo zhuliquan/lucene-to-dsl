@@ -6,11 +6,11 @@ import (
 )
 
 // simple term: is a single term without escape char and whitespace
-type SimpleTerm struct {
+type SingleTerm struct {
 	Value []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
 }
 
-func (t *SimpleTerm) ValueS() string {
+func (t *SingleTerm) ValueS() string {
 	if t == nil {
 		return ""
 	} else {
@@ -18,7 +18,7 @@ func (t *SimpleTerm) ValueS() string {
 	}
 }
 
-func (t *SimpleTerm) String() string {
+func (t *SingleTerm) String() string {
 	if t == nil {
 		return ""
 	} else {
@@ -26,7 +26,7 @@ func (t *SimpleTerm) String() string {
 	}
 }
 
-func (t *SimpleTerm) haveWildcard() bool {
+func (t *SingleTerm) haveWildcard() bool {
 	if t == nil {
 		return false
 	}
@@ -37,28 +37,6 @@ func (t *SimpleTerm) haveWildcard() bool {
 	}
 	return false
 }
-
-// func (t *SimpleTerm) fuzziness() int {
-// 	if t == nil || len(t.Fuzzy) == 0 {
-// 		return 0
-// 	} else if t.Fuzzy == "~" {
-// 		return 1
-// 	} else {
-// 		var v, _ = strconv.Atoi(t.Fuzzy[1:])
-// 		return v
-// 	}
-// }
-
-// func (t *SimpleTerm) boost() float64 {
-// 	if t == nil {
-// 		return 0.0
-// 	} else if len(t.Boost) != 0 {
-// 		var v, _ = strconv.ParseFloat(t.Boost[1:], 64)
-// 		return v
-// 	} else {
-// 		return 1.0
-// 	}
-// }
 
 // phrase term: a series of terms be surrounded with quotation, for instance "foo bar".
 type PhraseTerm struct {
@@ -96,28 +74,6 @@ func (t *PhraseTerm) haveWildcard() bool {
 	return false
 }
 
-// func (t *PhraseTerm) fuzziness() int {
-// 	if t == nil || len(t.Fuzzy) == 0 {
-// 		return 0
-// 	} else if t.Fuzzy == "~" {
-// 		return 1
-// 	} else {
-// 		var v, _ = strconv.Atoi(t.Fuzzy[1:])
-// 		return v
-// 	}
-// }
-
-// func (t *PhraseTerm) boost() float64 {
-// 	if t == nil {
-// 		return 0.0
-// 	} else if len(t.Boost) != 0 {
-// 		var v, _ = strconv.ParseFloat(t.Boost[1:], 64)
-// 		return v
-// 	} else {
-// 		return 1.0
-// 	}
-// }
-
 // a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
 type RegexpTerm struct {
 	Value string `parser:"@REGEXP" json:"value"`
@@ -150,7 +106,7 @@ type Bound struct {
 type RangeValue struct {
 	PhraseValue string   `parser:"  @STRING" json:"phrase_value"`
 	InfinityVal string   `parser:"| @('*')" json:"infinity_val"`
-	SimpleValue []string `parser:"| @(IDENT|PLUS|MINUS)+" json:"simple_value"`
+	SingleValue []string `parser:"| @(IDENT|PLUS|MINUS)+" json:"simple_value"`
 }
 
 func (v *RangeValue) String() string {
@@ -160,8 +116,8 @@ func (v *RangeValue) String() string {
 		return v.PhraseValue
 	} else if len(v.InfinityVal) != 0 {
 		return v.InfinityVal
-	} else if len(v.SimpleValue) != 0 {
-		return strings.Join(v.SimpleValue, "")
+	} else if len(v.SingleValue) != 0 {
+		return strings.Join(v.SingleValue, "")
 	} else {
 		return ""
 	}
@@ -203,27 +159,27 @@ func (t *DRangeTerm) String() string {
 // single side of range term: a term is behind of symbol ('>' / '<' / '>=' / '<=')
 type SRangeTerm struct {
 	Symbol     string      `parser:"@COMPARE" json:"symbol"`
-	SimpleTerm *SimpleTerm `parser:"( @@ " json:"simple_term"`
+	SingleTerm *SingleTerm `parser:"( @@ " json:"simple_term"`
 	PhraseTerm *PhraseTerm `parser:"| @@)" json:"phrase_term"`
 }
 
 func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 	if t == nil {
 		return nil
-	} else if t.Symbol == ">" && t.SimpleTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{SimpleValue: t.SimpleTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+	} else if t.Symbol == ">" && t.SingleTerm != nil {
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{SingleValue: t.SingleTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 	} else if t.Symbol == ">" && t.PhraseTerm != nil {
 		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == ">=" && t.SimpleTerm != nil {
-		return &DRangeTerm{LBRACKET: "[", LValue: &RangeValue{SimpleValue: t.SimpleTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+	} else if t.Symbol == ">=" && t.SingleTerm != nil {
+		return &DRangeTerm{LBRACKET: "[", LValue: &RangeValue{SingleValue: t.SingleTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 	} else if t.Symbol == ">=" && t.PhraseTerm != nil {
 		return &DRangeTerm{LBRACKET: "[", LValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == "<" && t.SimpleTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{SimpleValue: t.SimpleTerm.Value}, RBRACKET: "}"}
+	} else if t.Symbol == "<" && t.SingleTerm != nil {
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{SingleValue: t.SingleTerm.Value}, RBRACKET: "}"}
 	} else if t.Symbol == "<" && t.PhraseTerm != nil {
 		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, RBRACKET: "}"}
-	} else if t.Symbol == "<=" && t.SimpleTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{SimpleValue: t.SimpleTerm.Value}, RBRACKET: "]"}
+	} else if t.Symbol == "<=" && t.SingleTerm != nil {
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{SingleValue: t.SingleTerm.Value}, RBRACKET: "]"}
 	} else if t.Symbol == "<=" && t.PhraseTerm != nil {
 		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, RBRACKET: "]"}
 	} else {
@@ -238,43 +194,3 @@ func (t *SRangeTerm) ToBound() *Bound {
 func (t *SRangeTerm) String() string {
 	return t.toDRangeTerm().String()
 }
-
-// func (t *SRangeTerm) isRange() bool {
-// 	return t != nil && len(t.Symbol) != 0
-// }
-
-// func (t *SRangeTerm) haveWildcard() bool {
-// 	if t == nil {
-// 		return false
-// 	} else if t.PhraseTerm != nil {
-// 		return t.PhraseTerm.haveWildcard()
-// 	} else if t.SimpleTerm != nil {
-// 		return t.SimpleTerm.haveWildcard()
-// 	} else {
-// 		return false
-// 	}
-// }
-
-// func (t *SRangeTerm) fuzziness() int {
-// 	if t == nil {
-// 		return 0
-// 	} else if t.PhraseTerm != nil {
-// 		return t.PhraseTerm.fuzziness()
-// 	} else if t.SimpleTerm != nil {
-// 		return t.SimpleTerm.fuzziness()
-// 	} else {
-// 		return 0
-// 	}
-// }
-
-// func (t *SRangeTerm) boost() float64 {
-// 	if t == nil {
-// 		return 0.0
-// 	} else if t.PhraseTerm != nil {
-// 		return t.PhraseTerm.boost()
-// 	} else if t.SimpleTerm != nil {
-// 		return t.SimpleTerm.boost()
-// 	} else {
-// 		return 1.0
-// 	}
-// }
