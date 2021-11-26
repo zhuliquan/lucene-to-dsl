@@ -51,3 +51,21 @@ func (o *NOTSymbol) String() string {
 		return ""
 	}
 }
+
+// ("+" / "-")
+type PreSymbol struct {
+	MustNOT string `parser:"  @MINUS" json:"must_not"`
+	Must    string `parser:"| @PLUS" json:"must"`
+}
+
+func (o *PreSymbol) String() string {
+	if o == nil {
+		return ""
+	} else if len(o.MustNOT) != 0 {
+		return o.MustNOT
+	} else if len(o.Must) != 0 {
+		return o.Must
+	} else {
+		return ""
+	}
+}
