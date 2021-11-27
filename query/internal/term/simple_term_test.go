@@ -15,15 +15,33 @@ func TestSimpleTerm(t *testing.T) {
 	)
 
 	type testCase struct {
-		name  string
-		input string
-		want  *SingleTerm
+		name     string
+		input    string
+		want     *SingleTerm
+		values   string
+		wildward bool
 	}
 	var testCases = []testCase{
 		{
-			name:  "TestSimpleTerm01",
-			input: `\/dsada\/\ dasda80980?*`,
-			want:  &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}},
+			name:     "TestSimpleTerm01",
+			input:    `\/dsada\/\ dasda80980?`,
+			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`}},
+			values:   `\/dsada\/\ dasda80980?`,
+			wildward: true,
+		},
+		{
+			name:     "TestSimpleTerm02",
+			input:    `\/dsada\/\ dasda80980*`,
+			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `*`}},
+			values:   `\/dsada\/\ dasda80980*`,
+			wildward: true,
+		},
+		{
+			name:     "TestSimpleTerm03",
+			input:    `\/dsada\/\ dasda8\?0980\*`,
+			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda8\?0980\*`}},
+			values:   `\/dsada\/\ dasda8\?0980\*`,
+			wildward: false,
 		},
 	}
 
@@ -34,6 +52,10 @@ func TestSimpleTerm(t *testing.T) {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
 				t.Errorf("termParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if tt.values != out.ValueS() {
+				t.Errorf("expect get values: %s, but get values: %+v", tt.values, out.ValueS())
+			} else if tt.wildward != out.haveWildcard() {
+				t.Errorf("expect get wildcard: %s, but get wildcard: %+v", tt.wildward, out.haveWildcard())
 			}
 		})
 	}
@@ -46,15 +68,75 @@ func TestPhraseTerm(t *testing.T) {
 	)
 
 	type testCase struct {
-		name  string
-		input string
-		want  *PhraseTerm
+		name     string
+		input    string
+		want     *PhraseTerm
+		values   string
+		wildward bool
 	}
 	var testCases = []testCase{
 		{
-			name:  "PhraseTerm01",
-			input: `"dsada 78"`,
-			want:  &PhraseTerm{Value: `"dsada 78"`},
+			name:     "TestPhraseTerm01",
+			input:    `"dsada 78"`,
+			want:     &PhraseTerm{Value: `"dsada 78"`},
+			values:   `dsada 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm02",
+			input:    `"*dsada 78"`,
+			want:     &PhraseTerm{Value: `"*dsada 78"`},
+			values:   `*dsada 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm03",
+			input:    `"?dsada 78"`,
+			want:     &PhraseTerm{Value: `"?dsada 78"`},
+			values:   `?dsada 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm04",
+			input:    `"dsada* 78"`,
+			want:     &PhraseTerm{Value: `"dsada* 78"`},
+			values:   `dsada* 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm05",
+			input:    `"dsada? 78"`,
+			want:     &PhraseTerm{Value: `"dsada? 78"`},
+			values:   `dsada? 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm06",
+			input:    `"dsada\* 78"`,
+			want:     &PhraseTerm{Value: `"dsada\* 78"`},
+			values:   `dsada\* 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm07",
+			input:    `"dsada\? 78"`,
+			want:     &PhraseTerm{Value: `"dsada\? 78"`},
+			values:   `dsada\? 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm09",
+			input:    `"\*dsada 78"`,
+			want:     &PhraseTerm{Value: `"\*dsada 78"`},
+			values:   `\*dsada 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm10",
+			input:    `"\?dsada 78"`,
+			want:     &PhraseTerm{Value: `"\?dsada 78"`},
+			values:   `\?dsada 78`,
+			wildward: false,
 		},
 	}
 
@@ -65,6 +147,10 @@ func TestPhraseTerm(t *testing.T) {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
 				t.Errorf("phraseTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if tt.values != out.ValueS() {
+				t.Errorf("expect get values: %s, but get values: %+v", tt.values, out.ValueS())
+			} else if tt.wildward != out.haveWildcard() {
+				t.Errorf("expect get wildcard: %s, but get wildcard: %+v", tt.wildward, out.haveWildcard())
 			}
 		})
 	}
