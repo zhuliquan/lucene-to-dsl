@@ -69,9 +69,8 @@ func (o *NOTSymbol) GetLogicType() LogicOPType {
 	}
 }
 
-// (" " ? ( "+" / "-")? )
 type PreSymbol struct {
-	Should  string `parser:"@WHITESPACE*" json:"should"`
+	Should  string `parser:"@WHITESPACE?" json:"should"`
 	MustNOT string `parser:"( @MINUS " json:"must_not"`
 	Must    string `parser:"| @PLUS )?" json:"must"`
 }
