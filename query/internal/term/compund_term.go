@@ -44,19 +44,19 @@ type PrefixTerm struct {
 	RangeTerm  *RangeTerm  `parser:"| @@)" json:"range_term"`
 }
 
-// func (t *PrefixTerm) String() string {
-// 	if t == nil {
-// 		return ""
-// 	} else if t.SingleTerm != nil {
-// 		return t.Symbol + t.SingleTerm.String()
-// 	} else if t.PhraseTerm != nil {
-// 		return t.Symbol + t.PhraseTerm.String()
-// 	} else if t.RangeTerm != nil {
-// 		return t.Symbol + t.RangeTerm.String()
-// 	} else {
-// 		return ""
-// 	}
-// }
+func (t *PrefixTerm) String() string {
+	if t == nil {
+		return ""
+	} else if t.SingleTerm != nil {
+		return t.Symbol + t.SingleTerm.String()
+	} else if t.PhraseTerm != nil {
+		return t.Symbol + t.PhraseTerm.String()
+	} else if t.RangeTerm != nil {
+		return t.Symbol + t.RangeTerm.String()
+	} else {
+		return ""
+	}
+}
 
 func (t *PrefixTerm) GetPrefixType() op.PrefixOPType {
 	if t == nil {
@@ -70,6 +70,7 @@ func (t *PrefixTerm) GetPrefixType() op.PrefixOPType {
 	}
 }
 
+// whitespace is prefix with prefix term
 type WPrefixTerm struct {
 	Symbol     string      `parser:"WHITESPACE @(PLUS|MINUS)?" json:"symbol"`
 	SingleTerm *SingleTerm `parser:"( @@ " json:"single_term"`
@@ -117,13 +118,14 @@ type TermGroup struct {
 	PrefixTerms []PrefixTerm `parser:"LPAREN @@+ RPAREN" json:"pre-bool_terms"`
 }
 
-// a term with boost symbol like this foo^2 / "foo bar"^2 / [1 TO 2]^2 or nothing (default 1.0)
+// a term with boost symbol like this ( foo bar )^2 / [1 TO 2]^2 or nothing (default 1.0)
 type BoostTerm struct {
-	RangeTerm   *RangeTerm `parser:"( @@  " json:"range_term"`
-	GroupTerm   *TermGroup `parser:"| @@ )" json:"group_term"`
-	BoostSymbol string     `parser:"@BOOST?" json:"boost_symbol"`
+	RangeTerm   *RangeTerm       `parser:"( @@  " json:"range_term"`
+	GroupTerm   *PrefixTermGroup `parser:"| @@ )" json:"group_term"`
+	BoostSymbol string           `parser:"@BOOST?" json:"boost_symbol"`
 }
 
+// fuzzy term: term can by suffix with fuzzy or boost like this foo^2 / "foo bar"^2 / foo~ / "foo bar"~2
 type FuzzyTerm struct {
 	SingleTerm  *SingleTerm `parser:"( @@ " json:"single_term"`
 	PhraseTerm  *PhraseTerm `parser:"| @@)" json:"phrase_term"`
