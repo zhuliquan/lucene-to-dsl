@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
 func TestSimpleTerm(t *testing.T) {

@@ -1,8 +1,8 @@
 package query
 
 import (
-	op "github.com/zhuliquan/lucene-to-dsl/internal/operator"
-	"github.com/zhuliquan/lucene-to-dsl/internal/term"
+	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
+	tm "github.com/zhuliquan/lucene-to-dsl/query/internal/term"
 )
 
 type Lucene struct {
@@ -45,8 +45,8 @@ type ParenQuery struct {
 }
 
 type FieldQuery struct {
-	Field *term.Field `parser:"@@ COLON" json:"field"`
-	Term  *term.Term  `parser:"@@" json:"term"`
+	Field *tm.Field `parser:"@@ COLON" json:"field"`
+	Term  *tm.Term  `parser:"@@" json:"term"`
 }
 
 func (f *FieldQuery) String() string {

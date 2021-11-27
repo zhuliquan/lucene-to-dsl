@@ -32,22 +32,35 @@ func (t *RangeTerm) ToBound() *Bound {
 	}
 }
 
-// bool term: a term is behind of symbol ("+" / "-" / "!")
+// prefix term: a term is behind of prefix operator symbol ("+" / "-")
 type PrefixTerm struct {
-	BoolSymbol string      `parser:"@(MINUS|PLUS|NOT)?" json:"prefix"`
-	SimpleTerm *SingleTerm `parser:"( @@ " json:"simple_term"`
+	BoolSymbol string      `parser:"@(MINUS|PLUS)?" json:"prefix"`
+	SingleTerm *SingleTerm `parser:"( @@ " json:"simple_term"`
 	PhraseTerm *PhraseTerm `parser:"| @@ " json:"phrase_term"`
 	RangeTerm  *RangeTerm  `parser:"| @@)" json:"range_term"`
 }
 
-// func (t *PrefixTerm) String() string {
-// 	if t == nil {
-// 		return ""
-// 	} else if t.SimpleTerm
-// }
+type OrTerm struct {
+	AndTerm  *AndTerm `parser:"@@" json:"and_term"`
+	AndTerms *AndSTerm
+}
+
+func (t *PrefixTerm) String() string {
+	if t == nil {
+		return ""
+	} else if t.SingleTerm != nil {
+		return t.BoolSymbol + t.SingleTerm.String()
+	} else if t.PhraseTerm != nil {
+		return t.BoolSymbol + t.PhraseTerm.String()
+	} else if t.RangeTerm != nil {
+		return t.BoolSymbol + t.RangeTerm.String()
+	} else {
+		return ""
+	}
+}
 
 type GroupTerm struct {
-	PreBoolTerms []PrefixTerm `parser:"LPAREN @@+ RPAREN" json:"pre-bool_terms"`
+	PrefixTerms []PrefixTerm `parser:"LPAREN @@+ RPAREN" json:"pre-bool_terms"`
 }
 
 // a term with boost symbol like this foo^2 / "foo bar"^2 / [1 TO 2]^2 or nothing (default 1.0)

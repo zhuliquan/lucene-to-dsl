@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
 func TestRangeTerm(t *testing.T) {
@@ -122,6 +122,71 @@ func TestRangeTerm(t *testing.T) {
 }
 
 func TestFuzzyTerm(t *testing.T) {
+	var termParser = participle.MustBuild(
+		&FuzzyTerm{},
+		participle.Lexer(token.Lexer),
+	)
+
+	type testCase struct {
+		name  string
+		input string
+		want  *FuzzyTerm
+	}
+	var testCases = []testCase{
+		{
+			name:  "TestFuzzyTerm01",
+			input: `"dsada 78"`,
+			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+		},
+		{
+			name:  "TestFuzzyTerm02",
+			input: `"dsada 78"^08`,
+			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, BoostSymbol: "^08"},
+		},
+		{
+			name:  "TestFuzzyTerm03",
+			input: `"dsada 78"~8`,
+			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~8"},
+		},
+		{
+			name:  "TestFuzzyTerm04",
+			input: `"dsada 78"~`,
+			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~"},
+		},
+		{
+			name:  "TestFuzzyTerm05",
+			input: `\/dsada\/\ dasda80980?*`,
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+		},
+		{
+			name:  "TestFuzzyTerm06",
+			input: `\/dsada\/\ dasda80980?*\^\^^08`,
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`},
+		},
+		{
+			name:  "TestFuzzyTerm07",
+			input: `\/dsada\/\ dasda80980?*\^\^~8`,
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`},
+		},
+		{
+			name:  "TestFuzzyTerm08",
+			input: `\/dsada\/\ dasda80980?*\^\^~`,
+			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~`},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out = &FuzzyTerm{}
+			if err := termParser.ParseString(tt.input, out); err != nil {
+				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
+			} else if !reflect.DeepEqual(tt.want, out) {
+				t.Errorf("fuzzyTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			}
+		})
+	}
+}
+
+func TestPrefixTerm(t *testing.T) {
 	var termParser = participle.MustBuild(
 		&FuzzyTerm{},
 		participle.Lexer(token.Lexer),
