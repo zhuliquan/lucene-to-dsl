@@ -1,4 +1,4 @@
-package query
+package operator
 
 import (
 	"reflect"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestAndSymbol(t *testing.T) {
-	var operParser = participle.MustBuild(
+	var operatorParser = participle.MustBuild(
 		&ANDSymbol{},
 		participle.Lexer(token.Lexer),
 	)
@@ -39,7 +39,7 @@ func TestAndSymbol(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			var symbol = &ANDSymbol{}
-			if err := operParser.ParseString(tt.input, symbol); err != nil {
+			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {
 				t.Errorf("ParseString( %s ) = %+v, want: %+v", tt.input, symbol, tt.want)
@@ -49,7 +49,7 @@ func TestAndSymbol(t *testing.T) {
 }
 
 func TestOrSymbol(t *testing.T) {
-	var operParser = participle.MustBuild(
+	var operatorParser = participle.MustBuild(
 		&ORSymbol{},
 		participle.Lexer(token.Lexer),
 	)
@@ -80,7 +80,7 @@ func TestOrSymbol(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			var symbol = &ORSymbol{}
-			if err := operParser.ParseString(tt.input, symbol); err != nil {
+			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {
 				t.Errorf("ParseString( %s ) = %+v, want: %+v", tt.input, symbol, tt.want)
@@ -90,7 +90,7 @@ func TestOrSymbol(t *testing.T) {
 }
 
 func TestNotSymbol(t *testing.T) {
-	var operParser = participle.MustBuild(
+	var operatorParser = participle.MustBuild(
 		&NOTSymbol{},
 		participle.Lexer(token.Lexer),
 	)
@@ -120,7 +120,7 @@ func TestNotSymbol(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			var symbol = &NOTSymbol{}
-			if err := operParser.ParseString(tt.input, symbol); err != nil {
+			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {
 				t.Errorf("ParseString( %s ) = %+v, want: %+v", tt.input, symbol, tt.want)
@@ -130,7 +130,7 @@ func TestNotSymbol(t *testing.T) {
 }
 
 func TestPreSymbol(t *testing.T) {
-	var operParser = participle.MustBuild(
+	var operatorParser = participle.MustBuild(
 		&PreSymbol{},
 		participle.Lexer(token.Lexer),
 	)
@@ -155,7 +155,7 @@ func TestPreSymbol(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			var symbol = &PreSymbol{}
-			if err := operParser.ParseString(tt.input, symbol); err != nil {
+			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {
 				t.Errorf("ParseString( %s ) = %+v, want: %+v", tt.input, symbol, tt.want)

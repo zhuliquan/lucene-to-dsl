@@ -1,4 +1,4 @@
-package query
+package operator
 
 // bool operator ("AND" / "OR" / "NOT") or ("and" / "or" / "not") or ("&&" / "||" / "!")
 type ANDSymbol struct {
