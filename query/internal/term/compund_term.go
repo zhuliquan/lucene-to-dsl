@@ -6,48 +6,6 @@ import (
 	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
 )
 
-// a simple term
-type SimpleTerm struct {
-	SingleTerm *SimpleTerm `parser:"  @@" json:"single_term"`
-	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
-}
-
-func (t *SimpleTerm) String() string {
-	if t == nil {
-		return ""
-	} else if t.SingleTerm != nil {
-		return t.SingleTerm.String()
-	} else if t.PhraseTerm != nil {
-		return t.PhraseTerm.String()
-	} else {
-		return ""
-	}
-}
-
-func (t *SimpleTerm) ValueS() string {
-	if t == nil {
-		return ""
-	} else if t.SingleTerm != nil {
-		return t.SingleTerm.ValueS()
-	} else if t.PhraseTerm != nil {
-		return t.PhraseTerm.ValueS()
-	} else {
-		return ""
-	}
-}
-
-func (t *SimpleTerm) haveWildcard() bool {
-	if t != nil {
-		return false
-	} else if t.SingleTerm != nil {
-		return t.SingleTerm.haveWildcard()
-	} else if t.PhraseTerm != nil {
-		return t.PhraseTerm.haveWildcard()
-	} else {
-		return false
-	}
-}
-
 // single side range term or double side range term
 type RangeTerm struct {
 	SRangeTerm *SRangeTerm `parser:"  @@" json:"s_range_term"`
@@ -80,58 +38,74 @@ func (t *RangeTerm) ToBound() *Bound {
 
 // prefix term: a term is behind of prefix operator symbol ("+" / "-")
 type PrefixTerm struct {
-	Prefix     *op.PreSymbol `parser:"@@" json:"prefix"`
-	SingleTerm *SingleTerm   `parser:"( @@ " json:"simple_term"`
-	PhraseTerm *PhraseTerm   `parser:"| @@ " json:"phrase_term"`
-	RangeTerm  *RangeTerm    `parser:"| @@)" json:"range_term"`
+	Symbol     string      `parser:"@( PLUS | MINUS)?" json:"symbol"`
+	SingleTerm *SingleTerm `parser:"( @@ " json:"single_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@ " json:"phrase_term"`
+	RangeTerm  *RangeTerm  `parser:"| @@)" json:"range_term"`
 }
 
-func (t *PrefixTerm) String() string {
+// func (t *PrefixTerm) String() string {
+// 	if t == nil {
+// 		return ""
+// 	} else if t.SingleTerm != nil {
+// 		return t.Symbol + t.SingleTerm.String()
+// 	} else if t.PhraseTerm != nil {
+// 		return t.Symbol + t.PhraseTerm.String()
+// 	} else if t.RangeTerm != nil {
+// 		return t.Symbol + t.RangeTerm.String()
+// 	} else {
+// 		return ""
+// 	}
+// }
+
+func (t *PrefixTerm) GetPrefixType() op.PrefixOPType {
 	if t == nil {
-		return ""
-	} else if t.SingleTerm != nil {
-		return t.Prefix.String() + t.SingleTerm.String()
-	} else if t.PhraseTerm != nil {
-		return t.Prefix.String() + t.PhraseTerm.String()
-	} else if t.RangeTerm != nil {
-		return t.Prefix.String() + t.RangeTerm.String()
+		return op.UNKNOWN_PREFIX_TYPE
+	} else if t.Symbol == "+" {
+		return op.MUST_PREFIX_TYPE
+	} else if t.Symbol == "-" {
+		return op.MUST_NOT_PREFIX_TYPE
 	} else {
-		return ""
+		return op.SHOULD_PREFIX_TYPE
 	}
 }
 
-func (t *PrefixTerm) GetPrefixType() op.PrefixOPType {
-	return t.Prefix.GetPrefixType()
-}
-
 type WPrefixTerm struct {
-	Prefix     *op.PreSymbol `parser:"WHITESPACE @@" json:"prefix"`
-	SingleTerm *SingleTerm   `parser:"( @@ " json:"simple_term"`
-	PhraseTerm *PhraseTerm   `parser:"| @@ " json:"phrase_term"`
-	RangeTerm  *RangeTerm    `parser:"| @@)" json:"range_term"`
+	Symbol     string      `parser:"WHITESPACE @(PLUS|MINUS)?" json:"symbol"`
+	SingleTerm *SingleTerm `parser:"( @@ " json:"single_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@ " json:"phrase_term"`
+	RangeTerm  *RangeTerm  `parser:"| @@)" json:"range_term"`
 }
 
 func (t *WPrefixTerm) String() string {
 	if t == nil {
 		return ""
 	} else if t.SingleTerm != nil {
-		return " " + t.Prefix.String() + t.SingleTerm.String()
+		return " " + t.Symbol + t.SingleTerm.String()
 	} else if t.PhraseTerm != nil {
-		return t.Prefix.String() + t.PhraseTerm.String()
+		return " " + t.Symbol + t.PhraseTerm.String()
 	} else if t.RangeTerm != nil {
-		return " " + t.Prefix.String() + t.RangeTerm.String()
+		return " " + t.Symbol + t.RangeTerm.String()
 	} else {
 		return ""
 	}
 }
 
 func (t *WPrefixTerm) GetPrefixType() op.PrefixOPType {
-	return t.Prefix.GetPrefixType()
+	if t == nil {
+		return op.UNKNOWN_PREFIX_TYPE
+	} else if t.Symbol == "+" {
+		return op.MUST_PREFIX_TYPE
+	} else if t.Symbol == "-" {
+		return op.MUST_NOT_PREFIX_TYPE
+	} else {
+		return op.SHOULD_PREFIX_TYPE
+	}
 }
 
-type GroupPrefixTerm struct {
-	PrefixTerm  *PrefixTerm    `parser:"LPAREN @@" json:"prefix_term"`
-	WPrefixTerm []*WPrefixTerm `parser:"@@+ WHITESPACE RPAREN" json:"prefix_terms`
+type PrefixTermGroup struct {
+	PrefixTerm  *PrefixTerm    `parser:"LPAREN WHITESPACE* @@" json:"prefix_term"`
+	PrefixTerms []*WPrefixTerm `parser:"@@* WHITESPACE* RPAREN" json:"prefix_terms`
 }
 
 // type OrTerm struct {
@@ -139,23 +113,22 @@ type GroupPrefixTerm struct {
 // 	OrJTerms []*OrJTerm `parser:"@@+" json:"orj_terms"`
 // }
 
-type GroupTerm struct {
+type TermGroup struct {
 	PrefixTerms []PrefixTerm `parser:"LPAREN @@+ RPAREN" json:"pre-bool_terms"`
 }
 
 // a term with boost symbol like this foo^2 / "foo bar"^2 / [1 TO 2]^2 or nothing (default 1.0)
 type BoostTerm struct {
-	SingleTerm  *SingleTerm `parser:"( @@  " json:"simple_term"`
-	PhraseTerm  *PhraseTerm `parser:"| @@  " json:"phrase_term"`
-	RangeTerm   *RangeTerm  `parser:"| @@  " json:"range_term"`
-	GroupTerm   *GroupTerm  `parser:"| @@ )" json:"group_term"`
-	BoostSymbol string      `parser:"@BOOST?" json:"boost_symbol"`
+	RangeTerm   *RangeTerm `parser:"( @@  " json:"range_term"`
+	GroupTerm   *TermGroup `parser:"| @@ )" json:"group_term"`
+	BoostSymbol string     `parser:"@BOOST?" json:"boost_symbol"`
 }
 
 type FuzzyTerm struct {
-	SingleTerm  *SingleTerm `parser:"( @@  " json:"simple_term"`
-	PhraseTerm  *PhraseTerm `parser:"| @@ )" json:"phrase_term"`
-	FuzzySymbol string      `parser:"@FUZZY?  " json:"fuzzy_symbol"`
+	SingleTerm  *SingleTerm `parser:"( @@ " json:"single_term"`
+	PhraseTerm  *PhraseTerm `parser:"| @@)" json:"phrase_term"`
+	FuzzySymbol string      `parser:"( @FUZZY " json:"fuzzy_symbol"`
+	BoostSymbol string      `parser:"| @BOOST )?" json:"boost_symbol`
 }
 
 func (t *FuzzyTerm) Boost() float64 {
