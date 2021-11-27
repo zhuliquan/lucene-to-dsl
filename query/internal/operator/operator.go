@@ -68,35 +68,3 @@ func (o *NOTSymbol) GetLogicType() LogicOPType {
 		return NOT_LOGIC_TYPE
 	}
 }
-
-type PreSymbol struct {
-	Should  string `parser:"@WHITESPACE?" json:"should"`
-	MustNOT string `parser:"( @MINUS " json:"must_not"`
-	Must    string `parser:"| @PLUS )?" json:"must"`
-}
-
-func (o *PreSymbol) String() string {
-	if o == nil {
-		return ""
-	} else if len(o.MustNOT) != 0 {
-		return o.MustNOT
-	} else if len(o.Must) != 0 {
-		return o.Must
-	} else if len(o.Should) != 0 {
-		return " "
-	} else {
-		return ""
-	}
-}
-
-func (o *PreSymbol) GetPrefixType() PrefixOPType {
-	if o == nil {
-		return UNKNOWN_PREFIX_TYPE
-	} else if len(o.MustNOT) != 0 {
-		return MUST_NOT_PREFIX_TYPE
-	} else if len(o.Must) != 0 {
-		return MUST_PREFIX_TYPE
-	} else {
-		return SHOULD_PREFIX_TYPE
-	}
-}
