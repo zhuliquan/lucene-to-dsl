@@ -159,30 +159,21 @@ func (t *DRangeTerm) String() string {
 
 // single side of range term: a term is behind of symbol ('>' / '<' / '>=' / '<=')
 type SRangeTerm struct {
-	Symbol     string      `parser:"@COMPARE" json:"symbol"`
-	SingleTerm *SingleTerm `parser:"( @@ " json:"simple_term"`
-	PhraseTerm *PhraseTerm `parser:"| @@)" json:"phrase_term"`
+	Symbol string      `parser:"@COMPARE" json:"symbol"`
+	Value  *RangeValue `parser:"@@" json:"value"`
 }
 
 func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 	if t == nil {
 		return nil
-	} else if t.Symbol == ">" && t.SingleTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{SingleValue: t.SingleTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == ">" && t.PhraseTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == ">=" && t.SingleTerm != nil {
-		return &DRangeTerm{LBRACKET: "[", LValue: &RangeValue{SingleValue: t.SingleTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == ">=" && t.PhraseTerm != nil {
-		return &DRangeTerm{LBRACKET: "[", LValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == "<" && t.SingleTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{SingleValue: t.SingleTerm.Value}, RBRACKET: "}"}
-	} else if t.Symbol == "<" && t.PhraseTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, RBRACKET: "}"}
-	} else if t.Symbol == "<=" && t.SingleTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{SingleValue: t.SingleTerm.Value}, RBRACKET: "]"}
-	} else if t.Symbol == "<=" && t.PhraseTerm != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: &RangeValue{PhraseValue: t.PhraseTerm.Value}, RBRACKET: "]"}
+	} else if t.Symbol == ">" && t.Value != nil {
+		return &DRangeTerm{LBRACKET: "{", LValue: t.Value, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+	} else if t.Symbol == ">=" && t.Value != nil {
+		return &DRangeTerm{LBRACKET: "[", LValue: t.Value, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+	} else if t.Symbol == "<" && t.Value != nil {
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: t.Value, RBRACKET: "}"}
+	} else if t.Symbol == "<=" && t.Value != nil {
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: t.Value, RBRACKET: "]"}
 	} else {
 		return nil
 	}

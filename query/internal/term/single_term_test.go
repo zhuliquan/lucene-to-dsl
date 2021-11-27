@@ -309,12 +309,12 @@ func TestSRangeTerm(t *testing.T) {
 		{
 			name:  "SRangeTerm01",
 			input: `<="dsada 78"`,
-			want:  &SRangeTerm{Symbol: "<=", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: `"dsada 78"`}},
 		},
 		{
 			name:  "SRangeTerm05",
 			input: `<=dsada\ 78`,
-			want:  &SRangeTerm{Symbol: "<=", SingleTerm: &SingleTerm{Value: []string{`dsada\ 78`}}},
+			want:  &SRangeTerm{Symbol: "<=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}},
 		},
 	}
 
