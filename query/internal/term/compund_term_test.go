@@ -8,6 +8,101 @@ import (
 	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
+func TestSimpleTerm(t *testing.T) {
+	var termParser = participle.MustBuild(
+		&SimpleTerm{},
+		participle.Lexer(token.Lexer),
+	)
+
+	type testCase struct {
+		name     string
+		input    string
+		want     *PhraseTerm
+		values   string
+		wildward bool
+	}
+	var testCases = []testCase{
+		{
+			name:     "TestPhraseTerm01",
+			input:    `"dsada 78"`,
+			want:     &PhraseTerm{Value: `"dsada 78"`},
+			values:   `dsada 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm02",
+			input:    `"*dsada 78"`,
+			want:     &PhraseTerm{Value: `"*dsada 78"`},
+			values:   `*dsada 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm03",
+			input:    `"?dsada 78"`,
+			want:     &PhraseTerm{Value: `"?dsada 78"`},
+			values:   `?dsada 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm04",
+			input:    `"dsada* 78"`,
+			want:     &PhraseTerm{Value: `"dsada* 78"`},
+			values:   `dsada* 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm05",
+			input:    `"dsada? 78"`,
+			want:     &PhraseTerm{Value: `"dsada? 78"`},
+			values:   `dsada? 78`,
+			wildward: true,
+		},
+		{
+			name:     "TestPhraseTerm06",
+			input:    `"dsada\* 78"`,
+			want:     &PhraseTerm{Value: `"dsada\* 78"`},
+			values:   `dsada\* 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm07",
+			input:    `"dsada\? 78"`,
+			want:     &PhraseTerm{Value: `"dsada\? 78"`},
+			values:   `dsada\? 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm09",
+			input:    `"\*dsada 78"`,
+			want:     &PhraseTerm{Value: `"\*dsada 78"`},
+			values:   `\*dsada 78`,
+			wildward: false,
+		},
+		{
+			name:     "TestPhraseTerm10",
+			input:    `"\?dsada 78"`,
+			want:     &PhraseTerm{Value: `"\?dsada 78"`},
+			values:   `\?dsada 78`,
+			wildward: false,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out = &PhraseTerm{}
+			if err := termParser.ParseString(tt.input, out); err != nil {
+				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
+			} else if !reflect.DeepEqual(tt.want, out) {
+				t.Errorf("phraseTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if tt.values != out.ValueS() {
+				t.Errorf("expect get values: %s, but get values: %+v", tt.values, out.ValueS())
+			} else if tt.wildward != out.haveWildcard() {
+				t.Errorf("expect get wildcard: %+v, but get wildcard: %+v", tt.wildward, out.haveWildcard())
+			}
+		})
+	}
+}
+
 func TestRangeTerm(t *testing.T) {
 	var rangesTermParser = participle.MustBuild(
 		&RangeTerm{},

@@ -8,7 +8,7 @@ import (
 	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
-func TestSimpleTerm(t *testing.T) {
+func TestSingleTerm(t *testing.T) {
 	var termParser = participle.MustBuild(
 		&SingleTerm{},
 		participle.Lexer(token.Lexer),
@@ -55,7 +55,7 @@ func TestSimpleTerm(t *testing.T) {
 			} else if tt.values != out.ValueS() {
 				t.Errorf("expect get values: %s, but get values: %+v", tt.values, out.ValueS())
 			} else if tt.wildward != out.haveWildcard() {
-				t.Errorf("expect get wildcard: %s, but get wildcard: %+v", tt.wildward, out.haveWildcard())
+				t.Errorf("expect get wildcard: %+v, but get wildcard: %+v", tt.wildward, out.haveWildcard())
 			}
 		})
 	}
@@ -150,7 +150,7 @@ func TestPhraseTerm(t *testing.T) {
 			} else if tt.values != out.ValueS() {
 				t.Errorf("expect get values: %s, but get values: %+v", tt.values, out.ValueS())
 			} else if tt.wildward != out.haveWildcard() {
-				t.Errorf("expect get wildcard: %s, but get wildcard: %+v", tt.wildward, out.haveWildcard())
+				t.Errorf("expect get wildcard: %+v, but get wildcard: %+v", tt.wildward, out.haveWildcard())
 			}
 		})
 	}
