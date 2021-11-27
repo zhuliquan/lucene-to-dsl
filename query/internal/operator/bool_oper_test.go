@@ -22,17 +22,17 @@ func TestAndSymbol(t *testing.T) {
 		{
 			name:  "TestAndSymbol01",
 			input: ` AND   `,
-			want:  &ANDSymbol{LAND: "AND"},
+			want:  &ANDSymbol{Symbol: "AND"},
 		},
 		{
 			name:  "TestAndSymbol02",
 			input: ` and `,
-			want:  &ANDSymbol{LAND: "and"},
+			want:  &ANDSymbol{Symbol: "and"},
 		},
 		{
 			name:  "TestAndSymbol03",
 			input: ` && `,
-			want:  &ANDSymbol{SAND: "&&"},
+			want:  &ANDSymbol{Symbol: "&&"},
 		},
 	}
 
@@ -63,17 +63,17 @@ func TestOrSymbol(t *testing.T) {
 		{
 			name:  "TestOrSymbol01",
 			input: ` OR  `,
-			want:  &ORSymbol{LOR: "OR"},
+			want:  &ORSymbol{Symbol: "OR"},
 		},
 		{
 			name:  "TestOrSymbol02",
 			input: ` or  `,
-			want:  &ORSymbol{LOR: "or"},
+			want:  &ORSymbol{Symbol: "or"},
 		},
 		{
 			name:  "TestOrSymbol03",
 			input: ` ||  `,
-			want:  &ORSymbol{SOR: "||"},
+			want:  &ORSymbol{Symbol: "||"},
 		},
 	}
 
@@ -103,17 +103,17 @@ func TestNotSymbol(t *testing.T) {
 		{
 			name:  "TestNotSymbol01",
 			input: `NOT `,
-			want:  &NOTSymbol{LNOT: "NOT"},
+			want:  &NOTSymbol{Symbol: "NOT"},
 		},
 		{
 			name:  "TestNotSymbol02",
 			input: `not `,
-			want:  &NOTSymbol{LNOT: "not"},
+			want:  &NOTSymbol{Symbol: "not"},
 		},
 		{
 			name:  "TestNotSymbol03",
 			input: `! `,
-			want:  &NOTSymbol{SNOT: "!"},
+			want:  &NOTSymbol{Symbol: "!"},
 		},
 	}
 
@@ -135,21 +135,48 @@ func TestPreSymbol(t *testing.T) {
 		participle.Lexer(token.Lexer),
 	)
 	type testCase struct {
-		name  string
-		input string
-		want  *PreSymbol
+		name    string
+		input   string
+		wantVal *PreSymbol
+		wantTyp PrefixOPType
 	}
 	var testCases = []testCase{
 		{
-			name:  "TestPreSymbol01",
-			input: `-`,
-			want:  &PreSymbol{MustNOT: "-"},
+			name:    "TestPreSymbol01",
+			input:   `-`,
+			wantVal: &PreSymbol{MustNOT: "-"},
+			wantTyp: MUST_NOT_PREFIX_TYPE,
 		},
 		{
-			name:  "TestPreSymbol02",
-			input: `+`,
-			want:  &PreSymbol{Must: "+"},
+			name:    "TestPreSymbol02",
+			input:   "   -",
+			wantVal: &PreSymbol{Should: "   ", MustNOT: "-"},
+			wantTyp: MUST_NOT_PREFIX_TYPE,
 		},
+		{
+			name:    "TestPreSymbol03",
+			input:   "+",
+			wantVal: &PreSymbol{Must: "+"},
+			wantTyp: MUST_PREFIX_TYPE,
+		},
+		{
+			name:    "TestPreSymbol04",
+			input:   "    +",
+			wantVal: &PreSymbol{Should: "    ", Must: "+"},
+			wantTyp: MUST_PREFIX_TYPE,
+		},
+		{
+			name:    "TestPreSymbol05",
+			input:   `    `,
+			wantVal: &PreSymbol{Should: "    "},
+			wantTyp: SHOULD_PREFIX_TYPE,
+		},
+		// {
+		// 	name:    "TestPreSymbol06",
+		// 	input:   "",
+		// 	wantVal: &PreSymbol{Should: ""},
+		// 	wantTyp: SHOULD_PREFIX_TYPE,
+		// },
 	}
 
 	for _, tt := range testCases {
@@ -157,8 +184,10 @@ func TestPreSymbol(t *testing.T) {
 			var symbol = &PreSymbol{}
 			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
-			} else if !reflect.DeepEqual(symbol, tt.want) {
-				t.Errorf("ParseString( %s ) = %+v, want: %+v", tt.input, symbol, tt.want)
+			} else if !reflect.DeepEqual(symbol, tt.wantVal) {
+				t.Errorf("ParseString( %s ) = %+v, want: %+v", tt.input, symbol, tt.wantVal)
+			} else if symbol.GetPrefixType() != tt.wantTyp {
+				t.Errorf("expect get type: %s, but get type: %s", tt.wantTyp, symbol.GetPrefixType())
 			}
 		})
 	}

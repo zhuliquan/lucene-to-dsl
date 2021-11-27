@@ -1,61 +1,79 @@
 package operator
 
-// bool operator ("AND" / "OR" / "NOT") or ("and" / "or" / "not") or ("&&" / "||" / "!")
+// and operator ("AND" / "and" / "&&")
 type ANDSymbol struct {
-	SAND string `parser:"  WHITESPACE+ @(AND AND) WHITESPACE+" json:"sand"`
-	LAND string `parser:"| WHITESPACE+ @('AND' | 'and') WHITESPACE+" json:"land"`
+	Symbol string `parser:"  WHITESPACE+ @( AND AND | 'AND' | 'and' ) WHITESPACE+" json:"symbol"`
 }
 
 func (o *ANDSymbol) String() string {
 	if o == nil {
 		return ""
-	} else if o.SAND != "" {
-		return o.SAND
-	} else if o.LAND != "" {
-		return o.LAND
+	} else if o.Symbol != "" {
+		return o.Symbol
 	} else {
 		return ""
 	}
 }
 
+func (o *ANDSymbol) GetLogicType() LogicOPType {
+	if o == nil {
+		return UNKNOWN_LOGIC_TYPE
+	} else {
+		return AND_LOGIC_TYPE
+	}
+}
+
+// or operator ("OR" / "or" / "||")
 type ORSymbol struct {
-	SOR string `parser:"  WHITESPACE+ @(OR OR) WHITESPACE+" json:"sor"`
-	LOR string `parser:"| WHITESPACE+ @('OR' | 'or') WHITESPACE+" json:"lor"`
+	Symbol string `parser:"  WHITESPACE+ @( OR OR | 'OR' | 'or' ) WHITESPACE+" json:"symbol"`
 }
 
 func (o *ORSymbol) String() string {
 	if o == nil {
 		return ""
-	} else if o.SOR != "" {
-		return o.SOR
-	} else if o.LOR != "" {
-		return o.LOR
+	} else if o.Symbol != "" {
+		return o.Symbol
 	} else {
 		return ""
 	}
 }
 
+func (o *ORSymbol) GetLogicType() LogicOPType {
+	if o == nil {
+		return UNKNOWN_LOGIC_TYPE
+	} else {
+		return OR_LOGIC_TYPE
+	}
+}
+
+// not operator ("NOT" / "not" / "!")
 type NOTSymbol struct {
-	SNOT string `parser:"  @NOT WHITESPACE+" json:"snot"`
-	LNOT string `parser:"| @('NOT' | 'not') WHITESPACE+" json:"lnot"`
+	Symbol string `parser:"@( NOT | 'NOT' | 'not') WHITESPACE+" json:"symbol"`
 }
 
 func (o *NOTSymbol) String() string {
 	if o == nil {
 		return ""
-	} else if o.SNOT != "" {
-		return "!"
-	} else if o.LNOT != "" {
-		return o.LNOT
+	} else if o.Symbol != "" {
+		return o.Symbol
 	} else {
 		return ""
 	}
 }
 
-// ("+" / "-")
+func (o *NOTSymbol) GetLogicType() LogicOPType {
+	if o == nil {
+		return UNKNOWN_LOGIC_TYPE
+	} else {
+		return NOT_LOGIC_TYPE
+	}
+}
+
+// (" " ? ( "+" / "-")? )
 type PreSymbol struct {
-	MustNOT string `parser:"  @MINUS" json:"must_not"`
-	Must    string `parser:"| @PLUS" json:"must"`
+	Should  string `parser:"@WHITESPACE*" json:"should"`
+	MustNOT string `parser:"( @MINUS " json:"must_not"`
+	Must    string `parser:"| @PLUS )?" json:"must"`
 }
 
 func (o *PreSymbol) String() string {
@@ -65,7 +83,21 @@ func (o *PreSymbol) String() string {
 		return o.MustNOT
 	} else if len(o.Must) != 0 {
 		return o.Must
+	} else if len(o.Should) != 0 {
+		return " "
 	} else {
 		return ""
+	}
+}
+
+func (o *PreSymbol) GetPrefixType() PrefixOPType {
+	if o == nil {
+		return UNKNOWN_PREFIX_TYPE
+	} else if len(o.MustNOT) != 0 {
+		return MUST_NOT_PREFIX_TYPE
+	} else if len(o.Must) != 0 {
+		return MUST_PREFIX_TYPE
+	} else {
+		return SHOULD_PREFIX_TYPE
 	}
 }
