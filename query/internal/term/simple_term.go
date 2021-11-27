@@ -64,12 +64,13 @@ func (t *PhraseTerm) haveWildcard() bool {
 		return false
 	}
 	for i := 1; i < len(t.Value)-1; i++ {
-		if i > 1 && (t.Value[i] == '?' || t.Value[i] == '*' && t.Value[i-1] != '\\') {
+		if i == 1 && (t.Value[1] == '?' || t.Value[1] == '*') {
 			return true
 		}
-		if i == 1 && (t.Value[i] == '?' || t.Value[i] == '*') {
+		if i > 1 && ((t.Value[i] == '?' || t.Value[i] == '*') && t.Value[i-1] != '\\') {
 			return true
 		}
+
 	}
 	return false
 }
