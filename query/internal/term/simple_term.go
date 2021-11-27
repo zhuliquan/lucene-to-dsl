@@ -43,7 +43,7 @@ type PhraseTerm struct {
 	Value string `parser:"@STRING" json:"value"`
 }
 
-func (t *PhraseTerm) Values() string {
+func (t *PhraseTerm) ValueS() string {
 	if t == nil || len(t.Value) == 0 {
 		return ""
 	} else {
@@ -72,6 +72,48 @@ func (t *PhraseTerm) haveWildcard() bool {
 		}
 	}
 	return false
+}
+
+// a simple term
+type SimpleTerm struct {
+	SingleTerm *SimpleTerm `parser:"  @@" json:"single_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
+}
+
+func (t *SimpleTerm) String() string {
+	if t == nil {
+		return ""
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.String()
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.String()
+	} else {
+		return ""
+	}
+}
+
+func (t *SimpleTerm) ValueS() string {
+	if t == nil {
+		return ""
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.ValueS()
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.ValueS()
+	} else {
+		return ""
+	}
+}
+
+func (t *SimpleTerm) haveWildcard() bool {
+	if t != nil {
+		return false
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.haveWildcard()
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.haveWildcard()
+	} else {
+		return false
+	}
 }
 
 // a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
