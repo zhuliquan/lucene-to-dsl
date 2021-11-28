@@ -172,7 +172,7 @@ func (t *TermGroupElem) String() string {
 func (t *TermGroupElem) GetTermType() TermType {
 	if t == nil {
 		return UNKNOWN_TERM_TYPE
-	} else if t.SRangeTerm != nil {
+	} else if t.SingleTerm != nil {
 		return SINGLE_TERM_TYPE
 	} else if t.PhraseTerm != nil {
 		return PHRASE_TERM_TYPE
