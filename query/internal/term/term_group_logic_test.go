@@ -1,6 +1,7 @@
 package term
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -228,13 +229,13 @@ func TestTermGroup(t *testing.T) {
 					},
 				},
 				BoostSymbol: "^^8.78",
-			}
+			},
 			boost: 8.78,
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			var out = &LogicTermGroup{}
+			var out = &TermGroup{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
