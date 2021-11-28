@@ -203,85 +203,91 @@ func TestPrefixTerm(t *testing.T) {
 		{
 			name:  "TestPrefixTerm01",
 			input: `"dsada 78"`,
-			want:  &PrefixTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &PrefixTerm{Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm02",
 			input: `+"dsada 78"`,
-			want:  &PrefixTerm{Symbol: "+", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm03",
 			input: `-"dsada 78"`,
-			want:  &PrefixTerm{Symbol: "-", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &PrefixTerm{Symbol: "-", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm04",
 			input: `\+\/dsada\/\ dasda80980?*`,
-			want:  &PrefixTerm{SingleTerm: &SingleTerm{Value: []string{`\+\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want:  &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\+\/dsada\/\ dasda80980`, `?`, `*`}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm05",
 			input: `+\/dsada\/\ dasda80980?*`,
-			want:  &PrefixTerm{Symbol: "+", SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{
+				SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}},
+			}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm06",
 			input: `-\-\/dsada\/\ dasda80980?*`,
-			want:  &PrefixTerm{Symbol: "-", SingleTerm: &SingleTerm{Value: []string{`\-\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want: &PrefixTerm{Symbol: "-", Elem: &TermGroupElem{
+				SingleTerm: &SingleTerm{Value: []string{`\-\/dsada\/\ dasda80980`, `?`, `*`}},
+			}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm07",
 			input: `->890`,
-			want:  &PrefixTerm{Symbol: "-", RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}},
+			want: &PrefixTerm{Symbol: "-", Elem: &TermGroupElem{
+				RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}},
+			}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm08",
 			input: `>890`,
-			want:  &PrefixTerm{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}},
+			want:  &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm09",
 			input: `+>=890`,
-			want:  &PrefixTerm{Symbol: "+", RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">=", Value: &RangeValue{SingleValue: []string{`890`}}}}},
+			want:  &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">=", Value: &RangeValue{SingleValue: []string{`890`}}}}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm10",
 			input: `+[1 TO 2]`,
-			want: &PrefixTerm{Symbol: "+", RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+			want: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-			}}},
+			}}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm11",
 			input: `-[1 TO 2]`,
-			want: &PrefixTerm{Symbol: "-", RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+			want: &PrefixTerm{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-			}}},
+			}}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestPrefixTerm12",
 			input: `[1 TO 2]`,
-			want: &PrefixTerm{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+			want: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-			}}},
+			}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 	}
@@ -315,85 +321,85 @@ func TestWPrefixTerm(t *testing.T) {
 		{
 			name:  "TestWPrefixTerm01",
 			input: `  "dsada 78"`,
-			want:  &WPrefixTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &WPrefixTerm{Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm02",
 			input: `   +"dsada 78"`,
-			want:  &WPrefixTerm{Symbol: "+", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &WPrefixTerm{Symbol: "+", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm03",
 			input: `  -"dsada 78"`,
-			want:  &WPrefixTerm{Symbol: "-", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			want:  &WPrefixTerm{Symbol: "-", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm04",
 			input: `  \+\/dsada\/\ dasda80980?*`,
-			want:  &WPrefixTerm{SingleTerm: &SingleTerm{Value: []string{`\+\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want:  &WPrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\+\/dsada\/\ dasda80980`, `?`, `*`}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm05",
 			input: `  +\/dsada\/\ dasda80980?*`,
-			want:  &WPrefixTerm{Symbol: "+", SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want:  &WPrefixTerm{Symbol: "+", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm06",
 			input: `  -\-\/dsada\/\ dasda80980?*`,
-			want:  &WPrefixTerm{Symbol: "-", SingleTerm: &SingleTerm{Value: []string{`\-\/dsada\/\ dasda80980`, `?`, `*`}}},
+			want:  &WPrefixTerm{Symbol: "-", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\-\/dsada\/\ dasda80980`, `?`, `*`}}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm07",
 			input: `  ->890`,
-			want:  &WPrefixTerm{Symbol: "-", RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}},
+			want:  &WPrefixTerm{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm08",
 			input: `  >890`,
-			want:  &WPrefixTerm{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}},
+			want:  &WPrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`890`}}}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm09",
 			input: `  +>=890`,
-			want:  &WPrefixTerm{Symbol: "+", RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">=", Value: &RangeValue{SingleValue: []string{`890`}}}}},
+			want:  &WPrefixTerm{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: ">=", Value: &RangeValue{SingleValue: []string{`890`}}}}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm10",
 			input: `   +[1 TO 2]`,
-			want: &WPrefixTerm{Symbol: "+", RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+			want: &WPrefixTerm{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-			}}},
+			}}}},
 			oType: op.MUST_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm11",
 			input: `  -[1 TO 2]`,
-			want: &WPrefixTerm{Symbol: "-", RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+			want: &WPrefixTerm{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-			}}},
+			}}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
 		},
 		{
 			name:  "TestWPrefixTerm12",
 			input: `  [1 TO 2]`,
-			want: &WPrefixTerm{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+			want: &WPrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-			}}},
+			}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
 		},
 	}
@@ -427,13 +433,13 @@ func TestPrefixTermGroup(t *testing.T) {
 			name:  "TestPrefixTermGroup01",
 			input: `( 8908  "dsada 78" +"89080  xxx" -"xx yyyy" +\+dsada\ 7897 -\-\-dsada\-7897  )`,
 			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{SingleTerm: &SingleTerm{Value: []string{"8908"}}},
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
 				PrefixTerms: []*WPrefixTerm{
-					{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
-					{Symbol: "+", PhraseTerm: &PhraseTerm{Value: `"89080  xxx"`}},
-					{Symbol: "-", PhraseTerm: &PhraseTerm{Value: `"xx yyyy"`}},
-					{Symbol: "+", SingleTerm: &SingleTerm{Value: []string{`\+dsada\ 7897`}}},
-					{Symbol: "-", SingleTerm: &SingleTerm{Value: []string{`\-\-dsada\-7897`}}},
+					{Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+					{Symbol: "+", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"89080  xxx"`}}},
+					{Symbol: "-", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"xx yyyy"`}}},
+					{Symbol: "+", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\+dsada\ 7897`}}}},
+					{Symbol: "-", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\-\-dsada\-7897`}}}},
 				},
 			},
 		},
@@ -441,21 +447,21 @@ func TestPrefixTermGroup(t *testing.T) {
 			name:  "TestPrefixTermGroup02",
 			input: `( 8908 )`,
 			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{SingleTerm: &SingleTerm{Value: []string{"8908"}}},
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
 			},
 		},
 		{
 			name:  "TestPrefixTermGroup03",
 			input: `( 8908 [ -1 TO 3]  )`,
 			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{SingleTerm: &SingleTerm{Value: []string{"8908"}}},
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
 				PrefixTerms: []*WPrefixTerm{
 					{
-						RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+						Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 							LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
 							TO:     "TO",
 							RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
-						}},
+						}}},
 					},
 				},
 			},
@@ -464,19 +470,21 @@ func TestPrefixTermGroup(t *testing.T) {
 			name:  "TestPrefixTermGroup04",
 			input: `( +>2021-11-04 +<2021-11-11 )`,
 			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Symbol: "+", RangeTerm: &RangeTerm{
-					SRangeTerm: &SRangeTerm{
-						Symbol: ">",
-						Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "04"}},
+				PrefixTerm: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{
+					RangeTerm: &RangeTerm{
+						SRangeTerm: &SRangeTerm{
+							Symbol: ">",
+							Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "04"}},
+						},
 					},
 				}},
 				PrefixTerms: []*WPrefixTerm{
-					{Symbol: "+", RangeTerm: &RangeTerm{
+					{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{
 						SRangeTerm: &SRangeTerm{
 							Symbol: "<",
 							Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "11"}},
 						},
-					}},
+					}}},
 				},
 			},
 		},
@@ -484,38 +492,38 @@ func TestPrefixTermGroup(t *testing.T) {
 			name:  "TestPrefixTermGroup05",
 			input: `( [-1 TO 3]  )`,
 			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 					LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
 					TO:     "TO",
 					RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
-				}}},
+				}}}},
 			},
 		},
 		{
 			name:  "TestPrefixTermGroup06",
 			input: `( [-1 TO 3] [1 TO 2] +[5 TO 10}  -{8 TO 90])`,
 			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 					LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
 					TO:     "TO",
 					RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
-				}}},
+				}}}},
 				PrefixTerms: []*WPrefixTerm{
-					{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+					{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
 						TO:     "TO",
 						RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-					}}},
-					{Symbol: "+", RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+					}}}},
+					{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"5"}},
 						TO:     "TO",
 						RValue: &RangeValue{SingleValue: []string{"10"}}, RBRACKET: "}",
-					}}},
-					{Symbol: "-", RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+					}}}},
+					{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 						LBRACKET: "{", LValue: &RangeValue{SingleValue: []string{"8"}},
 						TO:     "TO",
 						RValue: &RangeValue{SingleValue: []string{"90"}}, RBRACKET: "]",
-					}}},
+					}}}},
 				},
 			},
 		},
