@@ -3,20 +3,9 @@ package token
 import (
 	"reflect"
 	"testing"
-
-	"github.com/alecthomas/participle"
 )
 
 func TestLexer(t *testing.T) {
-	var scan = func(scanner *participle.Parser, exp string) []*Token {
-		var tokens = []*Token{}
-		var ch = make(chan *Token, 100)
-		scanner.ParseString(exp, ch)
-		for c := range ch {
-			tokens = append(tokens, c)
-		}
-		return tokens
-	}
 	var err error
 	if err != nil {
 		panic(err)
@@ -173,7 +162,7 @@ func TestLexer(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			if out := scan(Scanner, tt.input); !reflect.DeepEqual(out, tt.want) {
+			if out := Scan(tt.input); !reflect.DeepEqual(out, tt.want) {
 				t.Errorf("Scan ( %+v ) = %+v, but want: %+v", tt.input, out, tt.want)
 			} else {
 				for i := 0; i < len(out); i++ {

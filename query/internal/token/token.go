@@ -95,6 +95,19 @@ var rules = []stateful.Rule{
 var Lexer *stateful.Definition
 var Scanner *participle.Parser
 
+func Scan(exp string) []*Token {
+	var tokens = []*Token{}
+	var ch = make(chan *Token, 100)
+	if err := Scanner.ParseString(exp, ch); err != nil {
+		return nil
+	} else {
+		for c := range ch {
+			tokens = append(tokens, c)
+		}
+		return tokens
+	}
+}
+
 func init() {
 	var err error
 	Lexer, err = stateful.NewSimple(rules)

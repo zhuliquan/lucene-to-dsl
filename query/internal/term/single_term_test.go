@@ -202,6 +202,7 @@ func TestDRangeTerm(t *testing.T) {
 		name  string
 		input string
 		want  *DRangeTerm
+		bound *Bound
 	}
 	var testCases = []testCase{
 		{
@@ -211,7 +212,12 @@ func TestDRangeTerm(t *testing.T) {
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
-				RBRACKET: "]"},
+				RBRACKET: "]",
+			},
+			bound: &Bound{
+				LeftInclude:  &RangeValue{SingleValue: []string{"1"}},
+				RightInclude: &RangeValue{SingleValue: []string{"2"}},
+			},
 		},
 		{
 			name:  "DRangeTerm02",
@@ -221,6 +227,10 @@ func TestDRangeTerm(t *testing.T) {
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
+			},
+			bound: &Bound{
+				LeftInclude:  &RangeValue{SingleValue: []string{"1"}},
+				RightExclude: &RangeValue{SingleValue: []string{"2"}},
 			},
 		},
 		{
@@ -232,6 +242,10 @@ func TestDRangeTerm(t *testing.T) {
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{SingleValue: []string{"1"}},
+				RightExclude: &RangeValue{SingleValue: []string{"2"}},
+			},
 		},
 		{
 			name:  `DRangeTerm04`,
@@ -241,6 +255,10 @@ func TestDRangeTerm(t *testing.T) {
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
+			},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{SingleValue: []string{"1"}},
+				RightInclude: &RangeValue{SingleValue: []string{"2"}},
 			},
 		},
 		{
@@ -252,6 +270,10 @@ func TestDRangeTerm(t *testing.T) {
 				RValue:   &RangeValue{InfinityVal: "*"},
 				RBRACKET: "]",
 			},
+			bound: &Bound{
+				LeftInclude:  &RangeValue{SingleValue: []string{"10"}},
+				RightInclude: &RangeValue{InfinityVal: "*"},
+			},
 		},
 		{
 			name:  `DRangeTerm06`,
@@ -261,6 +283,10 @@ func TestDRangeTerm(t *testing.T) {
 				LValue:   &RangeValue{InfinityVal: "*"},
 				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				RBRACKET: "}",
+			},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{InfinityVal: "*"},
+				RightExclude: &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 			},
 		},
 		{
@@ -272,6 +298,10 @@ func TestDRangeTerm(t *testing.T) {
 				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
 				RBRACKET: "}",
 			},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{InfinityVal: "*"},
+				RightExclude: &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+			},
 		},
 	}
 
@@ -282,6 +312,8 @@ func TestDRangeTerm(t *testing.T) {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
 				t.Errorf("rangeTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if !reflect.DeepEqual(tt.bound, out.GetBound()) {
+				t.Errorf("expect get bound: %+v, but get bound: %+v", tt.bound, out.GetBound())
 			}
 		})
 	}
@@ -297,17 +329,44 @@ func TestSRangeTerm(t *testing.T) {
 		name  string
 		input string
 		want  *SRangeTerm
+		bound *Bound
 	}
 	var testCases = []testCase{
 		{
 			name:  "SRangeTerm01",
 			input: `<="dsada 78"`,
 			want:  &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: `"dsada 78"`}},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{InfinityVal: "*"},
+				RightInclude: &RangeValue{PhraseValue: `"dsada 78"`},
+			},
 		},
 		{
-			name:  "SRangeTerm05",
-			input: `<=dsada\ 78`,
-			want:  &SRangeTerm{Symbol: "<=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}},
+			name:  "SRangeTerm02",
+			input: `<"dsada 78"`,
+			want:  &SRangeTerm{Symbol: "<", Value: &RangeValue{PhraseValue: `"dsada 78"`}},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{InfinityVal: "*"},
+				RightExclude: &RangeValue{PhraseValue: `"dsada 78"`},
+			},
+		},
+		{
+			name:  "SRangeTerm03",
+			input: `>=dsada\ 78`,
+			want:  &SRangeTerm{Symbol: ">=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}},
+			bound: &Bound{
+				LeftInclude:  &RangeValue{SingleValue: []string{`dsada\ 78`}},
+				RightExclude: &RangeValue{InfinityVal: "*"},
+			},
+		},
+		{
+			name:  "SRangeTerm04",
+			input: `>dsada\ 78`,
+			want:  &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}},
+			bound: &Bound{
+				LeftExclude:  &RangeValue{SingleValue: []string{`dsada\ 78`}},
+				RightExclude: &RangeValue{InfinityVal: "*"},
+			},
 		},
 	}
 
@@ -318,6 +377,8 @@ func TestSRangeTerm(t *testing.T) {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
 				t.Errorf("rangesTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if !reflect.DeepEqual(tt.bound, out.GetBound()) {
+				t.Errorf("expect get bound: %+v, but get bound: %+v", tt.bound, out.GetBound())
 			}
 		})
 	}

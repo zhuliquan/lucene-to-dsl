@@ -3,11 +3,17 @@ package term
 import (
 	"fmt"
 	"strings"
+
+	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
 // simple term: is a single term without escape char and whitespace
 type SingleTerm struct {
 	Value []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
+}
+
+func (t *SingleTerm) GetTermType() TermType {
+	return SINGLE_TERM_TYPE
 }
 
 func (t *SingleTerm) ValueS() string {
@@ -43,6 +49,10 @@ type PhraseTerm struct {
 	Value string `parser:"@STRING" json:"value"`
 }
 
+func (t *PhraseTerm) GetTermType() TermType {
+	return PHRASE_TERM_TYPE
+}
+
 func (t *PhraseTerm) ValueS() string {
 	if t == nil || len(t.Value) == 0 {
 		return ""
@@ -63,21 +73,26 @@ func (t *PhraseTerm) haveWildcard() bool {
 	if t == nil {
 		return false
 	}
-	for i := 1; i < len(t.Value)-1; i++ {
-		if i == 1 && (t.Value[1] == '?' || t.Value[1] == '*') {
-			return true
+	var ch = make(chan token.Token, 1024*1024)
+	token.Scanner.ParseString(t.Value[1:len(t.Value)-1], ch)
+	var have = false
+	for t := range ch {
+		if t.GetTokenType() == token.WILDCARD_TOKEN_TYPE {
+			have = true
+			break
 		}
-		if i > 1 && ((t.Value[i] == '?' || t.Value[i] == '*') && t.Value[i-1] != '\\') {
-			return true
-		}
-
 	}
-	return false
+	close(ch)
+	return have
 }
 
 // a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
 type RegexpTerm struct {
 	Value string `parser:"@REGEXP" json:"value"`
+}
+
+func (t *RegexpTerm) GetTermType() TermType {
+	return REGEXP_TERM_TYPE
 }
 
 func (t *RegexpTerm) ValuesS() string {
@@ -132,7 +147,11 @@ type DRangeTerm struct {
 	RBRACKET string      `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
 }
 
-func (t *DRangeTerm) ToBound() *Bound {
+func (t *DRangeTerm) GetTermType() TermType {
+	return RANGE_TERM_TYPE
+}
+
+func (t *DRangeTerm) GetBound() *Bound {
 	if t == nil {
 		return nil
 	} else if t.LBRACKET == "[" || t.RBRACKET == "]" {
@@ -162,6 +181,10 @@ type SRangeTerm struct {
 	Value  *RangeValue `parser:"@@" json:"value"`
 }
 
+func (t *SRangeTerm) GetTermType() TermType {
+	return RANGE_TERM_TYPE
+}
+
 func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 	if t == nil {
 		return nil
@@ -178,8 +201,8 @@ func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 	}
 }
 
-func (t *SRangeTerm) ToBound() *Bound {
-	return t.toDRangeTerm().ToBound()
+func (t *SRangeTerm) GetBound() *Bound {
+	return t.toDRangeTerm().GetBound()
 }
 
 func (t *SRangeTerm) String() string {
