@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
 	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
@@ -124,57 +125,29 @@ func (t *RegexpTerm) String() string {
 	}
 }
 
-// range bound like this [1, 2] [1, 2) (1, 2] (1, 2)
-type Bound struct {
-	LeftInclude  *RangeValue `json:"left_include"`
-	LeftExclude  *RangeValue `json:"left_exclude"`
-	RightInclude *RangeValue `json:"right_include"`
-	RightExclude *RangeValue `json:"right_exclude"`
-}
-
-type RangeValue struct {
-	PhraseValue string   `parser:"  @STRING" json:"phrase_value"`
-	InfinityVal string   `parser:"| @('*')" json:"infinity_val"`
-	SingleValue []string `parser:"| @(IDENT|PLUS|MINUS)+" json:"simple_value"`
-}
-
-func (v *RangeValue) String() string {
-	if v == nil {
-		return ""
-	} else if len(v.PhraseValue) != 0 {
-		return v.PhraseValue
-	} else if len(v.InfinityVal) != 0 {
-		return v.InfinityVal
-	} else if len(v.SingleValue) != 0 {
-		return strings.Join(v.SingleValue, "")
-	} else {
-		return ""
-	}
-}
-
 //double side of range term: a term is surrounded by brace / bracket, for instance [1 TO 2] / [1 TO 2} / {1 TO 2] / {1 TO 2}
 type DRangeTerm struct {
-	LBRACKET string      `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
-	LValue   *RangeValue `parser:"@@ WHITESPACE+ 'TO'" json:"left_value"`
-	RValue   *RangeValue `parser:"WHITESPACE+ @@" json:"right_value"`
-	RBRACKET string      `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
+	LBRACKET string          `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
+	LValue   *bnd.RangeValue `parser:"@@ WHITESPACE+ 'TO'" json:"left_value"`
+	RValue   *bnd.RangeValue `parser:"WHITESPACE+ @@" json:"right_value"`
+	RBRACKET string          `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
 }
 
 func (t *DRangeTerm) GetTermType() TermType {
 	return RANGE_TERM_TYPE
 }
 
-func (t *DRangeTerm) GetBound() *Bound {
+func (t *DRangeTerm) GetBound() *bnd.Bound {
 	if t == nil {
 		return nil
 	} else if t.LBRACKET == "[" && t.RBRACKET == "]" {
-		return &Bound{LeftInclude: t.LValue, RightInclude: t.RValue}
+		return &bnd.Bound{LeftInclude: t.LValue, RightInclude: t.RValue}
 	} else if t.LBRACKET == "[" && t.RBRACKET == "}" {
-		return &Bound{LeftInclude: t.LValue, RightExclude: t.RValue}
+		return &bnd.Bound{LeftInclude: t.LValue, RightExclude: t.RValue}
 	} else if t.LBRACKET == "{" && t.RBRACKET == "]" {
-		return &Bound{LeftExclude: t.LValue, RightInclude: t.RValue}
+		return &bnd.Bound{LeftExclude: t.LValue, RightInclude: t.RValue}
 	} else if t.LBRACKET == "{" && t.RBRACKET == "}" {
-		return &Bound{LeftExclude: t.LValue, RightExclude: t.RValue}
+		return &bnd.Bound{LeftExclude: t.LValue, RightExclude: t.RValue}
 	} else {
 		return nil
 	}
@@ -190,8 +163,8 @@ func (t *DRangeTerm) String() string {
 
 // single side of range term: a term is behind of symbol ('>' / '<' / '>=' / '<=')
 type SRangeTerm struct {
-	Symbol string      `parser:"@COMPARE" json:"symbol"`
-	Value  *RangeValue `parser:"@@" json:"value"`
+	Symbol string          `parser:"@COMPARE" json:"symbol"`
+	Value  *bnd.RangeValue `parser:"@@" json:"value"`
 	drange *DRangeTerm
 }
 
@@ -206,19 +179,19 @@ func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 		return t.drange
 	} else {
 		if t.Symbol == ">" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &bnd.RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 		} else if t.Symbol == ">=" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+			t.drange = &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &bnd.RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 		} else if t.Symbol == "<" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &bnd.RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
 		} else if t.Symbol == "<=" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &bnd.RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
 		}
 	}
 	return t.drange
 }
 
-func (t *SRangeTerm) GetBound() *Bound {
+func (t *SRangeTerm) GetBound() *bnd.Bound {
 	return t.toDRangeTerm().GetBound()
 }
 

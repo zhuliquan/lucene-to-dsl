@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
+	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
 	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
@@ -20,154 +21,154 @@ func TestRangeTerm(t *testing.T) {
 		input string
 		want  *RangeTerm
 		boost float64
-		bound *Bound
+		bound *bnd.Bound
 	}
 	var testCases = []testCase{
 		{
 			name:  "TestRangeTerm01",
 			input: `<="dsada 78"`,
-			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: `"dsada 78"`}}},
+			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{PhraseValue: `"dsada 78"`}}},
 			boost: 1.0,
-			bound: &Bound{LeftInclude: &RangeValue{PhraseValue: `"dsada 78"`}, RightExclude: &RangeValue{InfinityVal: "*"}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{PhraseValue: `"dsada 78"`}, RightExclude: &bnd.RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm02",
 			input: `<="dsada 78"^8.9`,
-			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: `"dsada 78"`}}, BoostSymbol: "^8.9"},
+			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{PhraseValue: `"dsada 78"`}}, BoostSymbol: "^8.9"},
 			boost: 8.9,
-			bound: &Bound{LeftInclude: &RangeValue{PhraseValue: `"dsada 78"`}, RightExclude: &RangeValue{InfinityVal: "*"}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{PhraseValue: `"dsada 78"`}, RightExclude: &bnd.RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm03",
 			input: `<=dsada\ 78`,
-			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}}},
+			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}}}},
 			boost: 1.0,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`dsada\ 78`}}, RightExclude: &RangeValue{InfinityVal: "*"}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}}, RightExclude: &bnd.RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm04",
 			input: `<=dsada\ 78^0.5`,
-			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}}, BoostSymbol: "^0.5"},
+			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}}}, BoostSymbol: "^0.5"},
 			boost: 0.5,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`dsada\ 78`}}, RightExclude: &RangeValue{InfinityVal: "*"}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}}, RightExclude: &bnd.RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm05",
 			input: `[1 TO 2]`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{SingleValue: []string{"2"}}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightInclude: &bnd.RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  "TestRangeTerm06",
 			input: `[1 TO 2]^0.7`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}, BoostSymbol: "^0.7"},
 			boost: 0.7,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{SingleValue: []string{"2"}}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightInclude: &bnd.RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  "TestRangeTerm07",
 			input: `[1 TO 2 }`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightExclude: &RangeValue{SingleValue: []string{"2"}}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightExclude: &bnd.RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  "TestRangeTerm08",
 			input: `[1 TO 2 }^0.9`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}, BoostSymbol: "^0.9"},
 			boost: 0.9,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightExclude: &RangeValue{SingleValue: []string{"2"}}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightExclude: &bnd.RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  `TestRangeTerm09`,
 			input: `{ 1 TO 2}`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftExclude: &RangeValue{SingleValue: []string{`1`}}, RightExclude: &RangeValue{SingleValue: []string{"2"}}},
+			bound: &bnd.Bound{LeftExclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightExclude: &bnd.RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  `TestRangeTerm10`,
 			input: `{ 1 TO 2]`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftExclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{SingleValue: []string{"2"}}},
+			bound: &bnd.Bound{LeftExclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightInclude: &bnd.RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  `TestRangeTerm11`,
 			input: `[10 TO *]`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"10"}},
-				RValue:   &RangeValue{InfinityVal: "*"},
+				LValue:   &bnd.RangeValue{SingleValue: []string{"10"}},
+				RValue:   &bnd.RangeValue{InfinityVal: "*"},
 				RBRACKET: "]",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{InfinityVal: "*"}},
+			bound: &bnd.Bound{LeftInclude: &bnd.RangeValue{SingleValue: []string{`1`}}, RightInclude: &bnd.RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  `TestRangeTerm12`,
 			input: `{* TO 2012-01-01}`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &RangeValue{InfinityVal: "*"},
-				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
+				LValue:   &bnd.RangeValue{InfinityVal: "*"},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftExclude: &RangeValue{InfinityVal: "*"}, RightExclude: &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}}},
+			bound: &bnd.Bound{LeftExclude: &bnd.RangeValue{InfinityVal: "*"}, RightExclude: &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}}},
 		},
 		{
 			name:  `TestRangeTerm13`,
 			input: `{* TO "2012-01-01 09:08:16"}`,
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &RangeValue{InfinityVal: "*"},
-				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+				LValue:   &bnd.RangeValue{InfinityVal: "*"},
+				RValue:   &bnd.RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
-			bound: &Bound{LeftExclude: &RangeValue{InfinityVal: "*"}, RightExclude: &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""}},
+			bound: &bnd.Bound{LeftExclude: &bnd.RangeValue{InfinityVal: "*"}, RightExclude: &bnd.RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""}},
 		},
 		{
 			name:  `TestRangeTerm14`,
 			input: `>2012-01-01^9.8`,
 			want: &RangeTerm{SRangeTerm: &SRangeTerm{
 				Symbol: ">",
-				Value:  &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
+				Value:  &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 			}, BoostSymbol: "^9.8"},
 			boost: 9.8,
-			bound: &Bound{LeftExclude: &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}}, RightExclude: &RangeValue{InfinityVal: "*"}},
+			bound: &bnd.Bound{LeftExclude: &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}}, RightExclude: &bnd.RangeValue{InfinityVal: "*"}},
 		},
 	}
 
