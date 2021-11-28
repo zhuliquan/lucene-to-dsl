@@ -10,35 +10,35 @@ import (
 
 func TestAndSymbol(t *testing.T) {
 	var operatorParser = participle.MustBuild(
-		&ANDSymbol{},
+		&AndSymbol{},
 		participle.Lexer(token.Lexer),
 	)
 	type testCase struct {
 		name  string
 		input string
-		want  *ANDSymbol
+		want  *AndSymbol
 	}
 	var testCases = []testCase{
 		{
 			name:  "TestAndSymbol01",
 			input: ` AND   `,
-			want:  &ANDSymbol{Symbol: "AND"},
+			want:  &AndSymbol{Symbol: "AND"},
 		},
 		{
 			name:  "TestAndSymbol02",
 			input: ` and `,
-			want:  &ANDSymbol{Symbol: "and"},
+			want:  &AndSymbol{Symbol: "and"},
 		},
 		{
 			name:  "TestAndSymbol03",
 			input: ` && `,
-			want:  &ANDSymbol{Symbol: "&&"},
+			want:  &AndSymbol{Symbol: "&&"},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			var symbol = &ANDSymbol{}
+			var symbol = &AndSymbol{}
 			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {
@@ -50,36 +50,36 @@ func TestAndSymbol(t *testing.T) {
 
 func TestOrSymbol(t *testing.T) {
 	var operatorParser = participle.MustBuild(
-		&ORSymbol{},
+		&OrSymbol{},
 		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {
 		name  string
 		input string
-		want  *ORSymbol
+		want  *OrSymbol
 	}
 	var testCases = []testCase{
 		{
 			name:  "TestOrSymbol01",
 			input: ` OR  `,
-			want:  &ORSymbol{Symbol: "OR"},
+			want:  &OrSymbol{Symbol: "OR"},
 		},
 		{
 			name:  "TestOrSymbol02",
 			input: ` or  `,
-			want:  &ORSymbol{Symbol: "or"},
+			want:  &OrSymbol{Symbol: "or"},
 		},
 		{
 			name:  "TestOrSymbol03",
 			input: ` ||  `,
-			want:  &ORSymbol{Symbol: "||"},
+			want:  &OrSymbol{Symbol: "||"},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			var symbol = &ORSymbol{}
+			var symbol = &OrSymbol{}
 			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {
@@ -91,35 +91,35 @@ func TestOrSymbol(t *testing.T) {
 
 func TestNotSymbol(t *testing.T) {
 	var operatorParser = participle.MustBuild(
-		&NOTSymbol{},
+		&NotSymbol{},
 		participle.Lexer(token.Lexer),
 	)
 	type testCase struct {
 		name  string
 		input string
-		want  *NOTSymbol
+		want  *NotSymbol
 	}
 	var testCases = []testCase{
 		{
 			name:  "TestNotSymbol01",
 			input: `NOT `,
-			want:  &NOTSymbol{Symbol: "NOT"},
+			want:  &NotSymbol{Symbol: "NOT"},
 		},
 		{
 			name:  "TestNotSymbol02",
 			input: `not `,
-			want:  &NOTSymbol{Symbol: "not"},
+			want:  &NotSymbol{Symbol: "not"},
 		},
 		{
 			name:  "TestNotSymbol03",
 			input: `! `,
-			want:  &NOTSymbol{Symbol: "!"},
+			want:  &NotSymbol{Symbol: "!"},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			var symbol = &NOTSymbol{}
+			var symbol = &NotSymbol{}
 			if err := operatorParser.ParseString(tt.input, symbol); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(symbol, tt.want) {

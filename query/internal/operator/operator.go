@@ -1,11 +1,11 @@
 package operator
 
 // and operator ("AND" / "and" / "&&")
-type ANDSymbol struct {
+type AndSymbol struct {
 	Symbol string `parser:"  WHITESPACE+ @( AND AND | 'AND' | 'and' ) WHITESPACE+" json:"symbol"`
 }
 
-func (o *ANDSymbol) String() string {
+func (o *AndSymbol) String() string {
 	if o == nil {
 		return ""
 	} else if o.Symbol != "" {
@@ -15,7 +15,7 @@ func (o *ANDSymbol) String() string {
 	}
 }
 
-func (o *ANDSymbol) GetLogicType() LogicOPType {
+func (o *AndSymbol) GetLogicType() LogicOPType {
 	if o == nil {
 		return UNKNOWN_LOGIC_TYPE
 	} else {
@@ -24,11 +24,11 @@ func (o *ANDSymbol) GetLogicType() LogicOPType {
 }
 
 // or operator ("OR" / "or" / "||")
-type ORSymbol struct {
+type OrSymbol struct {
 	Symbol string `parser:"  WHITESPACE+ @( OR OR | 'OR' | 'or' ) WHITESPACE+" json:"symbol"`
 }
 
-func (o *ORSymbol) String() string {
+func (o *OrSymbol) String() string {
 	if o == nil {
 		return ""
 	} else if o.Symbol != "" {
@@ -38,7 +38,7 @@ func (o *ORSymbol) String() string {
 	}
 }
 
-func (o *ORSymbol) GetLogicType() LogicOPType {
+func (o *OrSymbol) GetLogicType() LogicOPType {
 	if o == nil {
 		return UNKNOWN_LOGIC_TYPE
 	} else {
@@ -47,11 +47,11 @@ func (o *ORSymbol) GetLogicType() LogicOPType {
 }
 
 // not operator ("NOT" / "not" / "!")
-type NOTSymbol struct {
+type NotSymbol struct {
 	Symbol string `parser:"@( NOT | 'NOT' | 'not') WHITESPACE+" json:"symbol"`
 }
 
-func (o *NOTSymbol) String() string {
+func (o *NotSymbol) String() string {
 	if o == nil {
 		return ""
 	} else if o.Symbol != "" {
@@ -61,7 +61,7 @@ func (o *NOTSymbol) String() string {
 	}
 }
 
-func (o *NOTSymbol) GetLogicType() LogicOPType {
+func (o *NotSymbol) GetLogicType() LogicOPType {
 	if o == nil {
 		return UNKNOWN_LOGIC_TYPE
 	} else {
