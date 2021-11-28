@@ -149,13 +149,13 @@ func (t *DRangeTerm) GetTermType() TermType {
 func (t *DRangeTerm) GetBound() *Bound {
 	if t == nil {
 		return nil
-	} else if t.LBRACKET == "[" || t.RBRACKET == "]" {
+	} else if t.LBRACKET == "[" && t.RBRACKET == "]" {
 		return &Bound{LeftInclude: t.LValue, RightInclude: t.RValue}
-	} else if t.LBRACKET == "[" || t.RBRACKET == "}" {
+	} else if t.LBRACKET == "[" && t.RBRACKET == "}" {
 		return &Bound{LeftInclude: t.LValue, RightExclude: t.RValue}
-	} else if t.LBRACKET == "{" || t.RBRACKET == "]" {
+	} else if t.LBRACKET == "{" && t.RBRACKET == "]" {
 		return &Bound{LeftExclude: t.LValue, RightInclude: t.RValue}
-	} else if t.LBRACKET == "{" || t.RBRACKET == "}" {
+	} else if t.LBRACKET == "{" && t.RBRACKET == "}" {
 		return &Bound{LeftExclude: t.LValue, RightExclude: t.RValue}
 	} else {
 		return nil
@@ -174,6 +174,7 @@ func (t *DRangeTerm) String() string {
 type SRangeTerm struct {
 	Symbol string      `parser:"@COMPARE" json:"symbol"`
 	Value  *RangeValue `parser:"@@" json:"value"`
+	drange *DRangeTerm
 }
 
 func (t *SRangeTerm) GetTermType() TermType {
@@ -183,17 +184,20 @@ func (t *SRangeTerm) GetTermType() TermType {
 func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 	if t == nil {
 		return nil
-	} else if t.Symbol == ">" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == ">=" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
-	} else if t.Symbol == "<" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
-	} else if t.Symbol == "<=" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
+	} else if t.drange != nil {
+		return t.drange
 	} else {
-		return nil
+		if t.Symbol == ">" && t.Value != nil {
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+		} else if t.Symbol == ">=" && t.Value != nil {
+			t.drange = &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+		} else if t.Symbol == "<" && t.Value != nil {
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
+		} else if t.Symbol == "<=" && t.Value != nil {
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
+		}
 	}
+	return t.drange
 }
 
 func (t *SRangeTerm) GetBound() *Bound {
