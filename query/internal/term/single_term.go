@@ -120,7 +120,7 @@ type RegexpTerm struct {
 }
 
 func (t *RegexpTerm) GetTermType() TermType {
-	if t != nil {
+	if t == nil {
 		return UNKNOWN_TERM_TYPE
 	}
 	return REGEXP_TERM_TYPE

@@ -67,7 +67,7 @@ func (t *Term) Boost() float64 {
 	} else if t.FuzzyTerm != nil {
 		return t.FuzzyTerm.Boost()
 	} else if t.RangeTerm != nil {
-		return t.FuzzyTerm.Boost()
+		return t.RangeTerm.Boost()
 	} else if t.TermGroup != nil {
 		return t.TermGroup.Boost()
 	} else {
