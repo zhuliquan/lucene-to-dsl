@@ -228,7 +228,7 @@ func TestTermGroup(t *testing.T) {
 						},
 					},
 				},
-				BoostSymbol: "^^8.78",
+				BoostSymbol: "^8.78",
 			},
 			boost: 8.78,
 		},

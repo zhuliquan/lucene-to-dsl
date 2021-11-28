@@ -1,10 +1,13 @@
 package term
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
 	"github.com/alecthomas/participle"
+	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
+	"github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
 	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
@@ -23,22 +26,17 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm01",
 			input: `"dsada 78"`,
-			want:  &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
 		},
 		{
 			name:  "TestTerm02",
 			input: `"dsada 78"^08`,
-			want:  &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, BoostSymbol: "^08"}},
 		},
 		{
 			name:  "TestTerm03",
 			input: `"dsada 78"~8`,
-			want:  &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}}},
-		},
-		{
-			name:  "TestTerm04",
-			input: `"dsada 78"~8^080`,
-			want:  &Term{SRangeTerm: &SRangeTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~8"}},
 		},
 		{
 			name:  "TestTerm05",
@@ -48,144 +46,247 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm06",
 			input: `\/dsada\/\ dasda80980?*`,
-			want:  &Term{SRangeTerm: &SRangeTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}},
 		},
 		{
 			name:  "TestTerm07",
 			input: `\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &Term{SRangeTerm: &SRangeTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Boost: `^08`}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`}},
 		},
 		{
 			name:  "TestTerm08",
 			input: `\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &Term{SRangeTerm: &SRangeTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`}}},
-		},
-		{
-			name:  "TestTerm09",
-			input: `\/dsada\/\ dasda80980?*\^\^~8^080`,
-			want:  &Term{SRangeTerm: &SRangeTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}, Fuzzy: `~8`, Boost: `^080`}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`}},
 		},
 		{
 			name:  "TestTerm10",
-			input: `[1 TO 2]`,
+			input: `[1 TO 2]^7`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
-				RBRACKET: "]"},
-			},
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "[",
+					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					RBRACKET: "]",
+				},
+				BoostSymbol: "^7",
+			}},
 		},
 		{
 			name:  "TestTerm11",
-			input: `[1 TO 2 }`,
+			input: `[1 TO 2 }^7`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
-				RBRACKET: "}",
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "[",
+					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					RBRACKET: "}",
+				},
+				BoostSymbol: "^7",
 			}},
 		},
 		{
 			name:  `TestTerm12`,
-			input: `{ 1 TO 2}`,
+			input: `{ 1 TO 2}^7`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "{",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
-				RBRACKET: "}",
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "{",
+					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					RBRACKET: "}",
+				},
+				BoostSymbol: "^7",
 			}},
 		},
 		{
 			name:  `TestTerm13`,
-			input: `{ 1 TO 2]`,
+			input: `{ 1 TO 2]^7`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "{",
-				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
-				RValue:   &RangeValue{SingleValue: []string{"2"}},
-				RBRACKET: "]",
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "{",
+					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					RBRACKET: "]",
+				},
+				BoostSymbol: "^7",
 			}},
 		},
 		{
 			name:  `TestTerm14`,
-			input: `[10 TO *]`,
+			input: `[10 TO *]^7`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "[",
-				LValue:   &RangeValue{SingleValue: []string{"10"}},
-				TO:       "TO",
-				RValue:   &RangeValue{InfinityVal: "*"},
-				RBRACKET: "]",
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "[",
+					LValue:   &bnd.RangeValue{SingleValue: []string{"10"}},
+					RValue:   &bnd.RangeValue{InfinityVal: "*"},
+					RBRACKET: "]",
+				},
+				BoostSymbol: "^7",
 			}},
 		},
 		{
 			name:  `TestTerm15`,
 			input: `{* TO 2012-01-01}`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "{",
-				LValue:   &RangeValue{InfinityVal: "*"},
-				TO:       "TO",
-				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
-				RBRACKET: "}",
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "{",
+					LValue:   &bnd.RangeValue{InfinityVal: "*"},
+					RValue:   &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
+					RBRACKET: "}",
+				},
 			}},
 		},
 		{
 			name:  `TestTerm16`,
 			input: `{* TO "2012-01-01 09:08:16"}`,
 			want: &Term{RangeTerm: &RangeTerm{
-				LBRACKET: "{",
-				LValue:   &RangeValue{InfinityVal: "*"},
-				TO:       "TO",
-				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
-				RBRACKET: "}",
+				DRangeTerm: &DRangeTerm{
+					LBRACKET: "{",
+					LValue:   &bnd.RangeValue{InfinityVal: "*"},
+					RValue:   &bnd.RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+					RBRACKET: "}",
+				},
 			}},
 		},
 		{
 			name:  "TestTerm17",
 			input: `<="dsada 78"`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: "<=", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+			want: &Term{
+				RangeTerm: &RangeTerm{
+					SRangeTerm: &SRangeTerm{
+						Symbol: "<=",
+						Value:  &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+					},
+				},
+			},
 		},
 		{
 			name:  "TestTerm18",
 			input: `<"dsada 78"^08`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: "<", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Boost: "^08"}}},
-		},
-		{
-			name:  "TestTerm19",
-			input: `>="dsada 78"~8`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: ">=", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8"}}},
+			want: &Term{
+				RangeTerm: &RangeTerm{
+					SRangeTerm: &SRangeTerm{
+						Symbol: "<",
+						Value:  &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+					},
+					BoostSymbol: "^08",
+				},
+			},
 		},
 		{
 			name:  "TestTerm20",
-			input: `>"dsada 78"~8^080`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: ">", PhraseTerm: &PhraseTerm{Value: `"dsada 78"`, Fuzzy: "~8", Boost: "^080"}}},
+			input: `>"dsada 78"^080`,
+			want: &Term{
+				RangeTerm: &RangeTerm{
+					SRangeTerm: &SRangeTerm{
+						Symbol: ">",
+						Value:  &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+					},
+					BoostSymbol: "^080",
+				},
+			},
 		},
 		{
 			name:  "TestTerm21",
 			input: `<=dsada\ 78`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: "<=", SingleTerm: &SingleTerm{Value: []string{`dsada\ 78`}}}},
+			want: &Term{
+				RangeTerm: &RangeTerm{
+					SRangeTerm: &SRangeTerm{
+						Symbol: "<=",
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+					},
+				},
+			},
 		},
 		{
 			name:  "TestTerm22",
 			input: `<dsada\ 78^08`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: "<", SingleTerm: &SingleTerm{Value: []string{`dsada\ 78`}, Boost: "^08"}}},
-		},
-		{
-			name:  "TestTerm23",
-			input: `>=dsada\ 78~8`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: ">=", SingleTerm: &SingleTerm{Value: []string{`dsada\ 78`}, Fuzzy: "~8"}}},
+			want: &Term{
+				RangeTerm: &RangeTerm{
+					SRangeTerm: &SRangeTerm{
+						Symbol: "<",
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+					},
+					BoostSymbol: "^08",
+				},
+			},
 		},
 		{
 			name:  "TestTerm24",
-			input: `>dsada\ 78~8^080`,
-			want:  &Term{SRangeTerm: &SRangeTerm{Symbol: ">", SingleTerm: &SingleTerm{Value: []string{`dsada\ 78`}, Fuzzy: "~8", Boost: "^080"}}},
+			input: `>dsada\ 78^080`,
+			want: &Term{
+				RangeTerm: &RangeTerm{
+					SRangeTerm: &SRangeTerm{
+						Symbol: ">",
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+					},
+					BoostSymbol: "^080",
+				},
+			},
 		},
 		{
 			name:  "TestTerm25",
 			input: `/\d+\d+\.\d+.+/`,
 			want:  &Term{RegexpTerm: &RegexpTerm{Value: `/\d+\d+\.\d+.+/`}},
+		},
+		{
+			name:  "TestTerm26",
+			input: `(foo OR bar)`,
+			want: &Term{TermGroup: &TermGroup{
+				LogicTermGroup: &LogicTermGroup{
+					OrTermGroup: &OrTermGroup{
+						AndTermGroup: &AndTermGroup{
+							TermGroupElem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"foo"}}},
+						},
+					},
+					OSTermGroup: []*OSTermGroup{
+						{
+							OrSymbol: &operator.OrSymbol{Symbol: "OR"},
+							OrTermGroup: &OrTermGroup{
+								AndTermGroup: &AndTermGroup{
+									TermGroupElem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"bar"}}},
+								},
+							},
+						},
+					},
+				},
+			}},
+		},
+		{
+			name:  "TestTerm27",
+			input: `(foo OR bar or [1 TO 2])^7`,
+			want: &Term{TermGroup: &TermGroup{
+				LogicTermGroup: &LogicTermGroup{
+					OrTermGroup: &OrTermGroup{
+						AndTermGroup: &AndTermGroup{
+							TermGroupElem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"foo"}}},
+						},
+					},
+					OSTermGroup: []*OSTermGroup{
+						{
+							OrSymbol: &operator.OrSymbol{Symbol: "OR"},
+							OrTermGroup: &OrTermGroup{
+								AndTermGroup: &AndTermGroup{
+									TermGroupElem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"bar"}}},
+								},
+							},
+						},
+						{
+							OrSymbol: &operator.OrSymbol{Symbol: "or"},
+							OrTermGroup: &OrTermGroup{
+								AndTermGroup: &AndTermGroup{
+									TermGroupElem: &TermGroupElem{DRangeTerm: &DRangeTerm{
+										LBRACKET: "[",
+										LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
+										RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+										RBRACKET: "]",
+									}},
+								},
+							},
+						},
+					},
+				},
+				BoostSymbol: "^7",
+			}},
 		},
 	}
 
@@ -241,8 +342,8 @@ func TestTerm_isRegexp(t *testing.T) {
 			var out = &Term{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
-			} else if out.isRegexp() != tt.want {
-				t.Errorf("isRegexp() = %+v, want: %+v", out.isRegexp(), tt.want)
+			} else if (out.GetTermType()&REGEXP_TERM_TYPE == REGEXP_TERM_TYPE) != tt.want {
+				t.Errorf("isRegexp() = %+v, want: %+v", (out.GetTermType()&REGEXP_TERM_TYPE == REGEXP_TERM_TYPE), tt.want)
 			}
 		})
 	}
@@ -253,7 +354,7 @@ func TestTerm_isWildcard(t *testing.T) {
 
 	var termParser = participle.MustBuild(
 		&Term{},
-		participle.Lexer(Lexer),
+		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {
@@ -310,8 +411,8 @@ func TestTerm_isWildcard(t *testing.T) {
 			var out = &Term{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
-			} else if out.haveWildcard() != tt.want {
-				t.Errorf("haveWildcard() = %+v, want: %+v", out.haveWildcard(), tt.want)
+			} else if (out.GetTermType()&WILDCARD_TERM_TYPE == WILDCARD_TERM_TYPE) != tt.want {
+				t.Errorf("haveWildcard() = %+v, want: %+v", (out.GetTermType()&WILDCARD_TERM_TYPE == WILDCARD_TERM_TYPE), tt.want)
 			}
 		})
 	}
@@ -320,7 +421,7 @@ func TestTerm_isWildcard(t *testing.T) {
 func TestTerm_isRange(t *testing.T) {
 	var termParser = participle.MustBuild(
 		&Term{},
-		participle.Lexer(Lexer),
+		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {
@@ -357,8 +458,8 @@ func TestTerm_isRange(t *testing.T) {
 			var out = &Term{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
-			} else if out.isRange() != tt.want {
-				t.Errorf("isRange() = %+v, want: %+v", out.isRange(), tt.want)
+			} else if (out.GetTermType()&RANGE_TERM_TYPE == RANGE_TERM_TYPE) != tt.want {
+				t.Errorf("isRange() = %+v, want: %+v", (out.GetTermType()&RANGE_TERM_TYPE == RANGE_TERM_TYPE), tt.want)
 			}
 		})
 	}
@@ -368,7 +469,7 @@ func TestTerm_fuzziness(t *testing.T) {
 
 	var termParser = participle.MustBuild(
 		&Term{},
-		participle.Lexer(Lexer),
+		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {
@@ -415,8 +516,8 @@ func TestTerm_fuzziness(t *testing.T) {
 			var out = &Term{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
-			} else if out.fuzziness() != tt.want {
-				t.Errorf("fuzziness() = %+v, want: %+v", out.fuzziness(), tt.want)
+			} else if out.Fuzziness() != tt.want {
+				t.Errorf("fuzziness() = %+v, want: %+v", out.Fuzziness(), tt.want)
 			}
 		})
 	}
@@ -427,7 +528,7 @@ func TestTerm_boost(t *testing.T) {
 
 	var termParser = participle.MustBuild(
 		&Term{},
-		participle.Lexer(Lexer),
+		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {
@@ -473,7 +574,7 @@ func TestTerm_boost(t *testing.T) {
 			want:  3.8,
 		},
 		{
-			name:  "TestBoost07",
+			name:  "TestBoost08",
 			input: `"dsad 7089"^0.8`,
 			want:  0.8,
 		},
@@ -484,8 +585,8 @@ func TestTerm_boost(t *testing.T) {
 			var out = &Term{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
-			} else if (out.boost() - tt.want) > 1E-8 {
-				t.Errorf("boost() = %+v, want: %+v", out.boost(), tt.want)
+			} else if math.Abs(out.Boost()-tt.want) > 1E-8 {
+				t.Errorf("boost() = %+v, want: %+v", out.Boost(), tt.want)
 			}
 		})
 	}
