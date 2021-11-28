@@ -9,7 +9,8 @@ import (
 
 // simple term: is a single term without escape char and whitespace
 type SingleTerm struct {
-	Value []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
+	Value    []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
+	wildcard int8
 }
 
 func (t *SingleTerm) GetTermType() TermType {
@@ -35,18 +36,27 @@ func (t *SingleTerm) String() string {
 func (t *SingleTerm) haveWildcard() bool {
 	if t == nil {
 		return false
-	}
-	for i := 0; i < len(t.Value); i++ {
-		if t.Value[i] == "?" || t.Value[i] == "*" {
-			return true
+	} else if t.wildcard == -1 {
+		return false
+	} else if t.wildcard == 1 {
+		return true
+	} else {
+		for i := 0; i < len(t.Value); i++ {
+			if t.Value[i] == "?" || t.Value[i] == "*" {
+				t.wildcard = 1
+				return true
+			}
 		}
+		t.wildcard = -1
+		return false
 	}
-	return false
+
 }
 
 // phrase term: a series of terms be surrounded with quotation, for instance "foo bar".
 type PhraseTerm struct {
-	Value string `parser:"@STRING" json:"value"`
+	Value    string `parser:"@STRING" json:"value"`
+	wildcard int8
 }
 
 func (t *PhraseTerm) GetTermType() TermType {
@@ -72,13 +82,21 @@ func (t *PhraseTerm) String() string {
 func (t *PhraseTerm) haveWildcard() bool {
 	if t == nil {
 		return false
-	}
-	for _, t := range token.Scan(t.Value[1 : len(t.Value)-1]) {
-		if t.GetTokenType() == token.WILDCARD_TOKEN_TYPE {
-			return true
+	} else if t.wildcard == -1 {
+		return false
+	} else if t.wildcard == 1 {
+		return true
+	} else {
+		for _, x := range token.Scan(t.Value[1 : len(t.Value)-1]) {
+			if x.GetTokenType() == token.WILDCARD_TOKEN_TYPE {
+				t.wildcard = 1
+				return true
+			}
 		}
+		t.wildcard = -1
+		return false
 	}
-	return false
+
 }
 
 // a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
