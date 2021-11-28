@@ -2,6 +2,7 @@ package term
 
 import (
 	"strconv"
+	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
 )
 
 // single side range term or double side range and with boost like this [1 TO 2]^2
@@ -23,7 +24,7 @@ func (t *RangeTerm) String() string {
 	}
 }
 
-func (t *RangeTerm) GetBound() *Bound {
+func (t *RangeTerm) GetBound() *bnd.Bound {
 	if t == nil {
 		return nil
 	} else if t.SRangeTerm != nil {
@@ -58,6 +59,7 @@ func (t *FuzzyTerm) GetTermType() TermType {
 	if t == nil {
 		return UNKNOWN_TERM_TYPE
 	} else if t.SingleTerm != nil {
+
 		return SINGLE_TERM_TYPE | 
 	} else if t.PhraseTerm != nil {
 		return PHRASE_TERM_TYPE
