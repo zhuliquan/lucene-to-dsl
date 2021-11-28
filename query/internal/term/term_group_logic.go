@@ -3,6 +3,8 @@ package term
 import (
 	"strconv"
 	"strings"
+
+	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
 )
 
 // term group: join sum prefix term group together
@@ -26,13 +28,14 @@ func (t *TermGroup) Boost() float64 {
 	}
 }
 
+// logic term group: join sum term elem by OR / AND / NOT
 type LogicTermGroup struct {
 	OrTermGroup *OrTermGroup   `parser:"@@ " json:"or_term_group"`
 	OSTermGroup []*OSTermGroup `parser:"@@*" json:"or_symbol_term_group"`
 }
 
 func (t *LogicTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.OrTermGroup != nil {
 		var sl = []string{t.OrTermGroup.String()}
@@ -51,7 +54,7 @@ type OrTermGroup struct {
 }
 
 func (t *OrTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.AndTermGroup != nil {
 		var sl = []string{t.AndTermGroup.String()}
@@ -71,7 +74,7 @@ type OSTermGroup struct {
 }
 
 func (t *OSTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.OrTermGroup != nil {
 		return t.OrSymbol.String() + t.NotSymbol.String() + t.OrTermGroup.String()
@@ -87,7 +90,7 @@ type AndTermGroup struct {
 }
 
 func (t *AndTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.NotTermGroup != nil {
 		return t.NotTermGroup.String()
@@ -102,12 +105,12 @@ func (t *AndTermGroup) String() string {
 
 type AnSTermGroup struct {
 	AndSymbol    *op.AndSymbol `parser:"@@" json:"and_symbol"`
-	NotSymbol    *op.NotSymbol `parser:"@@?" json:"not_symbol`
+	NotSymbol    *op.NotSymbol `parser:"@@?" json:"not_symbol"`
 	AndTermGroup *AndTermGroup `parser:"@@" json:"and_term_group"`
 }
 
 func (t *AnSTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.AndTermGroup != nil {
 		return t.AndSymbol.String() + t.NotSymbol.String() + t.AndTermGroup.String()
@@ -122,7 +125,7 @@ type NotTermGroup struct {
 }
 
 func (t *NotTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.SubTermGroup != nil {
 		return t.NotSymbol.String() + t.SubTermGroup.String()
@@ -136,7 +139,7 @@ type ParenTermGroup struct {
 }
 
 func (t *ParenTermGroup) String() string {
-	if t != nil {
+	if t == nil {
 		return ""
 	} else if t.SubTermGroup != nil {
 		return "( " + t.SubTermGroup.String() + " )"

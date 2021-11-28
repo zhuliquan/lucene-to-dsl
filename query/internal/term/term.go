@@ -2,8 +2,8 @@ package term
 
 type Term struct {
 	RegexpTerm *RegexpTerm `parser:"  @@" json:"regexp_term"`
-	FuzzyTerm  *FuzzyTerm  `parser:"| @@" json:"ranges_term"`
-	BoostTerm  *BoostTerm  `parser:"| @@" json:"range_term"`
+	FuzzyTerm  *FuzzyTerm  `parser:"| @@" json:"fuzzy_term"`
+	BoostTerm  *BoostTerm  `parser:"| @@" json:"boost_term"`
 }
 
 func (t *Term) String() string {
@@ -13,8 +13,8 @@ func (t *Term) String() string {
 		return t.RegexpTerm.String()
 	} else if t.FuzzyTerm != nil {
 		return t.FuzzyTerm.String()
-	} else if t.RangeTerm != nil {
-		return t.RangeTerm.String()
+	} else if t.BoostTerm != nil {
+		return t.BoostTerm.String()
 	} else {
 		return ""
 	}

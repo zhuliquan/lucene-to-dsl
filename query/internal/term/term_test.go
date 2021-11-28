@@ -204,7 +204,7 @@ func TestTerm(t *testing.T) {
 func TestTerm_isRegexp(t *testing.T) {
 	var termParser = participle.MustBuild(
 		&Term{},
-		participle.Lexer(Lexer),
+		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {

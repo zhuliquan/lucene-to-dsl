@@ -62,7 +62,7 @@ func (t *PrefixTerm) GetPrefixType() op.PrefixOPType {
 // whitespace is prefix with prefix term
 type WPrefixTerm struct {
 	Symbol string         `parser:"WHITESPACE @(PLUS|MINUS)?" json:"symbol"`
-	Elem   *TermGroupElem `parser:"@@" json:"elem`
+	Elem   *TermGroupElem `parser:"@@" json:"elem"`
 }
 
 func (t *WPrefixTerm) String() string {
@@ -89,7 +89,7 @@ func (t *WPrefixTerm) GetPrefixType() op.PrefixOPType {
 
 type PrefixTermGroup struct {
 	PrefixTerm  *PrefixTerm    `parser:"LPAREN WHITESPACE* @@ " json:"prefix_term"`
-	PrefixTerms []*WPrefixTerm `parser:"@@*  WHITESPACE* RPAREN" json:"prefix_terms`
+	PrefixTerms []*WPrefixTerm `parser:"@@*  WHITESPACE* RPAREN" json:"prefix_terms"`
 	BoostSymbol string         `parser:"@BOOST?" json:"boost_symbol"`
 }
 
