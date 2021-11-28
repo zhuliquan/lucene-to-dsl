@@ -150,8 +150,9 @@ func (t *PrefixTermGroup) String() string {
 
 // term group: join sum prefix term group together
 type TermGroup struct {
-	OrTermGroup *OrTermGroup   `parser:"@@ " json:"or_term_group"`
-	OSTermGroup []*OSTermGroup `parser:"@@*" json:"or_symbol_term_group"`
+	OrTermGroup *OrTermGroup   `parser:"LPAREN WHITESPACE* @@ " json:"or_term_group"`
+	OSTermGroup []*OSTermGroup `parser:"@@* WHITESPACE* RPAREN" json:"or_symbol_term_group"`
+	BoostSymbol string         `parser:"@BOOST?" json:"boost_symbol"`
 }
 
 func (t *TermGroup) String() string {
@@ -165,6 +166,17 @@ func (t *TermGroup) String() string {
 		return strings.Join(sl, "")
 	} else {
 		return ""
+	}
+}
+
+func (t *TermGroup) Boost() float64 {
+	if t == nil {
+		return 0.0
+	} else if len(t.BoostSymbol) == 0 {
+		return 1.0
+	} else {
+		var res, _ = strconv.ParseFloat(t.BoostSymbol[1:], 64)
+		return res
 	}
 }
 
