@@ -9,7 +9,7 @@ func (o *AndSymbol) String() string {
 	if o == nil {
 		return ""
 	} else if o.Symbol != "" {
-		return o.Symbol
+		return " " + o.Symbol + " "
 	} else {
 		return ""
 	}
@@ -32,7 +32,7 @@ func (o *OrSymbol) String() string {
 	if o == nil {
 		return ""
 	} else if o.Symbol != "" {
-		return o.Symbol
+		return " " + o.Symbol + " "
 	} else {
 		return ""
 	}
@@ -55,7 +55,7 @@ func (o *NotSymbol) String() string {
 	if o == nil {
 		return ""
 	} else if o.Symbol != "" {
-		return o.Symbol
+		return o.Symbol + " "
 	} else {
 		return ""
 	}
