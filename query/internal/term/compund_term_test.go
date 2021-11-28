@@ -1,6 +1,7 @@
 package term
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -122,50 +123,158 @@ func TestFuzzyTerm(t *testing.T) {
 	)
 
 	type testCase struct {
-		name  string
-		input string
-		want  *FuzzyTerm
+		name     string
+		input    string
+		want     *FuzzyTerm
+		valueS   string
+		wildcard bool
+		boost    float64
+		fuzzy    int
 	}
 	var testCases = []testCase{
 		{
-			name:  "TestFuzzyTerm01",
-			input: `"dsada 78"`,
-			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}},
+			name:     "TestFuzzyTerm01",
+			input:    `"dsada\* 78"`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada\* 78"`}},
+			valueS:   `dsada\* 78`,
+			wildcard: false,
+			fuzzy:    0,
+			boost:    1.0,
 		},
 		{
-			name:  "TestFuzzyTerm02",
-			input: `"dsada 78"^08`,
-			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, BoostSymbol: "^08"},
+			name:     "TestFuzzyTerm02",
+			input:    `"dsada* 78"`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada* 78"`}},
+			valueS:   `dsada* 78`,
+			wildcard: true,
+			fuzzy:    0,
+			boost:    1.0,
 		},
 		{
-			name:  "TestFuzzyTerm03",
-			input: `"dsada 78"~8`,
-			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~8"},
+			name:     "TestFuzzyTerm03",
+			input:    `"dsada\* 78"^08`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada\* 78"`}, BoostSymbol: "^08"},
+			valueS:   `dsada\* 78`,
+			wildcard: false,
+			fuzzy:    0,
+			boost:    8.0,
 		},
 		{
-			name:  "TestFuzzyTerm04",
-			input: `"dsada 78"~`,
-			want:  &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~"},
+			name:     "TestFuzzyTerm04",
+			input:    `"dsada* 78"^08`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada* 78"`}, BoostSymbol: "^08"},
+			valueS:   `dsada* 78`,
+			wildcard: true,
+			fuzzy:    0,
+			boost:    8.0,
 		},
 		{
-			name:  "TestFuzzyTerm05",
-			input: `\/dsada\/\ dasda80980?*`,
-			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+			name:     "TestFuzzyTerm05",
+			input:    `"dsada\* 78"~8`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada\* 78"`}, FuzzySymbol: "~8"},
+			valueS:   `dsada\* 78`,
+			wildcard: false,
+			fuzzy:    8,
+			boost:    1.0,
 		},
 		{
-			name:  "TestFuzzyTerm06",
-			input: `\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`},
+			name:     "TestFuzzyTerm06",
+			input:    `"dsada* 78"~8`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada* 78"`}, FuzzySymbol: "~8"},
+			valueS:   `dsada* 78`,
+			wildcard: true,
+			fuzzy:    8,
+			boost:    1.0,
 		},
 		{
-			name:  "TestFuzzyTerm07",
-			input: `\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`},
+			name:     "TestFuzzyTerm07",
+			input:    `"dsada 78"~`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~"},
+			valueS:   `dsada 78`,
+			wildcard: false,
+			fuzzy:    1,
+			boost:    1.0,
 		},
 		{
-			name:  "TestFuzzyTerm08",
-			input: `\/dsada\/\ dasda80980?*\^\^~`,
-			want:  &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~`},
+			name:     "TestFuzzyTerm08",
+			input:    `"dsada* 78"~`,
+			want:     &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada* 78"`}, FuzzySymbol: "~"},
+			valueS:   `dsada* 78`,
+			wildcard: true,
+			fuzzy:    1,
+			boost:    1.0,
+		},
+		{
+			name:     "TestFuzzyTerm05",
+			input:    `\/dsada\/\ dasda80980?*`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}},
+			valueS:   `\/dsada\/\ dasda80980?*`,
+			wildcard: true,
+			fuzzy:    0,
+			boost:    1.0,
+		},
+		{
+			name:     "TestFuzzyTerm06",
+			input:    `\/dsada\/\ dasda80980?*\^\^^08`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`},
+			valueS:   `\/dsada\/\ dasda80980?*\^\^`,
+			wildcard: true,
+			fuzzy:    0,
+			boost:    8.0,
+		},
+		{
+			name:     "TestFuzzyTerm07",
+			input:    `\/dsada\/\ dasda80980?*\^\^~8`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`},
+			valueS:   `\/dsada\/\ dasda80980?*\^\^`,
+			wildcard: true,
+			fuzzy:    8,
+			boost:    1.0,
+		},
+		{
+			name:     "TestFuzzyTerm08",
+			input:    `\/dsada\/\ dasda80980?*\^\^~`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~`},
+			valueS:   `\/dsada\/\ dasda80980?*\^\^`,
+			wildcard: true,
+			fuzzy:    1,
+			boost:    1.0,
+		},
+		{
+			name:     "TestFuzzyTerm09",
+			input:    `\/dsada\/\ dasda80980\?\*`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980\?\*`}}},
+			valueS:   `\/dsada\/\ dasda80980\?\*`,
+			wildcard: false,
+			fuzzy:    0,
+			boost:    1.0,
+		},
+		{
+			name:     "TestFuzzyTerm10",
+			input:    `\/dsada\/\ dasda80980\?\*\^\^^08`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980\?\*\^\^`}}, BoostSymbol: `^08`},
+			valueS:   `\/dsada\/\ dasda80980\?\*\^\^`,
+			wildcard: false,
+			fuzzy:    0,
+			boost:    8.0,
+		},
+		{
+			name:     "TestFuzzyTerm11",
+			input:    `\/dsada\/\ dasda80980\?\*\^\^~8`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980\?\*\^\^`}}, FuzzySymbol: `~8`},
+			valueS:   `\/dsada\/\ dasda80980\?\*\^\^`,
+			wildcard: false,
+			fuzzy:    8,
+			boost:    1.0,
+		},
+		{
+			name:     "TestFuzzyTerm12",
+			input:    `\/dsada\/\ dasda80980\?\*\^\^~`,
+			want:     &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980\?\*\^\^`}}, FuzzySymbol: `~`},
+			valueS:   `\/dsada\/\ dasda80980\?\*\^\^`,
+			wildcard: false,
+			fuzzy:    1,
+			boost:    1.0,
 		},
 	}
 	for _, tt := range testCases {
@@ -175,6 +284,14 @@ func TestFuzzyTerm(t *testing.T) {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
 				t.Errorf("fuzzyTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if out.ValueS() != tt.valueS {
+				t.Errorf("expect get values: %s but get values: %s", tt.valueS, out.ValueS())
+			} else if out.haveWildcard() != tt.wildcard {
+				t.Errorf("expect wildcard: %+v, but wildcard: %+v", tt.wildcard, out.haveWildcard())
+			} else if out.Fuzziness() != tt.fuzzy {
+				t.Errorf("expect get fuzzy: %d, but get fuzzy: %d", tt.fuzzy, out.Fuzziness())
+			} else if math.Abs(out.Boost()-tt.boost) > 1E-6 {
+				t.Errorf("expect get boost: %f, but get boost: %f", tt.boost, out.Boost())
 			}
 		})
 	}
@@ -405,6 +522,123 @@ func TestWPrefixTerm(t *testing.T) {
 }
 
 func TestPrefixTermGroup(t *testing.T) {
+	var termParser = participle.MustBuild(
+		&PrefixTermGroup{},
+		participle.Lexer(token.Lexer),
+	)
+
+	type testCase struct {
+		name  string
+		input string
+		want  *PrefixTermGroup
+	}
+	var testCases = []testCase{
+		{
+			name:  "TestPrefixTermGroup01",
+			input: `( 8908  "dsada 78" +"89080  xxx" -"xx yyyy" +\+dsada\ 7897 -\-\-dsada\-7897  )`,
+			want: &PrefixTermGroup{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
+				PrefixTerms: []*WPrefixTerm{
+					{Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+					{Symbol: "+", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"89080  xxx"`}}},
+					{Symbol: "-", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"xx yyyy"`}}},
+					{Symbol: "+", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\+dsada\ 7897`}}}},
+					{Symbol: "-", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\-\-dsada\-7897`}}}},
+				},
+			},
+		},
+		{
+			name:  "TestPrefixTermGroup02",
+			input: `( 8908 )`,
+			want: &PrefixTermGroup{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
+			},
+		},
+		{
+			name:  "TestPrefixTermGroup03",
+			input: `( 8908 [ -1 TO 3]  )`,
+			want: &PrefixTermGroup{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
+				PrefixTerms: []*WPrefixTerm{
+					{
+						Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+							LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
+							RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+						}}},
+					},
+				},
+			},
+		},
+		{
+			name:  "TestPrefixTermGroup04",
+			input: `( +>2021-11-04 +<2021-11-11 )`,
+			want: &PrefixTermGroup{
+				PrefixTerm: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{
+					RangeTerm: &RangeTerm{
+						SRangeTerm: &SRangeTerm{
+							Symbol: ">",
+							Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "04"}},
+						},
+					},
+				}},
+				PrefixTerms: []*WPrefixTerm{
+					{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{
+						SRangeTerm: &SRangeTerm{
+							Symbol: "<",
+							Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "11"}},
+						},
+					}}},
+				},
+			},
+		},
+		{
+			name:  "TestPrefixTermGroup05",
+			input: `( [-1 TO 3]  )`,
+			want: &PrefixTermGroup{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+					LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
+					RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+				}}}},
+			},
+		},
+		{
+			name:  "TestPrefixTermGroup06",
+			input: `( [-1 TO 3] [1 TO 2] +[5 TO 10}  -{8 TO 90])`,
+			want: &PrefixTermGroup{
+				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+					LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
+					RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+				}}}},
+				PrefixTerms: []*WPrefixTerm{
+					{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
+						RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
+					}}}},
+					{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"5"}},
+						RValue: &RangeValue{SingleValue: []string{"10"}}, RBRACKET: "}",
+					}}}},
+					{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
+						LBRACKET: "{", LValue: &RangeValue{SingleValue: []string{"8"}},
+						RValue: &RangeValue{SingleValue: []string{"90"}}, RBRACKET: "]",
+					}}}},
+				},
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			var out = &PrefixTermGroup{}
+			if err := termParser.ParseString(tt.input, out); err != nil {
+				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
+			} else if !reflect.DeepEqual(tt.want, out) {
+				t.Errorf("termParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			}
+		})
+	}
+}
+
+func TestTermGroup(t *testing.T) {
 	var termParser = participle.MustBuild(
 		&PrefixTermGroup{},
 		participle.Lexer(token.Lexer),
