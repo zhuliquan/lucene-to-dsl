@@ -3,7 +3,7 @@ package term
 type TermType uint64
 
 const (
-	UNKNOWN_TERM_TYPE TermType = 1 >> iota
+	UNKNOWN_TERM_TYPE TermType = 1 << iota
 	SINGLE_TERM_TYPE
 	PHRASE_TERM_TYPE
 	REGEXP_TERM_TYPE

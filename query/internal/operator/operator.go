@@ -25,7 +25,7 @@ func (o *AndSymbol) GetLogicType() LogicOPType {
 
 // or operator ("OR" / "or" / "||")
 type OrSymbol struct {
-	Symbol string `parser:"  WHITESPACE+ @( OR OR | 'OR' | 'or' ) WHITESPACE+" json:"symbol"`
+	Symbol string `parser:"  WHITESPACE+ @( SOR SOR | 'OR' | 'or' ) WHITESPACE+" json:"symbol"`
 }
 
 func (o *OrSymbol) String() string {
