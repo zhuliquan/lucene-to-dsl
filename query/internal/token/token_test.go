@@ -17,12 +17,7 @@ func TestLexer(t *testing.T) {
 		}
 		return tokens
 	}
-	var scanner *participle.Parser
 	var err error
-	scanner, err = participle.Build(
-		&Token{},
-		participle.Lexer(Lexer),
-	)
 	if err != nil {
 		panic(err)
 	}
@@ -31,6 +26,7 @@ func TestLexer(t *testing.T) {
 		name  string
 		input string
 		want  []*Token
+		typeS []TokenType
 	}
 
 	var testCases = []testCase{
@@ -52,6 +48,21 @@ func TestLexer(t *testing.T) {
 				{COMPARE: ">="},
 				{IDENT: "90"},
 			},
+			typeS: []TokenType{
+				IDENT_TOKEN_TYPE,
+				COLON_TOKEN_TYPE,
+				COMPARE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				PLUS_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				COLON_TOKEN_TYPE,
+				COMPARE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+			},
 		},
 		{
 			name:  "TestScan02",
@@ -68,6 +79,19 @@ func TestLexer(t *testing.T) {
 				{IDENT: "y"},
 				{COLON: ":"},
 				{STRING: `"dasda 8\ : +"`},
+			},
+			typeS: []TokenType{
+				IDENT_TOKEN_TYPE,
+				MINUS_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				COLON_TOKEN_TYPE,
+				REGEXP_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				COLON_TOKEN_TYPE,
+				STRING_TOKEN_TYPE,
 			},
 		},
 		{
@@ -109,12 +133,54 @@ func TestLexer(t *testing.T) {
 				{WHITESPACE: " "},
 				{SOR: "|"},
 			},
+			typeS: []TokenType{
+				IDENT_TOKEN_TYPE,
+				COLON_TOKEN_TYPE,
+				COMPARE_TOKEN_TYPE,
+				COMPARE_TOKEN_TYPE,
+				LPAREN_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				NOT_TOKEN_TYPE,
+				AND_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WILDCARD_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WILDCARD_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				LBRACK_TOKEN_TYPE,
+				LBRACE_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				PLUS_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WILDCARD_TOKEN_TYPE,
+				RBRACE_TOKEN_TYPE,
+				RBRACK_TOKEN_TYPE,
+				RPAREN_TOKEN_TYPE,
+				BOOST_TOKEN_TYPE,
+				FUZZY_TOKEN_TYPE,
+				FUZZY_TOKEN_TYPE,
+				IDENT_TOKEN_TYPE,
+				WHITESPACE_TOKEN_TYPE,
+				SOR_TOKEN_TYPE,
+			},
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			if out := scan(scanner, tt.input); !reflect.DeepEqual(out, tt.want) {
+			if out := scan(Scanner, tt.input); !reflect.DeepEqual(out, tt.want) {
 				t.Errorf("Scan ( %+v ) = %+v, but want: %+v", tt.input, out, tt.want)
+			} else {
+				for i := 0; i < len(out); i++ {
+					if out[i].GetTokenType() != tt.typeS[i] {
+						t.Errorf("expect get type: %+v, but get type: %+v", tt.typeS[i], out[i].GetTokenType())
+					}
+				}
 			}
 		})
 

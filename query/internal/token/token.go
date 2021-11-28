@@ -1,6 +1,7 @@
 package token
 
 import (
+	"github.com/alecthomas/participle"
 	"github.com/alecthomas/participle/lexer/stateful"
 )
 
@@ -82,7 +83,7 @@ var rules = []stateful.Rule{
 		Pattern: `\&`,
 	},
 	{
-		Name:    "OR",
+		Name:    "SOR",
 		Pattern: `\|`,
 	},
 	{
@@ -92,10 +93,18 @@ var rules = []stateful.Rule{
 }
 
 var Lexer *stateful.Definition
+var Scanner *participle.Parser
 
 func init() {
 	var err error
 	Lexer, err = stateful.NewSimple(rules)
+	if err != nil {
+		panic(err.Error())
+	}
+	Scanner, err = participle.Build(
+		&Token{},
+		participle.Lexer(Lexer),
+	)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -122,7 +131,7 @@ type Token struct {
 	LBRACE     string `parser:"| @LBRACE" json:"lbrace"`
 	RBRACE     string `parser:"| @RBRACE" json:"rbrace"`
 	AND        string `parser:"| @AND" json:"and"`
-	SOR        string `parser:"| @OR" json:"sor"`
+	SOR        string `parser:"| @SOR" json:"sor"`
 	NOT        string `parser:"| @NOT" json:"not"`
 }
 
@@ -173,5 +182,55 @@ func (t *Token) String() string {
 		return t.NOT
 	} else {
 		return ""
+	}
+}
+
+func (t *Token) GetTokenType() TokenType {
+	if t == nil {
+		return UNKNOWN_TOKEN_TYPE
+	} else if t.EOL != "" {
+		return EOL_TOKEN_TYPE
+	} else if t.WHITESPACE != "" {
+		return WHITESPACE_TOKEN_TYPE
+	} else if t.IDENT != "" {
+		return IDENT_TOKEN_TYPE
+	} else if t.STRING != "" {
+		return STRING_TOKEN_TYPE
+	} else if t.REGEXP != "" {
+		return REGEXP_TOKEN_TYPE
+	} else if t.COLON != "" {
+		return COLON_TOKEN_TYPE
+	} else if t.COMPARE != "" {
+		return COMPARE_TOKEN_TYPE
+	} else if t.PLUS != "" {
+		return PLUS_TOKEN_TYPE
+	} else if t.MINUS != "" {
+		return MINUS_TOKEN_TYPE
+	} else if t.FUZZY != "" {
+		return FUZZY_TOKEN_TYPE
+	} else if t.BOOST != "" {
+		return BOOST_TOKEN_TYPE
+	} else if t.WILDCARD != "" {
+		return WILDCARD_TOKEN_TYPE
+	} else if t.LPAREN != "" {
+		return LPAREN_TOKEN_TYPE
+	} else if t.RPAREN != "" {
+		return RPAREN_TOKEN_TYPE
+	} else if t.LBRACK != "" {
+		return LBRACK_TOKEN_TYPE
+	} else if t.RBRACK != "" {
+		return RBRACK_TOKEN_TYPE
+	} else if t.LBRACE != "" {
+		return LBRACE_TOKEN_TYPE
+	} else if t.RBRACE != "" {
+		return RBRACE_TOKEN_TYPE
+	} else if t.AND != "" {
+		return AND_TOKEN_TYPE
+	} else if t.SOR != "" {
+		return SOR_TOKEN_TYPE
+	} else if t.NOT != "" {
+		return NOT_TOKEN_TYPE
+	} else {
+		return UNKNOWN_TOKEN_TYPE
 	}
 }
