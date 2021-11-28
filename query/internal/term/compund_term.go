@@ -313,3 +313,27 @@ func (t *FuzzyTerm) String() string {
 		return ""
 	}
 }
+
+func (t *FuzzyTerm) haveWildcard() bool {
+	if t == nil {
+		return false
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.haveWildcard()
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.haveWildcard()
+	} else {
+		return false
+	}
+}
+
+func (t *FuzzyTerm) ValueS() string {
+	if t == nil {
+		return ""
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.ValueS()
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.ValueS()
+	} else {
+		return ""
+	}
+}
