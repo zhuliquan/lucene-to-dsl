@@ -120,9 +120,7 @@ func (q *NotQuery) String() string {
 
 // paren query: lucene query is surround with paren
 type ParenQuery struct {
-	LParen   string  `parser:"@LPAREN WHITESPACE*" json:"lparen"`
-	SubQuery *Lucene `parser:"@@" json:"sub_query"`
-	RParen   string  `parser:"WHITESPACE* @RPAREN" json:"rparen"`
+	SubQuery *Lucene `parser:"LPAREN WHITESPACE* @@ WHITESPACE* RPAREN" json:"sub_query"`
 }
 
 func (q *ParenQuery) String() string {
