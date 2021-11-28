@@ -1,5 +1,9 @@
 package term
 
+import (
+	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
+)
+
 type Term struct {
 	RegexpTerm *RegexpTerm `parser:"  @@" json:"regexp_term"`
 	FuzzyTerm  *FuzzyTerm  `parser:"| @@" json:"fuzzy_term"`
@@ -23,36 +27,28 @@ func (t *Term) String() string {
 	}
 }
 
-func (t.Term) GetTermType() TermType {
-	if t  == nil {
-		return UNKNOWN_TERM_TYPE
-	} else if t.isRegexp() {
-		return REGEXP_TERM_TYPE
-	} else if haveWildcard() {
-		return 
-	}
-}
-
-func (t *Term) isRegexp() bool {
-	return t != nil && t.RegexpTerm != nil
-}
-
-func (t *Term) haveWildcard() bool {
+func (t *Term) GetTermType() TermType {
 	if t == nil {
-		return false
+		return UNKNOWN_TERM_TYPE
+	} else if t.RegexpTerm != nil {
+		return t.RegexpTerm.GetTermType()
 	} else if t.FuzzyTerm != nil {
-		return t.FuzzyTerm.haveWildcard()
+		return t.FuzzyTerm.GetTermType()
+	} else if t.RangeTerm != nil {
+		return t.RangeTerm.GetTermType()
+	} else if t.TermGroup != nil {
+		return t.TermGroup.GetTermType()
 	} else {
-		return false
+		return UNKNOWN_TERM_TYPE
 	}
 }
 
-func (t *Term) isRange() bool {
-	return t != nil && t.RangeTerm != nil
-}
-
-func (t *Term) isGroup() bool {
-	return t != nil && t.TermGroup != nil
+func (t *Term) GetBound() *bnd.Bound {
+	if t == nil || t.RangeTerm == nil {
+		return nil
+	} else {
+		return t.RangeTerm.GetBound()
+	}
 }
 
 func (t *Term) Fuzziness() int {
