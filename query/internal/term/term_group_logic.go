@@ -7,31 +7,18 @@ import (
 	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
 )
 
-// term group: join sum prefix term group together
-type TermGroup struct {
-	LogicTermGroup *LogicTermGroup `parser:"LPAREN WHITESPACE* @@ WHITESPACE* RPAREN" json:"logic_term_group"`
-	BoostSymbol    string          `parser:"@BOOST?" json:"boost_symbol"`
-}
-
-func (t *TermGroup) String() string {
-	return t.LogicTermGroup.String() + t.BoostSymbol
-}
-
-func (t *TermGroup) Boost() float64 {
-	if t == nil {
-		return 0.0
-	} else if len(t.BoostSymbol) == 0 {
-		return 1.0
-	} else {
-		var res, _ = strconv.ParseFloat(t.BoostSymbol[1:], 64)
-		return res
-	}
-}
-
 // logic term group: join sum term elem by OR / AND / NOT
 type LogicTermGroup struct {
 	OrTermGroup *OrTermGroup   `parser:"@@ " json:"or_term_group"`
 	OSTermGroup []*OSTermGroup `parser:"@@*" json:"or_symbol_term_group"`
+}
+
+func (t *LogicTermGroup) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	} else {
+		return GROUP_TERM_TYPE
+	}
 }
 
 func (t *LogicTermGroup) String() string {
@@ -145,5 +132,38 @@ func (t *ParenTermGroup) String() string {
 		return "( " + t.SubTermGroup.String() + " )"
 	} else {
 		return ""
+	}
+}
+
+// term group: join sum prefix term group together
+type TermGroup struct {
+	LogicTermGroup *LogicTermGroup `parser:"LPAREN WHITESPACE* @@ WHITESPACE* RPAREN" json:"logic_term_group"`
+	BoostSymbol    string          `parser:"@BOOST?" json:"boost_symbol"`
+}
+
+func (t *TermGroup) String() string {
+	return t.LogicTermGroup.String() + t.BoostSymbol
+}
+
+func (t *TermGroup) Boost() float64 {
+	if t == nil {
+		return 0.0
+	} else if len(t.BoostSymbol) == 0 {
+		return 1.0
+	} else {
+		var res, _ = strconv.ParseFloat(t.BoostSymbol[1:], 64)
+		return res
+	}
+}
+
+func (t *TermGroup) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	} else {
+		var res = t.LogicTermGroup.GetTermType()
+		if len(t.BoostSymbol) != 0 {
+			res |= BOOST_TERM_TYPE
+		}
+		return res
 	}
 }

@@ -15,7 +15,14 @@ type SingleTerm struct {
 }
 
 func (t *SingleTerm) GetTermType() TermType {
-	return SINGLE_TERM_TYPE
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	}
+	var res = SINGLE_TERM_TYPE
+	if t.haveWildcard() {
+		res |= WILDCARD_TERM_TYPE
+	}
+	return res
 }
 
 func (t *SingleTerm) ValueS() string {
@@ -61,7 +68,14 @@ type PhraseTerm struct {
 }
 
 func (t *PhraseTerm) GetTermType() TermType {
-	return PHRASE_TERM_TYPE
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	}
+	var res = PHRASE_TERM_TYPE
+	if t.haveWildcard() {
+		res |= WILDCARD_TERM_TYPE
+	}
+	return res
 }
 
 func (t *PhraseTerm) ValueS() string {
@@ -106,6 +120,9 @@ type RegexpTerm struct {
 }
 
 func (t *RegexpTerm) GetTermType() TermType {
+	if t != nil {
+		return UNKNOWN_TERM_TYPE
+	}
 	return REGEXP_TERM_TYPE
 }
 
@@ -134,6 +151,9 @@ type DRangeTerm struct {
 }
 
 func (t *DRangeTerm) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	}
 	return RANGE_TERM_TYPE
 }
 
@@ -169,6 +189,9 @@ type SRangeTerm struct {
 }
 
 func (t *SRangeTerm) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	}
 	return RANGE_TERM_TYPE
 }
 

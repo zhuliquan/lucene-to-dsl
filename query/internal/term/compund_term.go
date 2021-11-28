@@ -2,6 +2,7 @@ package term
 
 import (
 	"strconv"
+
 	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
 )
 
@@ -10,6 +11,17 @@ type RangeTerm struct {
 	SRangeTerm  *SRangeTerm `parser:"( @@ " json:"s_range_term"`
 	DRangeTerm  *DRangeTerm `parser:"| @@)" json:"d_range_term"`
 	BoostSymbol string      `parser:"@BOOST?" json:"boost_symbol"`
+}
+
+func (t *RangeTerm) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	}
+	var res = RANGE_TERM_TYPE
+	if len(t.BoostSymbol) != 0 {
+		res |= BOOST_TERM_TYPE
+	}
+	return res
 }
 
 func (t *RangeTerm) String() string {
@@ -56,16 +68,23 @@ type FuzzyTerm struct {
 }
 
 func (t *FuzzyTerm) GetTermType() TermType {
+	var res TermType
 	if t == nil {
 		return UNKNOWN_TERM_TYPE
 	} else if t.SingleTerm != nil {
-
-		return SINGLE_TERM_TYPE | 
+		res = t.SingleTerm.GetTermType()
 	} else if t.PhraseTerm != nil {
-		return PHRASE_TERM_TYPE
+		res = t.PhraseTerm.GetTermType()
 	} else {
-		return 
+		return UNKNOWN_TERM_TYPE
 	}
+	if len(t.BoostSymbol) != 0 {
+		res |= BOOST_TERM_TYPE
+	}
+	if len(t.FuzzySymbol) != 0 {
+		res |= FUZZY_TERM_TYPE
+	}
+	return res
 }
 
 func (t *FuzzyTerm) Boost() float64 {
@@ -147,5 +166,21 @@ func (t *TermGroupElem) String() string {
 		return t.DRangeTerm.String()
 	} else {
 		return ""
+	}
+}
+
+func (t *TermGroupElem) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	} else if t.SRangeTerm != nil {
+		return SINGLE_TERM_TYPE
+	} else if t.PhraseTerm != nil {
+		return PHRASE_TERM_TYPE
+	} else if t.SRangeTerm != nil {
+		return RANGE_TERM_TYPE
+	} else if t.DRangeTerm != nil {
+		return RANGE_TERM_TYPE
+	} else {
+		return UNKNOWN_TERM_TYPE
 	}
 }
