@@ -23,13 +23,13 @@ func (t *RangeTerm) String() string {
 	}
 }
 
-func (t *RangeTerm) ToBound() *Bound {
+func (t *RangeTerm) GetBound() *Bound {
 	if t == nil {
 		return nil
 	} else if t.SRangeTerm != nil {
-		return t.SRangeTerm.ToBound()
+		return t.SRangeTerm.GetBound()
 	} else if t.DRangeTerm != nil {
-		return t.DRangeTerm.ToBound()
+		return t.DRangeTerm.GetBound()
 	} else {
 		return nil
 	}
@@ -52,6 +52,18 @@ type FuzzyTerm struct {
 	PhraseTerm  *PhraseTerm `parser:"| @@)" json:"phrase_term"`
 	FuzzySymbol string      `parser:"( @FUZZY  " json:"fuzzy_symbol"`
 	BoostSymbol string      `parser:"| @BOOST)?" json:"boost_symbol"`
+}
+
+func (t *FuzzyTerm) GetTermType() TermType {
+	if t == nil {
+		return UNKNOWN_TERM_TYPE
+	} else if t.SingleTerm != nil {
+		return SINGLE_TERM_TYPE | 
+	} else if t.PhraseTerm != nil {
+		return PHRASE_TERM_TYPE
+	} else {
+		return 
+	}
 }
 
 func (t *FuzzyTerm) Boost() float64 {
@@ -107,6 +119,30 @@ func (t *FuzzyTerm) ValueS() string {
 		return t.SingleTerm.ValueS()
 	} else if t.PhraseTerm != nil {
 		return t.PhraseTerm.ValueS()
+	} else {
+		return ""
+	}
+}
+
+// term group element
+type TermGroupElem struct {
+	SingleTerm *SingleTerm `parser:"  @@" json:"single_term"`
+	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
+	SRangeTerm *SRangeTerm `parser:"| @@" json:"single_range_term"`
+	DRangeTerm *DRangeTerm `parser:"| @@" json:"double_range_term"`
+}
+
+func (t *TermGroupElem) String() string {
+	if t == nil {
+		return ""
+	} else if t.SingleTerm != nil {
+		return t.SingleTerm.String()
+	} else if t.PhraseTerm != nil {
+		return t.PhraseTerm.String()
+	} else if t.SRangeTerm != nil {
+		return t.SRangeTerm.String()
+	} else if t.DRangeTerm != nil {
+		return t.DRangeTerm.String()
 	} else {
 		return ""
 	}
