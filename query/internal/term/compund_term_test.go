@@ -701,126 +701,175 @@ func TestPrefixTermGroup(t *testing.T) {
 
 func TestTermGroup(t *testing.T) {
 	var termParser = participle.MustBuild(
-		&PrefixTermGroup{},
+		&TermGroup{},
 		participle.Lexer(token.Lexer),
 	)
 
 	type testCase struct {
 		name  string
 		input string
-		want  *PrefixTermGroup
+		want  *TermGroup
+		boost float64
 	}
 	var testCases = []testCase{
 		{
 			name:  "TestPrefixTermGroup01",
 			input: `( 8908  "dsada 78" +"89080  xxx" -"xx yyyy" +\+dsada\ 7897 -\-\-dsada\-7897  )`,
-			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
-				PrefixTerms: []*WPrefixTerm{
-					{Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
-					{Symbol: "+", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"89080  xxx"`}}},
-					{Symbol: "-", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"xx yyyy"`}}},
-					{Symbol: "+", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\+dsada\ 7897`}}}},
-					{Symbol: "-", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\-\-dsada\-7897`}}}},
-				},
-			},
-		},
-		{
-			name:  "TestPrefixTermGroup02",
-			input: `( 8908 )`,
-			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
-			},
-		},
-		{
-			name:  "TestPrefixTermGroup03",
-			input: `( 8908 [ -1 TO 3]  )`,
-			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
-				PrefixTerms: []*WPrefixTerm{
-					{
-						Elem: &TermGroupElem{
-							DRangeTerm: &DRangeTerm{
-								LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
-								RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+			want: &TermGroup{
+				OrTermGroup: &OrTermGroup{
+					AndTermGroup: &AndTermGroup{
+						TermGroupElem: &PrefixTermGroup{
+							PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
+							PrefixTerms: []*WPrefixTerm{
+								{Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+								{Symbol: "+", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"89080  xxx"`}}},
+								{Symbol: "-", Elem: &TermGroupElem{PhraseTerm: &PhraseTerm{Value: `"xx yyyy"`}}},
+								{Symbol: "+", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\+dsada\ 7897`}}}},
+								{Symbol: "-", Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{`\-\-dsada\-7897`}}}},
 							},
 						},
 					},
 				},
 			},
+			boost: 1.0,
+		},
+		{
+			name:  "TestPrefixTermGroup02",
+			input: `( 8908 )`,
+			want: &TermGroup{
+				OrTermGroup: &OrTermGroup{
+					AndTermGroup: &AndTermGroup{
+						TermGroupElem: &PrefixTermGroup{
+							PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
+						},
+					},
+				},
+			},
+			boost: 1.0,
+		},
+		{
+			name:  "TestPrefixTermGroup03",
+			input: `( 8908 [ -1 TO 3]  )^1.45`,
+			want: &TermGroup{
+				OrTermGroup: &OrTermGroup{
+					AndTermGroup: &AndTermGroup{
+						TermGroupElem: &PrefixTermGroup{
+							PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{SingleTerm: &SingleTerm{Value: []string{"8908"}}}},
+							PrefixTerms: []*WPrefixTerm{
+								{
+									Elem: &TermGroupElem{
+										DRangeTerm: &DRangeTerm{
+											LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
+											RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				BoostSymbol: "^1.45",
+			},
+			boost: 1.45,
 		},
 		{
 			name:  "TestPrefixTermGroup04",
-			input: `( +>2021-11-04 +<2021-11-11 )`,
-			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{
-					SRangeTerm: &SRangeTerm{
-						Symbol: ">",
-						Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "04"}},
-					},
-				}},
-				PrefixTerms: []*WPrefixTerm{
-					{Symbol: "+", Elem: &TermGroupElem{
-						SRangeTerm: &SRangeTerm{
-							Symbol: "<",
-							Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "11"}},
+			input: `( +>2021-11-04 +<2021-11-11 )^9.8`,
+			want: &TermGroup{
+				OrTermGroup: &OrTermGroup{
+					AndTermGroup: &AndTermGroup{
+						TermGroupElem: &PrefixTermGroup{
+							PrefixTerm: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{
+								SRangeTerm: &SRangeTerm{
+									Symbol: ">",
+									Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "04"}},
+								},
+							}},
+							PrefixTerms: []*WPrefixTerm{
+								{Symbol: "+", Elem: &TermGroupElem{
+									SRangeTerm: &SRangeTerm{
+										Symbol: "<",
+										Value:  &RangeValue{SingleValue: []string{`2021`, "-", "11", "-", "11"}},
+									},
+								}},
+							},
 						},
-					}},
+					},
 				},
+				BoostSymbol: "^9.8",
 			},
+			boost: 9.8,
 		},
 		{
 			name:  "TestPrefixTermGroup05",
-			input: `( [-1 TO 3]  )`,
-			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{
-					DRangeTerm: &DRangeTerm{
-						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
-						RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+			input: `( [-1 TO 3]  )^0.9`,
+			want: &TermGroup{
+				OrTermGroup: &OrTermGroup{
+					AndTermGroup: &AndTermGroup{
+						TermGroupElem: &PrefixTermGroup{
+							PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{
+								DRangeTerm: &DRangeTerm{
+									LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
+									RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+								},
+							}},
+						},
 					},
-				}},
+				},
+				BoostSymbol: "^0.9",
 			},
+			boost: 0.9,
 		},
 		{
 			name:  "TestPrefixTermGroup06",
-			input: `( [-1 TO 3] [1 TO 2] +[5 TO 10}  -{8 TO 90])`,
-			want: &PrefixTermGroup{
-				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{
-					DRangeTerm: &DRangeTerm{
-						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
-						RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+			input: `( [-1 TO 3] [1 TO 2] +[5 TO 10}  -{8 TO 90])^1.9`,
+			want: &TermGroup{
+				OrTermGroup: &OrTermGroup{
+					AndTermGroup: &AndTermGroup{
+						TermGroupElem: &PrefixTermGroup{
+							PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{
+								DRangeTerm: &DRangeTerm{
+									LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
+									RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
+								},
+							}},
+							PrefixTerms: []*WPrefixTerm{
+								{Elem: &TermGroupElem{
+									DRangeTerm: &DRangeTerm{
+										LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
+										RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
+									},
+								}},
+								{Symbol: "+", Elem: &TermGroupElem{
+									DRangeTerm: &DRangeTerm{
+										LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"5"}},
+										RValue: &RangeValue{SingleValue: []string{"10"}}, RBRACKET: "}",
+									},
+								}},
+								{Symbol: "-", Elem: &TermGroupElem{
+									DRangeTerm: &DRangeTerm{
+										LBRACKET: "{", LValue: &RangeValue{SingleValue: []string{"8"}},
+										RValue: &RangeValue{SingleValue: []string{"90"}}, RBRACKET: "]",
+									},
+								}},
+							},
+						},
 					},
-				}},
-				PrefixTerms: []*WPrefixTerm{
-					{Elem: &TermGroupElem{
-						DRangeTerm: &DRangeTerm{
-							LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-							RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
-						},
-					}},
-					{Symbol: "+", Elem: &TermGroupElem{
-						DRangeTerm: &DRangeTerm{
-							LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"5"}},
-							RValue: &RangeValue{SingleValue: []string{"10"}}, RBRACKET: "}",
-						},
-					}},
-					{Symbol: "-", Elem: &TermGroupElem{
-						DRangeTerm: &DRangeTerm{
-							LBRACKET: "{", LValue: &RangeValue{SingleValue: []string{"8"}},
-							RValue: &RangeValue{SingleValue: []string{"90"}}, RBRACKET: "]",
-						},
-					}},
 				},
+				BoostSymbol: "^1.9",
 			},
+			boost: 1.9,
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			var out = &PrefixTermGroup{}
+			var out = &TermGroup{}
 			if err := termParser.ParseString(tt.input, out); err != nil {
 				t.Errorf("failed to parse input: %s, err: %+v", tt.input, err)
 			} else if !reflect.DeepEqual(tt.want, out) {
 				t.Errorf("termParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
+			} else if out.Boost() != tt.boost {
+				t.Errorf("expect get boost: %f, but get boost: %f", tt.boost, out.Boost())
 			}
 		})
 	}
