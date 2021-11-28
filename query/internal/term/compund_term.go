@@ -7,10 +7,11 @@ import (
 	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
 )
 
-// single side range term or double side range term
+// single side range term or double side range and with boost like this [1 TO 2]^2
 type RangeTerm struct {
-	SRangeTerm *SRangeTerm `parser:"  @@" json:"s_range_term"`
-	DRangeTerm *DRangeTerm `parser:"| @@" json:"d_range_term"`
+	SRangeTerm  *SRangeTerm `parser:"( @@ " json:"s_range_term"`
+	DRangeTerm  *DRangeTerm `parser:"| @@)" json:"d_range_term"`
+	BoostSymbol string      `parser:"@BOOST?" json:"boost_symbol"`
 }
 
 func (t *RangeTerm) String() string {
@@ -37,11 +38,23 @@ func (t *RangeTerm) ToBound() *Bound {
 	}
 }
 
+func (t *RangeTerm) Boost() float64 {
+	if t == nil {
+		return 0.0
+	} else if len(t.BoostSymbol) == 0 {
+		return 1.0
+	} else {
+		var res, _ = strconv.ParseFloat(t.BoostSymbol[1:], 64)
+		return res
+	}
+}
+
 // term group elem
 type TermGroupElem struct {
 	SingleTerm *SingleTerm `parser:"  @@" json:"single_term"`
 	PhraseTerm *PhraseTerm `parser:"| @@" json:"phrase_term"`
-	RangeTerm  *RangeTerm  `parser:"| @@" json:"range_term"`
+	SRangeTerm *SRangeTerm `parser:"| @@" json:"single_range_term"`
+	DRangeTerm *DRangeTerm `parser:"| @@" json:"double_range_term"`
 }
 
 func (t *TermGroupElem) String() string {
@@ -51,8 +64,10 @@ func (t *TermGroupElem) String() string {
 		return t.SingleTerm.String()
 	} else if t.PhraseTerm != nil {
 		return t.PhraseTerm.String()
-	} else if t.RangeTerm != nil {
-		return t.RangeTerm.String()
+	} else if t.SRangeTerm != nil {
+		return t.SRangeTerm.String()
+	} else if t.DRangeTerm != nil {
+		return t.DRangeTerm.String()
 	} else {
 		return ""
 	}
@@ -115,8 +130,8 @@ func (t *WPrefixTerm) GetPrefixType() op.PrefixOPType {
 }
 
 type PrefixTermGroup struct {
-	PrefixTerm  *PrefixTerm    `parser:"LPAREN WHITESPACE* @@ " json:"prefix_term"`
-	PrefixTerms []*WPrefixTerm `parser:"@@* WHITESPACE* RPAREN" json:"prefix_terms`
+	PrefixTerm  *PrefixTerm    `parser:"@@ " json:"prefix_term"`
+	PrefixTerms []*WPrefixTerm `parser:"@@*" json:"prefix_terms`
 }
 
 func (t *PrefixTermGroup) String() string {
