@@ -118,7 +118,7 @@ type TermGroup struct {
 }
 
 func (t *TermGroup) String() string {
-	return t.PrefixTermGroup.String() + t.BoostSymbol
+	return "( " + t.PrefixTermGroup.String() + " )" + t.BoostSymbol
 }
 
 func (t *TermGroup) Boost() float64 {

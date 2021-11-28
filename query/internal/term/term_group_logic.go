@@ -142,7 +142,7 @@ type TermGroup struct {
 }
 
 func (t *TermGroup) String() string {
-	return t.LogicTermGroup.String() + t.BoostSymbol
+	return "( " + t.LogicTermGroup.String() + " )" + t.BoostSymbol
 }
 
 func (t *TermGroup) Boost() float64 {
