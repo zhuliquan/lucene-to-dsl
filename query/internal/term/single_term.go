@@ -73,17 +73,12 @@ func (t *PhraseTerm) haveWildcard() bool {
 	if t == nil {
 		return false
 	}
-	var ch = make(chan token.Token, 1024*1024)
-	token.Scanner.ParseString(t.Value[1:len(t.Value)-1], ch)
-	var have = false
-	for t := range ch {
+	for _, t := range token.Scan(t.Value[1 : len(t.Value)-1]) {
 		if t.GetTokenType() == token.WILDCARD_TOKEN_TYPE {
-			have = true
-			break
+			return true
 		}
 	}
-	close(ch)
-	return have
+	return false
 }
 
 // a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
