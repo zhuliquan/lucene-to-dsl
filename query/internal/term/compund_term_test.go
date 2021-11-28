@@ -20,6 +20,7 @@ func TestRangeTerm(t *testing.T) {
 		input string
 		want  *RangeTerm
 		boost float64
+		bound *Bound
 	}
 	var testCases = []testCase{
 		{
@@ -27,24 +28,28 @@ func TestRangeTerm(t *testing.T) {
 			input: `<="dsada 78"`,
 			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: `"dsada 78"`}}},
 			boost: 1.0,
+			bound: &Bound{LeftInclude: &RangeValue{PhraseValue: `"dsada 78"`}, RightExclude: &RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm02",
 			input: `<="dsada 78"^8.9`,
 			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: `"dsada 78"`}}, BoostSymbol: "^8.9"},
 			boost: 8.9,
+			bound: &Bound{LeftInclude: &RangeValue{PhraseValue: `"dsada 78"`}, RightExclude: &RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm03",
 			input: `<=dsada\ 78`,
 			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}}},
 			boost: 1.0,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`dsada\ 78`}}, RightExclude: &RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm04",
 			input: `<=dsada\ 78^0.5`,
 			want:  &RangeTerm{SRangeTerm: &SRangeTerm{Symbol: "<=", Value: &RangeValue{SingleValue: []string{`dsada\ 78`}}}, BoostSymbol: "^0.5"},
 			boost: 0.5,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`dsada\ 78`}}, RightExclude: &RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  "TestRangeTerm05",
@@ -56,6 +61,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "]",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  "TestRangeTerm06",
@@ -67,6 +73,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "]",
 			}, BoostSymbol: "^0.7"},
 			boost: 0.7,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  "TestRangeTerm07",
@@ -78,6 +85,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightExclude: &RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  "TestRangeTerm08",
@@ -89,6 +97,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "}",
 			}, BoostSymbol: "^0.9"},
 			boost: 0.9,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightExclude: &RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  `TestRangeTerm09`,
@@ -100,6 +109,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftExclude: &RangeValue{SingleValue: []string{`1`}}, RightExclude: &RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  `TestRangeTerm10`,
@@ -111,6 +121,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "]",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftExclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{SingleValue: []string{"2"}}},
 		},
 		{
 			name:  `TestRangeTerm11`,
@@ -122,6 +133,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "]",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftInclude: &RangeValue{SingleValue: []string{`1`}}, RightInclude: &RangeValue{InfinityVal: "*"}},
 		},
 		{
 			name:  `TestRangeTerm12`,
@@ -133,6 +145,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftExclude: &RangeValue{InfinityVal: "*"}, RightExclude: &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}}},
 		},
 		{
 			name:  `TestRangeTerm13`,
@@ -144,6 +157,7 @@ func TestRangeTerm(t *testing.T) {
 				RBRACKET: "}",
 			}},
 			boost: 1.0,
+			bound: &Bound{LeftExclude: &RangeValue{InfinityVal: "*"}, RightExclude: &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""}},
 		},
 		{
 			name:  `TestRangeTerm14`,
@@ -153,6 +167,7 @@ func TestRangeTerm(t *testing.T) {
 				Value:  &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 			}, BoostSymbol: "^9.8"},
 			boost: 9.8,
+			bound: &Bound{LeftExclude: &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}}, RightExclude: &RangeValue{InfinityVal: "*"}},
 		},
 	}
 
@@ -165,6 +180,8 @@ func TestRangeTerm(t *testing.T) {
 				t.Errorf("rangesTermParser.ParseString( %s ) = %+v, want: %+v", tt.input, out, tt.want)
 			} else if math.Abs(tt.boost-out.Boost()) > 1E-6 {
 				t.Errorf("expect get boost: %f, but get boost: %f", tt.boost, out.Boost())
+			} else if !reflect.DeepEqual(out.GetBound(), tt.bound) {
+				t.Errorf("expect get bound: %+v, but get bound: %+v", tt.bound, out.GetBound())
 			}
 		})
 	}
