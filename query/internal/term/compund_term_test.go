@@ -37,7 +37,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}},
@@ -48,7 +47,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}},
@@ -59,7 +57,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			}},
@@ -70,7 +67,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			}},
@@ -81,7 +77,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"10"}},
-				TO:       "TO",
 				RValue:   &RangeValue{InfinityVal: "*"},
 				RBRACKET: "]",
 			}},
@@ -92,7 +87,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{InfinityVal: "*"},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				RBRACKET: "}",
 			}},
@@ -103,7 +97,6 @@ func TestRangeTerm(t *testing.T) {
 			want: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{InfinityVal: "*"},
-				TO:       "TO",
 				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
 				RBRACKET: "}",
 			}},
@@ -265,7 +258,6 @@ func TestPrefixTerm(t *testing.T) {
 			input: `+[1 TO 2]`,
 			want: &PrefixTerm{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 			}}}},
 			oType: op.MUST_PREFIX_TYPE,
@@ -275,7 +267,6 @@ func TestPrefixTerm(t *testing.T) {
 			input: `-[1 TO 2]`,
 			want: &PrefixTerm{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 			}}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
@@ -285,7 +276,6 @@ func TestPrefixTerm(t *testing.T) {
 			input: `[1 TO 2]`,
 			want: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 			}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
@@ -377,7 +367,6 @@ func TestWPrefixTerm(t *testing.T) {
 			input: `   +[1 TO 2]`,
 			want: &WPrefixTerm{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 			}}}},
 			oType: op.MUST_PREFIX_TYPE,
@@ -387,7 +376,6 @@ func TestWPrefixTerm(t *testing.T) {
 			input: `  -[1 TO 2]`,
 			want: &WPrefixTerm{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 			}}}},
 			oType: op.MUST_NOT_PREFIX_TYPE,
@@ -397,7 +385,6 @@ func TestWPrefixTerm(t *testing.T) {
 			input: `  [1 TO 2]`,
 			want: &WPrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 				LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-				TO:     "TO",
 				RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 			}}}},
 			oType: op.SHOULD_PREFIX_TYPE,
@@ -459,7 +446,6 @@ func TestPrefixTermGroup(t *testing.T) {
 					{
 						Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 							LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
-							TO:     "TO",
 							RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
 						}}},
 					},
@@ -494,7 +480,6 @@ func TestPrefixTermGroup(t *testing.T) {
 			want: &PrefixTermGroup{
 				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 					LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
-					TO:     "TO",
 					RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
 				}}}},
 			},
@@ -505,23 +490,19 @@ func TestPrefixTermGroup(t *testing.T) {
 			want: &PrefixTermGroup{
 				PrefixTerm: &PrefixTerm{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 					LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"-", "1"}},
-					TO:     "TO",
 					RValue: &RangeValue{SingleValue: []string{"3"}}, RBRACKET: "]",
 				}}}},
 				PrefixTerms: []*WPrefixTerm{
 					{Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"1"}},
-						TO:     "TO",
 						RValue: &RangeValue{SingleValue: []string{"2"}}, RBRACKET: "]",
 					}}}},
 					{Symbol: "+", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 						LBRACKET: "[", LValue: &RangeValue{SingleValue: []string{"5"}},
-						TO:     "TO",
 						RValue: &RangeValue{SingleValue: []string{"10"}}, RBRACKET: "}",
 					}}}},
 					{Symbol: "-", Elem: &TermGroupElem{RangeTerm: &RangeTerm{DRangeTerm: &DRangeTerm{
 						LBRACKET: "{", LValue: &RangeValue{SingleValue: []string{"8"}},
-						TO:     "TO",
 						RValue: &RangeValue{SingleValue: []string{"90"}}, RBRACKET: "]",
 					}}}},
 				},

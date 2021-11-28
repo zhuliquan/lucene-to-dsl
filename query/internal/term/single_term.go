@@ -127,9 +127,8 @@ func (v *RangeValue) String() string {
 //double side of range term: a term is surrounded by brace / bracket, for instance [1 TO 2] / [1 TO 2} / {1 TO 2] / {1 TO 2}
 type DRangeTerm struct {
 	LBRACKET string      `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
-	LValue   *RangeValue `parser:"@@" json:"left_value"`
-	TO       string      `parser:"WHITESPACE+ @('TO') WHITESPACE+"`
-	RValue   *RangeValue `parser:"@@" json:"right_value"`
+	LValue   *RangeValue `parser:"@@ WHITESPACE+ 'TO'" json:"left_value"`
+	RValue   *RangeValue `parser:"WHITESPACE+ @@" json:"right_value"`
 	RBRACKET string      `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
 }
 
@@ -167,13 +166,13 @@ func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 	if t == nil {
 		return nil
 	} else if t.Symbol == ">" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: t.Value, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+		return &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 	} else if t.Symbol == ">=" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "[", LValue: t.Value, TO: "TO", RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+		return &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 	} else if t.Symbol == "<" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: t.Value, RBRACKET: "}"}
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
 	} else if t.Symbol == "<=" && t.Value != nil {
-		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, TO: "TO", RValue: t.Value, RBRACKET: "]"}
+		return &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
 	} else {
 		return nil
 	}

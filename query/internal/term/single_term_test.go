@@ -210,7 +210,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]"},
 		},
@@ -220,7 +219,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			},
@@ -231,7 +229,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			},
@@ -242,7 +239,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{SingleValue: []string{"1"}},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			},
@@ -253,7 +249,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "[",
 				LValue:   &RangeValue{SingleValue: []string{"10"}},
-				TO:       "TO",
 				RValue:   &RangeValue{InfinityVal: "*"},
 				RBRACKET: "]",
 			},
@@ -264,7 +259,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{InfinityVal: "*"},
-				TO:       "TO",
 				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				RBRACKET: "}",
 			},
@@ -275,7 +269,6 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &RangeValue{InfinityVal: "*"},
-				TO:       "TO",
 				RValue:   &RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
 				RBRACKET: "}",
 			},
