@@ -19,12 +19,16 @@ var rules = []stateful.Rule{
 		Pattern: `([^-\!\s:\|\&"\?\*\\\^~\(\)\{\}\[\]\+\/><=]|\.|(\\(\s|:|\&|\||\?|\*|\\|\^|~|\(|\)|\!|\[|\]|\{|\}|\+|-|\/|>|<|=)))+`,
 	},
 	{
-		Name:    "STRING",
-		Pattern: `"(\\"|[^"])*"`,
+		Name:    "QUOTE",
+		Pattern: `"`,
 	},
 	{
-		Name:    "REGEXP",
-		Pattern: `\/(\\\/|[^\/])+\/`,
+		Name:    "SLASH",
+		Pattern: `\/`,
+	},
+	{
+		Name:    "REVERSE",
+		Pattern: `\\`,
 	},
 	{
 		Name:    "COLON",
@@ -128,8 +132,9 @@ type Token struct {
 	EOL        string `parser:"  @EOL" json:"eol"`
 	WHITESPACE string `parser:"| @WHITESPACE" json:"whitespace"`
 	IDENT      string `parser:"| @IDENT" json:"ident"`
-	STRING     string `parser:"| @STRING" json:"string"`
-	REGEXP     string `parser:"| @REGEXP" json:"regexp"`
+	QUOTE      string `parser:"| @QUOTE" json:"quote"`
+	SLASH      string `parser:"| @SLASH" json:"slash"`
+	REVERSE    string `parser:"| @REVERSE" json:"reverse"`
 	COLON      string `parser:"| @COLON" json:"colon"`
 	COMPARE    string `parser:"| @COMPARE" json:"compare"`
 	PLUS       string `parser:"| @PLUS" json:"plus"`
@@ -157,10 +162,12 @@ func (t *Token) String() string {
 		return t.WHITESPACE
 	} else if t.IDENT != "" {
 		return t.IDENT
-	} else if t.STRING != "" {
-		return t.STRING
-	} else if t.REGEXP != "" {
-		return t.REGEXP
+	} else if t.QUOTE != "" {
+		return t.QUOTE
+	} else if t.SLASH != "" {
+		return t.SLASH
+	} else if t.REVERSE != "" {
+		return t.REVERSE
 	} else if t.COLON != "" {
 		return t.COLON
 	} else if t.COMPARE != "" {
@@ -207,10 +214,12 @@ func (t *Token) GetTokenType() TokenType {
 		return WHITESPACE_TOKEN_TYPE
 	} else if t.IDENT != "" {
 		return IDENT_TOKEN_TYPE
-	} else if t.STRING != "" {
-		return STRING_TOKEN_TYPE
-	} else if t.REGEXP != "" {
-		return REGEXP_TOKEN_TYPE
+	} else if t.QUOTE != "" {
+		return QUOTE_TOKEN_TYPE
+	} else if t.SLASH != "" {
+		return SLASH_TOKEN_TYPE
+	} else if t.REVERSE != "" {
+		return REVERSE_TOKEN_TYPE
 	} else if t.COLON != "" {
 		return COLON_TOKEN_TYPE
 	} else if t.COMPARE != "" {
