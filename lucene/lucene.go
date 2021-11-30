@@ -3,16 +3,9 @@ package lucene
 import (
 	"strings"
 
-	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/dsl"
-	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
-	tm "github.com/zhuliquan/lucene-to-dsl/query/internal/term"
+	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
+	tm "github.com/zhuliquan/lucene-to-dsl/lucene/internal/term"
 )
-
-type Query interface {
-	String() string
-	ToASTNode() (dsl.ASTNode, error)
-}
 
 // lucene: consist of or query and or symbol query
 type Lucene struct {

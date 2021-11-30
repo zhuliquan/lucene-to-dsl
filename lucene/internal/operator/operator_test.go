@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
 )
 
 func TestAndSymbol(t *testing.T) {

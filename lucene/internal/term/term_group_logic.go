@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
+	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
 )
 
 // logic term group: join sum term elem by OR / AND / NOT

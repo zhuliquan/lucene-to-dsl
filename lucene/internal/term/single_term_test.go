@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
-	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
+	bnd "github.com/zhuliquan/lucene-to-dsl/lucene/internal/bound"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
 )
 
 func TestSingleTerm(t *testing.T) {

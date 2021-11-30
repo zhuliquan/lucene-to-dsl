@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	op "github.com/zhuliquan/lucene-to-dsl/query/internal/operator"
-	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
+	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
 )
 
 func TestPrefixTerm(t *testing.T) {

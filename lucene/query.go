@@ -1,17 +1,22 @@
-package query
+package lucene
 
 import (
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/query/internal/lucene"
-	tk "github.com/zhuliquan/lucene-to-dsl/query/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/dsl"
+	tk "github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
 )
+
+type Query interface {
+	String() string
+	ToASTNode() (dsl.ASTNode, error)
+}
 
 var QueryParser *participle.Parser
 
 func init() {
 	var err error
 	QueryParser, err = participle.Build(
-		&lucene.Lucene{},
+		&Lucene{},
 		participle.Lexer(tk.Lexer),
 	)
 	if err != nil {
