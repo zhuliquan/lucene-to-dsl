@@ -79,63 +79,63 @@ func TestPhraseTerm(t *testing.T) {
 		{
 			name:     "TestPhraseTerm01",
 			input:    `"dsada 78"`,
-			want:     &PhraseTerm{Value: `"dsada 78"`},
+			want:     &PhraseTerm{Value: []string{`dsada`, ` `, `78`}},
 			values:   `dsada 78`,
 			wildward: false,
 		},
 		{
 			name:     "TestPhraseTerm02",
 			input:    `"*dsada 78"`,
-			want:     &PhraseTerm{Value: `"*dsada 78"`},
+			want:     &PhraseTerm{Value: []string{`*`, `dsada`, ` `, `78`}},
 			values:   `*dsada 78`,
 			wildward: true,
 		},
 		{
 			name:     "TestPhraseTerm03",
 			input:    `"?dsada 78"`,
-			want:     &PhraseTerm{Value: `"?dsada 78"`},
+			want:     &PhraseTerm{Value: []string{`?`, `dsada`, ` `, `78`}},
 			values:   `?dsada 78`,
 			wildward: true,
 		},
 		{
 			name:     "TestPhraseTerm04",
 			input:    `"dsada* 78"`,
-			want:     &PhraseTerm{Value: `"dsada* 78"`},
+			want:     &PhraseTerm{Value: []string{`dsada`, `*`, ` `, `78`}},
 			values:   `dsada* 78`,
 			wildward: true,
 		},
 		{
 			name:     "TestPhraseTerm05",
 			input:    `"dsada? 78"`,
-			want:     &PhraseTerm{Value: `"dsada? 78"`},
+			want:     &PhraseTerm{Value: []string{`dsada`, `?`, ` `, `78`}},
 			values:   `dsada? 78`,
 			wildward: true,
 		},
 		{
 			name:     "TestPhraseTerm06",
 			input:    `"dsada\* 78"`,
-			want:     &PhraseTerm{Value: `"dsada\* 78"`},
+			want:     &PhraseTerm{Value: []string{`dsada\*`, ` `, `78`}},
 			values:   `dsada\* 78`,
 			wildward: false,
 		},
 		{
 			name:     "TestPhraseTerm07",
 			input:    `"dsada\? 78"`,
-			want:     &PhraseTerm{Value: `"dsada\? 78"`},
+			want:     &PhraseTerm{Value: []string{`dsada\?`, ` `, `78`}},
 			values:   `dsada\? 78`,
 			wildward: false,
 		},
 		{
 			name:     "TestPhraseTerm09",
 			input:    `"\*dsada 78"`,
-			want:     &PhraseTerm{Value: `"\*dsada 78"`},
+			want:     &PhraseTerm{Value: []string{`\*dsada`, ` `, `78`}},
 			values:   `\*dsada 78`,
 			wildward: false,
 		},
 		{
 			name:     "TestPhraseTerm10",
 			input:    `"\?dsada 78"`,
-			want:     &PhraseTerm{Value: `"\?dsada 78"`},
+			want:     &PhraseTerm{Value: []string{`\?dsada`, ` `, `78`}},
 			values:   `\?dsada 78`,
 			wildward: false,
 		},
@@ -172,12 +172,12 @@ func TestRegexpTerm(t *testing.T) {
 		{
 			name:  "RegexpTerm01",
 			input: `/dsada 78/`,
-			want:  &RegexpTerm{Value: `/dsada 78/`},
+			want:  &RegexpTerm{Value: []string{`dsada`, ` `, `78`}},
 		},
 		{
 			name:  "RegexpTerm02",
 			input: `/\d+\/\d+\.\d+.+/`,
-			want:  &RegexpTerm{Value: `/\d+\/\d+\.\d+.+/`},
+			want:  &RegexpTerm{Value: []string{`\`, `d`, `+`, `\/`, `\`, `d`, `+`, `\`, `.`, `\`, `d`, `+`, `.`, `+`}},
 		},
 	}
 
@@ -296,12 +296,12 @@ func TestDRangeTerm(t *testing.T) {
 			want: &DRangeTerm{
 				LBRACKET: "{",
 				LValue:   &bnd.RangeValue{InfinityVal: "*"},
-				RValue:   &bnd.RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+				RValue:   &bnd.RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
 				RBRACKET: "}",
 			},
 			bound: &bnd.Bound{
 				LeftExclude:  &bnd.RangeValue{InfinityVal: "*"},
-				RightExclude: &bnd.RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+				RightExclude: &bnd.RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
 			},
 		},
 	}
@@ -335,20 +335,20 @@ func TestSRangeTerm(t *testing.T) {
 	var testCases = []testCase{
 		{
 			name:  "SRangeTerm01",
-			input: `<="dsada 78"`,
-			want:  &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{PhraseValue: `"dsada 78"`}},
+			input: `<="dsada\455 78"`,
+			want:  &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{PhraseValue: []string{`dsada`, `\`, `455`, ` `, `78`}}},
 			bound: &bnd.Bound{
 				LeftExclude:  &bnd.RangeValue{InfinityVal: "*"},
-				RightInclude: &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+				RightInclude: &bnd.RangeValue{PhraseValue: []string{`dsada`, `\`, `455`, ` `, `78`}},
 			},
 		},
 		{
 			name:  "SRangeTerm02",
-			input: `<"dsada 78"`,
-			want:  &SRangeTerm{Symbol: "<", Value: &bnd.RangeValue{PhraseValue: `"dsada 78"`}},
+			input: `<"dsada\\ 78"`,
+			want:  &SRangeTerm{Symbol: "<", Value: &bnd.RangeValue{PhraseValue: []string{`dsada\\`, ` `, `78`}}},
 			bound: &bnd.Bound{
 				LeftExclude:  &bnd.RangeValue{InfinityVal: "*"},
-				RightExclude: &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+				RightExclude: &bnd.RangeValue{PhraseValue: []string{`dsada\\`, ` `, `78`}},
 			},
 		},
 		{

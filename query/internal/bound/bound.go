@@ -10,17 +10,21 @@ type Bound struct {
 	RightExclude *RangeValue `json:"right_exclude"`
 }
 
+type PhraseValue struct {
+	Value []string `parser:"" json:"value"`
+}
+
 type RangeValue struct {
-	PhraseValue string   `parser:"  @STRING" json:"phrase_value"`
-	InfinityVal string   `parser:"| @('*')" json:"infinity_val"`
+	InfinityVal string   `parser:"  @('*')" json:"infinity_val"`
+	PhraseValue []string `parser:"| QUOTE @( REVERSE QUOTE | !QUOTE )* QUOTE" json:"phrase_value"`
 	SingleValue []string `parser:"| @(IDENT|PLUS|MINUS)+" json:"simple_value"`
 }
 
 func (v *RangeValue) String() string {
 	if v == nil {
 		return ""
-	} else if len(v.PhraseValue) != 0 {
-		return v.PhraseValue
+	} else if v.PhraseValue != nil {
+		return strings.Join(v.PhraseValue, "")
 	} else if len(v.InfinityVal) != 0 {
 		return v.InfinityVal
 	} else if len(v.SingleValue) != 0 {
