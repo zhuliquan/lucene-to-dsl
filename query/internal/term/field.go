@@ -3,7 +3,7 @@ package term
 import "strings"
 
 type Field struct {
-	Value []string `parser:"@(IDENT|MINUS)+"`
+	Value []string `parser:"@(IDENT|MINUS|NUMBER|DOT)+"`
 }
 
 func (f *Field) String() string {

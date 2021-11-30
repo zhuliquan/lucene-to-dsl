@@ -9,7 +9,7 @@ import (
 
 // simple term: is a single term without escape char and whitespace
 type SingleTerm struct {
-	Value    []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
+	Value    []string `parser:"@(IDENT|NUMBER|DOT|WILDCARD)+" json:"value"`
 	wildcard int8
 }
 

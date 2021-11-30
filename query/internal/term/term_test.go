@@ -46,17 +46,17 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm06",
 			input: `\/dsada\/\ dasda80980?*`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`, `*`}}}},
 		},
 		{
 			name:  "TestTerm07",
 			input: `\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`}},
 		},
 		{
 			name:  "TestTerm08",
 			input: `\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`}},
 		},
 		{
 			name:  "TestTerm10",
@@ -192,7 +192,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<=",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 				},
 			},
@@ -204,7 +204,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 					BoostSymbol: "^08",
 				},
@@ -217,7 +217,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: ">",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 					BoostSymbol: "^080",
 				},

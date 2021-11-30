@@ -26,21 +26,21 @@ func TestSingleTerm(t *testing.T) {
 		{
 			name:     "TestSimpleTerm01",
 			input:    `\/dsada\/\ dasda80980?`,
-			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`}},
+			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`}},
 			values:   `\/dsada\/\ dasda80980?`,
 			wildward: true,
 		},
 		{
 			name:     "TestSimpleTerm02",
 			input:    `\/dsada\/\ dasda80980*`,
-			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `*`}},
+			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `*`}},
 			values:   `\/dsada\/\ dasda80980*`,
 			wildward: true,
 		},
 		{
 			name:     "TestSimpleTerm03",
 			input:    `\/dsada\/\ dasda8\?0980\*`,
-			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda8\?0980\*`}},
+			want:     &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `8`, `\?`, `0980`, `\*`}},
 			values:   `\/dsada\/\ dasda8\?0980\*`,
 			wildward: false,
 		},
@@ -354,18 +354,18 @@ func TestSRangeTerm(t *testing.T) {
 		{
 			name:  "SRangeTerm03",
 			input: `>=dsada\ 78`,
-			want:  &SRangeTerm{Symbol: ">=", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}}},
+			want:  &SRangeTerm{Symbol: ">=", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}}},
 			bound: &bnd.Bound{
-				LeftInclude:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+				LeftInclude:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 				RightExclude: &bnd.RangeValue{InfinityVal: "*"},
 			},
 		},
 		{
 			name:  "SRangeTerm04",
 			input: `>dsada\ 78`,
-			want:  &SRangeTerm{Symbol: ">", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}}},
+			want:  &SRangeTerm{Symbol: ">", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}}},
 			bound: &bnd.Bound{
-				LeftExclude:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+				LeftExclude:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 				RightExclude: &bnd.RangeValue{InfinityVal: "*"},
 			},
 		},

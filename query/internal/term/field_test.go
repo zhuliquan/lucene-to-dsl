@@ -24,7 +24,7 @@ func TestField(t *testing.T) {
 		{
 			name:  "TestField01",
 			input: `1\+1`,
-			want:  &Field{Value: []string{`1\+1`}},
+			want:  &Field{Value: []string{`1`, `\+`, `1`}},
 		},
 		{
 			name:  "TestField02",
@@ -34,12 +34,12 @@ func TestField(t *testing.T) {
 		{
 			name:  "TestField03",
 			input: `x.y`,
-			want:  &Field{Value: []string{`x.y`}},
+			want:  &Field{Value: []string{`x`, `.`, `y`}},
 		},
 		{
 			name:  "TestField04",
 			input: `x.y-z`,
-			want:  &Field{Value: []string{`x.y`, `-`, `z`}},
+			want:  &Field{Value: []string{`x`, `.`, `y`, `-`, `z`}},
 		},
 	}
 	for _, tt := range testCases {

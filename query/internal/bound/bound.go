@@ -17,7 +17,7 @@ type PhraseValue struct {
 type RangeValue struct {
 	InfinityVal string   `parser:"  @('*')" json:"infinity_val"`
 	PhraseValue []string `parser:"| QUOTE @( REVERSE QUOTE | !QUOTE )* QUOTE" json:"phrase_value"`
-	SingleValue []string `parser:"| @(IDENT|PLUS|MINUS)+" json:"simple_value"`
+	SingleValue []string `parser:"| @(IDENT|NUMBER|DOT|PLUS|MINUS)+" json:"simple_value"`
 }
 
 func (v *RangeValue) String() string {
