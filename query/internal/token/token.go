@@ -16,15 +16,27 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "IDENT",
-		Pattern: `([^-\!\s:\|\&"\?\*\\\^~\(\)\{\}\[\]\+\/><=]|\.|(\\(\s|:|\&|\||\?|\*|\\|\^|~|\(|\)|\!|\[|\]|\{|\}|\+|-|\/|>|<|=)))+`,
+		Pattern: `([^-\!\s:\|\&"\?\*\\\^~\(\)\{\}\[\]\+\/><=0-9\.]|(\\(\s|:|\&|\||\?|\*|\\|\^|~|\(|\)|\!|\[|\]|\{|\}|\+|-|\/|>|<|=)))+`,
 	},
 	{
-		Name:    "STRING",
-		Pattern: `"(\\"|[^"])*"`,
+		Name:    "DOT",
+		Pattern: `\.`,
 	},
 	{
-		Name:    "REGEXP",
-		Pattern: `\/(\\\/|[^\/])+\/`,
+		Name:    "NUMBER",
+		Pattern: `[0-9]+`,
+	},
+	{
+		Name:    "QUOTE",
+		Pattern: `"`,
+	},
+	{
+		Name:    "SLASH",
+		Pattern: `\/`,
+	},
+	{
+		Name:    "REVERSE",
+		Pattern: `\\`,
 	},
 	{
 		Name:    "COLON",
@@ -43,12 +55,14 @@ var rules = []stateful.Rule{
 		Pattern: `-`,
 	},
 	{
-		Name:    "FUZZY",
-		Pattern: `~\d*`,
+		Name: "FUZZY",
+		// Pattern: `~\d*`,
+		Pattern: `~`,
 	},
 	{
-		Name:    "BOOST",
-		Pattern: `\^(\d+(\.\d+)?)`,
+		Name: "BOOST",
+		// Pattern: `\^(\d+(\.\d+)?)`,
+		Pattern: `\^`,
 	},
 	{
 		Name:    "WILDCARD",
@@ -128,8 +142,11 @@ type Token struct {
 	EOL        string `parser:"  @EOL" json:"eol"`
 	WHITESPACE string `parser:"| @WHITESPACE" json:"whitespace"`
 	IDENT      string `parser:"| @IDENT" json:"ident"`
-	STRING     string `parser:"| @STRING" json:"string"`
-	REGEXP     string `parser:"| @REGEXP" json:"regexp"`
+	DOT        string `parser:"| @DOT" json:"dot"`
+	NUMBER     string `parser:"| @NUMBER" json:"number"`
+	QUOTE      string `parser:"| @QUOTE" json:"quote"`
+	SLASH      string `parser:"| @SLASH" json:"slash"`
+	REVERSE    string `parser:"| @REVERSE" json:"reverse"`
 	COLON      string `parser:"| @COLON" json:"colon"`
 	COMPARE    string `parser:"| @COMPARE" json:"compare"`
 	PLUS       string `parser:"| @PLUS" json:"plus"`
@@ -149,53 +166,61 @@ type Token struct {
 }
 
 func (t *Token) String() string {
+	var res = ""
 	if t == nil {
-		return ""
+		res = ""
 	} else if t.EOL != "" {
-		return t.EOL
+		res = t.EOL
 	} else if t.WHITESPACE != "" {
-		return t.WHITESPACE
+		res = t.WHITESPACE
 	} else if t.IDENT != "" {
-		return t.IDENT
-	} else if t.STRING != "" {
-		return t.STRING
-	} else if t.REGEXP != "" {
-		return t.REGEXP
+		res = t.IDENT
+	} else if t.DOT != "" {
+		res = t.DOT
+	} else if t.NUMBER != "" {
+		res = t.NUMBER
+	} else if t.QUOTE != "" {
+		res = t.QUOTE
+	} else if t.SLASH != "" {
+		res = t.SLASH
+	} else if t.REVERSE != "" {
+		res = t.REVERSE
 	} else if t.COLON != "" {
-		return t.COLON
+		res = t.COLON
 	} else if t.COMPARE != "" {
-		return t.COMPARE
+		res = t.COMPARE
 	} else if t.PLUS != "" {
-		return t.PLUS
+		res = t.PLUS
 	} else if t.MINUS != "" {
-		return t.MINUS
+		res = t.MINUS
 	} else if t.FUZZY != "" {
-		return t.FUZZY
+		res = t.FUZZY
 	} else if t.BOOST != "" {
-		return t.BOOST
+		res = t.BOOST
 	} else if t.WILDCARD != "" {
-		return t.WILDCARD
+		res = t.WILDCARD
 	} else if t.LPAREN != "" {
-		return t.LPAREN
+		res = t.LPAREN
 	} else if t.RPAREN != "" {
-		return t.RPAREN
+		res = t.RPAREN
 	} else if t.LBRACK != "" {
-		return t.LBRACK
+		res = t.LBRACK
 	} else if t.RBRACK != "" {
-		return t.RBRACK
+		res = t.RBRACK
 	} else if t.LBRACE != "" {
-		return t.LBRACE
+		res = t.LBRACE
 	} else if t.RBRACE != "" {
-		return t.RBRACE
+		res = t.RBRACE
 	} else if t.AND != "" {
-		return t.AND
+		res = t.AND
 	} else if t.SOR != "" {
-		return t.SOR
+		res = t.SOR
 	} else if t.NOT != "" {
-		return t.NOT
+		res = t.NOT
 	} else {
 		return ""
 	}
+	return res + "$"
 }
 
 func (t *Token) GetTokenType() TokenType {
@@ -207,10 +232,16 @@ func (t *Token) GetTokenType() TokenType {
 		return WHITESPACE_TOKEN_TYPE
 	} else if t.IDENT != "" {
 		return IDENT_TOKEN_TYPE
-	} else if t.STRING != "" {
-		return STRING_TOKEN_TYPE
-	} else if t.REGEXP != "" {
-		return REGEXP_TOKEN_TYPE
+	} else if t.DOT != "" {
+		return DOT_TOKEN_TYPE
+	} else if t.NUMBER != "" {
+		return NUMBER_TOKEN_TYPE
+	} else if t.QUOTE != "" {
+		return QUOTE_TOKEN_TYPE
+	} else if t.SLASH != "" {
+		return SLASH_TOKEN_TYPE
+	} else if t.REVERSE != "" {
+		return REVERSE_TOKEN_TYPE
 	} else if t.COLON != "" {
 		return COLON_TOKEN_TYPE
 	} else if t.COMPARE != "" {

@@ -10,7 +10,7 @@ import (
 type RangeTerm struct {
 	SRangeTerm  *SRangeTerm `parser:"( @@ " json:"s_range_term"`
 	DRangeTerm  *DRangeTerm `parser:"| @@)" json:"d_range_term"`
-	BoostSymbol string      `parser:"@BOOST?" json:"boost_symbol"`
+	BoostSymbol string      `parser:"@(BOOST NUMBER (DOT NUMBER)?)?" json:"boost_symbol"`
 }
 
 func (t *RangeTerm) GetTermType() TermType {
@@ -63,8 +63,8 @@ func (t *RangeTerm) Boost() float64 {
 type FuzzyTerm struct {
 	SingleTerm  *SingleTerm `parser:"( @@ " json:"single_term"`
 	PhraseTerm  *PhraseTerm `parser:"| @@)" json:"phrase_term"`
-	FuzzySymbol string      `parser:"( @FUZZY  " json:"fuzzy_symbol"`
-	BoostSymbol string      `parser:"| @BOOST)?" json:"boost_symbol"`
+	FuzzySymbol string      `parser:"( @(FUZZY NUMBER?)  " json:"fuzzy_symbol"`
+	BoostSymbol string      `parser:"| @(BOOST NUMBER (DOT NUMBER)?))?" json:"boost_symbol"`
 }
 
 func (t *FuzzyTerm) GetTermType() TermType {

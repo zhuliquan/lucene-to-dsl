@@ -138,7 +138,7 @@ func (t *ParenTermGroup) String() string {
 // term group: join sum prefix term group together
 type TermGroup struct {
 	LogicTermGroup *LogicTermGroup `parser:"LPAREN WHITESPACE* @@ WHITESPACE* RPAREN" json:"logic_term_group"`
-	BoostSymbol    string          `parser:"@BOOST?" json:"boost_symbol"`
+	BoostSymbol    string          `parser:"@(BOOST NUMBER (DOT NUMBER)?)?" json:"boost_symbol"`
 }
 
 func (t *TermGroup) String() string {

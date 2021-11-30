@@ -5,12 +5,11 @@ import (
 	"strings"
 
 	bnd "github.com/zhuliquan/lucene-to-dsl/query/internal/bound"
-	"github.com/zhuliquan/lucene-to-dsl/query/internal/token"
 )
 
 // simple term: is a single term without escape char and whitespace
 type SingleTerm struct {
-	Value    []string `parser:"@(IDENT|WILDCARD)+" json:"value"`
+	Value    []string `parser:"@(IDENT|NUMBER|DOT|WILDCARD)+" json:"value"`
 	wildcard int8
 }
 
@@ -49,8 +48,8 @@ func (t *SingleTerm) haveWildcard() bool {
 	} else if t.wildcard == 1 {
 		return true
 	} else {
-		for i := 0; i < len(t.Value); i++ {
-			if t.Value[i] == "?" || t.Value[i] == "*" {
+		for _, tk := range t.Value {
+			if tk == "*" || tk == "?" {
 				t.wildcard = 1
 				return true
 			}
@@ -63,7 +62,7 @@ func (t *SingleTerm) haveWildcard() bool {
 
 // phrase term: a series of terms be surrounded with quotation, for instance "foo bar".
 type PhraseTerm struct {
-	Value    string `parser:"@STRING" json:"value"`
+	Value    []string `parser:"QUOTE @( REVERSE QUOTE | !QUOTE )* QUOTE" json:"value"`
 	wildcard int8
 }
 
@@ -82,7 +81,7 @@ func (t *PhraseTerm) ValueS() string {
 	if t == nil || len(t.Value) == 0 {
 		return ""
 	} else {
-		return t.Value[1 : len(t.Value)-1]
+		return strings.Join(t.Value, "")
 	}
 }
 
@@ -90,7 +89,7 @@ func (t *PhraseTerm) String() string {
 	if t == nil {
 		return ""
 	} else {
-		return t.Value
+		return "\"" + strings.Join(t.Value, "") + "\""
 	}
 }
 
@@ -102,8 +101,8 @@ func (t *PhraseTerm) haveWildcard() bool {
 	} else if t.wildcard == 1 {
 		return true
 	} else {
-		for _, x := range token.Scan(t.Value[1 : len(t.Value)-1]) {
-			if x.GetTokenType() == token.WILDCARD_TOKEN_TYPE {
+		for _, tk := range t.Value {
+			if tk == "*" || tk == "?" {
 				t.wildcard = 1
 				return true
 			}
@@ -116,7 +115,7 @@ func (t *PhraseTerm) haveWildcard() bool {
 
 // a regexp term is surrounded be slash, for instance /\d+\.?\d+/ in here if you want present '/' you should type '\/'
 type RegexpTerm struct {
-	Value string `parser:"@REGEXP" json:"value"`
+	Value []string `parser:"SLASH @( REVERSE SLASH | !SLASH )+ SLASH" json:"value"`
 }
 
 func (t *RegexpTerm) GetTermType() TermType {
@@ -130,7 +129,7 @@ func (t *RegexpTerm) ValuesS() string {
 	if t == nil || len(t.Value) == 0 {
 		return ""
 	} else {
-		return t.Value[1 : len(t.Value)-1]
+		return strings.Join(t.Value, "")
 	}
 }
 
@@ -138,7 +137,7 @@ func (t *RegexpTerm) String() string {
 	if t == nil {
 		return ""
 	} else {
-		return t.Value
+		return "/" + strings.Join(t.Value, "") + "/"
 	}
 }
 

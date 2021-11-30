@@ -114,7 +114,7 @@ func (t *PrefixTermGroup) GetTermType() TermType {
 
 type TermGroup struct {
 	PrefixTermGroup *PrefixTermGroup `parser:"LPAREN WHITESPACE* @@ WHITESPACE* RPAREN" json:"prefix_term_group"`
-	BoostSymbol     string           `parser:"@BOOST?" json:"boost_symbol"`
+	BoostSymbol     string           `parser:"@(BOOST NUMBER (DOT NUMBER)?)?" json:"boost_symbol"`
 }
 
 func (t *TermGroup) String() string {

@@ -26,37 +26,37 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm01",
 			input: `"dsada 78"`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: []string{`dsada`, ` `, `78`}}}},
 		},
 		{
 			name:  "TestTerm02",
 			input: `"dsada 78"^08`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, BoostSymbol: "^08"}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: []string{`dsada`, ` `, `78`}}, BoostSymbol: "^08"}},
 		},
 		{
 			name:  "TestTerm03",
 			input: `"dsada 78"~8`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: `"dsada 78"`}, FuzzySymbol: "~8"}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{PhraseTerm: &PhraseTerm{Value: []string{`dsada`, ` `, `78`}}, FuzzySymbol: "~8"}},
 		},
 		{
 			name:  "TestTerm05",
 			input: `/dsada 78/`,
-			want:  &Term{RegexpTerm: &RegexpTerm{Value: `/dsada 78/`}},
+			want:  &Term{RegexpTerm: &RegexpTerm{Value: []string{`dsada`, ` `, `78`}}},
 		},
 		{
 			name:  "TestTerm06",
 			input: `\/dsada\/\ dasda80980?*`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`}}}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`, `*`}}}},
 		},
 		{
 			name:  "TestTerm07",
 			input: `\/dsada\/\ dasda80980?*\^\^^08`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`, `*`, `\^\^`}}, BoostSymbol: `^08`}},
 		},
 		{
 			name:  "TestTerm08",
 			input: `\/dsada\/\ dasda80980?*\^\^~8`,
-			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`}},
+			want:  &Term{FuzzyTerm: &FuzzyTerm{SingleTerm: &SingleTerm{Value: []string{`\/dsada\/\ dasda`, `80980`, `?`, `*`, `\^\^`}}, FuzzySymbol: `~8`}},
 		},
 		{
 			name:  "TestTerm10",
@@ -142,7 +142,7 @@ func TestTerm(t *testing.T) {
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "{",
 					LValue:   &bnd.RangeValue{InfinityVal: "*"},
-					RValue:   &bnd.RangeValue{PhraseValue: "\"2012-01-01 09:08:16\""},
+					RValue:   &bnd.RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
 					RBRACKET: "}",
 				},
 			}},
@@ -154,7 +154,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<=",
-						Value:  &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+						Value:  &bnd.RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
 					},
 				},
 			},
@@ -166,7 +166,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<",
-						Value:  &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+						Value:  &bnd.RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
 					},
 					BoostSymbol: "^08",
 				},
@@ -179,7 +179,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: ">",
-						Value:  &bnd.RangeValue{PhraseValue: `"dsada 78"`},
+						Value:  &bnd.RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
 					},
 					BoostSymbol: "^080",
 				},
@@ -192,7 +192,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<=",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 				},
 			},
@@ -204,7 +204,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 					BoostSymbol: "^08",
 				},
@@ -217,7 +217,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: ">",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ 78`}},
+						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 					BoostSymbol: "^080",
 				},
@@ -226,7 +226,7 @@ func TestTerm(t *testing.T) {
 		{
 			name:  "TestTerm25",
 			input: `/\d+\d+\.\d+.+/`,
-			want:  &Term{RegexpTerm: &RegexpTerm{Value: `/\d+\d+\.\d+.+/`}},
+			want:  &Term{RegexpTerm: &RegexpTerm{Value: []string{`\`, `d`, `+`, `\`, `d`, `+`, `\`, `.`, `\`, `d`, `+`, `.`, `+`}}},
 		},
 		{
 			name:  "TestTerm26",
