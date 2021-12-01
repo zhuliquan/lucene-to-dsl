@@ -121,7 +121,7 @@ func TestLexer(t *testing.T) {
 		},
 		{
 			name:  "TestScan03",
-			input: `\!\:.\ \\:<=<(you OR !& \!\&*\** [{ you\[\]+ you?}])^090~9~ouo |`,
+			input: `\!\:.\ \\:<=<(you OR !& \!\&*\** [{ you\[\]+ you?}])^090~9~ouo |!!&&`,
 			want: []*Token{
 				{IDENT: `\!\:`},
 				{DOT: `.`},
@@ -161,6 +161,10 @@ func TestLexer(t *testing.T) {
 				{IDENT: "ouo"},
 				{WHITESPACE: " "},
 				{SOR: "|"},
+				{NOT: "!"},
+				{NOT: "!"},
+				{AND: "&"},
+				{AND: "&"},
 			},
 			typeS: []TokenType{
 				IDENT_TOKEN_TYPE,
@@ -201,6 +205,10 @@ func TestLexer(t *testing.T) {
 				IDENT_TOKEN_TYPE,
 				WHITESPACE_TOKEN_TYPE,
 				SOR_TOKEN_TYPE,
+				NOT_TOKEN_TYPE,
+				NOT_TOKEN_TYPE,
+				AND_TOKEN_TYPE,
+				AND_TOKEN_TYPE,
 			},
 		},
 		{

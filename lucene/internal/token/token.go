@@ -16,7 +16,7 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "IDENT",
-		Pattern: `([^-\!\s:\|\&"\?\*\\\^~\(\)\{\}\[\]\+\/><=0-9\.]|(\\(\s|:|\&|\||\?|\*|\\|\^|~|\(|\)|\!|\[|\]|\{|\}|\+|-|\/|>|<|=)))+`,
+		Pattern: `([^-!\s:\|&"\?\*\\\^~\(\)\{\}\[\]\+\/><=0-9\.]|(\\(\s|:|&|\||\?|\*|\\|\^|~|\(|\)|!|\[|\]|\{|\}|\+|-|\/|>|<|=)))+`,
 	},
 	{
 		Name:    "DOT",
@@ -55,13 +55,11 @@ var rules = []stateful.Rule{
 		Pattern: `-`,
 	},
 	{
-		Name: "FUZZY",
-		// Pattern: `~\d*`,
+		Name:    "FUZZY",
 		Pattern: `~`,
 	},
 	{
-		Name: "BOOST",
-		// Pattern: `\^(\d+(\.\d+)?)`,
+		Name:    "BOOST",
 		Pattern: `\^`,
 	},
 	{
@@ -94,7 +92,7 @@ var rules = []stateful.Rule{
 	},
 	{
 		Name:    "AND",
-		Pattern: `\&`,
+		Pattern: `&`,
 	},
 	{
 		Name:    "SOR",
