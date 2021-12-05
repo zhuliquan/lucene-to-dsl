@@ -80,8 +80,12 @@ const (
 	UNKNOWN_META_UNIT_TYPE MetaUnitType = ""
 
 	// time unit
+	YEAR        MetaUnitType = "y"
+	MONTH       MetaUnitType = "M"
+	w           MetaUnitType = "w"
 	DAY         MetaUnitType = "d"
-	HOUR        MetaUnitType = "h"
+	LOWER_HOUR  MetaUnitType = "h"
+	UPPER_HOUR  MetaUnitType = "H"
 	MINUTE      MetaUnitType = "m"
 	SECOND      MetaUnitType = "s"
 	MILLISECOND MetaUnitType = "ms"
@@ -110,6 +114,8 @@ const (
 	YARD_FULL          MetaUnitType = "yards"
 	FEET               MetaUnitType = "ft"
 	FEET_FULL          MetaUnitType = "feet"
+	INCH               MetaUnitType = "in"
+	INCH_FULL          MetaUnitType = "inch"
 	KILOMETER          MetaUnitType = "km"
 	KILOMETER_FULL     MetaUnitType = "kilometers"
 	METER              MetaUnitType = "m"
@@ -131,4 +137,12 @@ const (
 	GAUGE   MetaMetricsType = "gauge"
 	COUNTER MetaMetricsType = "counter"
 	SUMMARY MetaMetricsType = "summary"
+)
+
+type MappingType string
+
+const (
+	DYNAMIC_Mapping MappingType = "true"
+	STATIC_MAPPING  MappingType = "false"
+	STRICT_MAPPING  MappingType = "strict"
 )
