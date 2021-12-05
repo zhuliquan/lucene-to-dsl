@@ -82,7 +82,7 @@ const (
 	// time unit
 	YEAR        MetaUnitType = "y"
 	MONTH       MetaUnitType = "M"
-	w           MetaUnitType = "w"
+	Week        MetaUnitType = "w"
 	DAY         MetaUnitType = "d"
 	LOWER_HOUR  MetaUnitType = "h"
 	UPPER_HOUR  MetaUnitType = "H"
