@@ -76,8 +76,8 @@ ident_char = ( -( escape | digit | dot | whitespace | quote ) | '\\' , (escape |
 digit      = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
 whitespace = '\t' | '\r' | '\f' | ' ' ;
 quote      = '"' ;
-
-eol        = '\n' ;dot        = '.' ;
+eol        = '\n' ;
+dot        = '.' ;
 ```
 
 ### mapping of field
