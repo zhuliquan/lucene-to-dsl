@@ -66,6 +66,7 @@ const (
 type MetricsType string
 
 const (
+	UNKNOWN_METRICS_TYPE     MetricsType = ""
 	MAX_METRICS_TYPE         MetricsType = "max"
 	MIN_METRICS_TYPE         MetricsType = "min"
 	SUM_METRICS_TYPE         MetricsType = "sum"
@@ -76,8 +77,8 @@ const (
 type MetaUnitType string
 
 const (
-	UNKNOWN_UNIT_TYPE  MetaUnitType = ""
-	
+	UNKNOWN_META_UNIT_TYPE MetaUnitType = ""
+
 	// time unit
 	DAY         MetaUnitType = "d"
 	HOUR        MetaUnitType = "h"
@@ -122,4 +123,12 @@ const (
 	NAUTICAL_MILE_FULL MetaUnitType = "nauticalmiles"
 )
 
-type MetaMetricsType 
+type MetaMetricsType string
+
+const (
+	UNKNOWN_META_METRICS_TYPE MetaMetricsType = ""
+
+	GAUGE   MetaMetricsType = "gauge"
+	COUNTER MetaMetricsType = "counter"
+	SUMMARY MetaMetricsType = "summary"
+)
