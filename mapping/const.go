@@ -72,3 +72,54 @@ const (
 	AVG_METRICS_TYPE         MetricsType = "avg"
 	VALUE_COUNT_METRICS_TYPE MetricsType = "value_count"
 )
+
+type MetaUnitType string
+
+const (
+	UNKNOWN_UNIT_TYPE  MetaUnitType = ""
+	
+	// time unit
+	DAY         MetaUnitType = "d"
+	HOUR        MetaUnitType = "h"
+	MINUTE      MetaUnitType = "m"
+	SECOND      MetaUnitType = "s"
+	MILLISECOND MetaUnitType = "ms"
+	MICROSECOND MetaUnitType = "micros"
+	NANOSECOND  MetaUnitType = "nanos"
+
+	// byte size unit for storage size
+	BYTE     MetaUnitType = "b"
+	KILOBYTE MetaUnitType = "kb"
+	MEGABYTE MetaUnitType = "mb"
+	GIGABYTE MetaUnitType = "gb"
+	TERABYTE MetaUnitType = "tb"
+	PETABYTE MetaUnitType = "pb"
+
+	// unit-less quantities
+	BILO MetaUnitType = "k"
+	MEGA MetaUnitType = "m"
+	GIGA MetaUnitType = "g"
+	TERA MetaUnitType = "t"
+	PETA MetaUnitType = "p"
+
+	// distance unit
+	MILE               MetaUnitType = "mi"
+	MILE_FULL          MetaUnitType = "miles"
+	YARD               MetaUnitType = "yd"
+	YARD_FULL          MetaUnitType = "yards"
+	FEET               MetaUnitType = "ft"
+	FEET_FULL          MetaUnitType = "feet"
+	KILOMETER          MetaUnitType = "km"
+	KILOMETER_FULL     MetaUnitType = "kilometers"
+	METER              MetaUnitType = "m"
+	METER_FULL         MetaUnitType = "meters"
+	CENTIMETER         MetaUnitType = "cm"
+	CENTIMETER_FULL    MetaUnitType = "centimeters"
+	MILLIMETER         MetaUnitType = "mm"
+	MILLIMETER_FULL    MetaUnitType = "millimeters"
+	NAUTICAL_MILE      MetaUnitType = "NM"
+	NAUTICAL_MILE_1    MetaUnitType = "nmi"
+	NAUTICAL_MILE_FULL MetaUnitType = "nauticalmiles"
+)
+
+type MetaMetricsType 
