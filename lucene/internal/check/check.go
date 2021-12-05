@@ -5,7 +5,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // check date field value
@@ -14,7 +13,6 @@ import (
 //      format: yyyy-MM-dd HH:mm:ss||[+-](\d+y\d+w\d+M\d+d\d+H\d+m\d+s)/[ywMdHms] 1980-07-01 09:08:00||+7w/d
 //      format: now[+-](\d+y\d+w\d+M\d+d\d+H\d+m\d+s)/\d+[ywMdHms]  now+7y/d
 func CheckDateValue(dateValue string) error {
-	time.ParseDuration()
 	return nil
 }
 
