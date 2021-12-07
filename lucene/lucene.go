@@ -1,11 +1,51 @@
 package lucene
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/alecthomas/participle"
+	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
 	tm "github.com/zhuliquan/lucene-to-dsl/lucene/internal/term"
+	tk "github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
 )
+
+var LuceneParser *participle.Parser
+
+func init() {
+	var err error
+	LuceneParser, err = participle.Build(
+		&Lucene{},
+		participle.Lexer(tk.Lexer),
+	)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ParseLucene(queryString string) (*Lucene, error) {
+	var (
+		err error
+		lqy = &Lucene{}
+	)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("failed to parse lucene, err: %+v", r)
+		}
+	}()
+
+	if err = LuceneParser.ParseString(queryString, lqy); err != nil {
+		return nil, err
+	} else {
+		return lqy, nil
+	}
+}
+
+type Query interface {
+	String() string
+	ToASTNode() (dsl.ASTNode, error)
+}
 
 // lucene: consist of or query and or symbol query
 type Lucene struct {
