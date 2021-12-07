@@ -37,9 +37,36 @@ type FieldMapping struct {
 	IncludeInAll        bool         `json:"include_in_all,omitempty"`
 	DepthLimit          int          `json:"depth_limit,omitempty"`
 	EagerGlobalOrdinals bool         `json:"eager_global_ordinals,omitempty,"`
-	IgnoreAbove         string       `json:"ignore_above,omitempty"`
-	IgnoreMalformed     bool         `json:"ignore_malformed,omitempty"`
-	Format              string       `json:"format,omitempty"`
+	// Strings longer than the ignore_above setting will not be indexed or stored.
+	// For arrays of strings, ignore_above will be applied for each array element
+	// separately and string elements longer than ignore_above will not be indexed or stored.
+	// All strings/array elements will still be present in the _source field,
+	// if the latter is enabled which is the default in Elasticsearch.
+	IgnoreAbove string `json:"ignore_above,omitempty"`
+
+	// Sometimes you don’t have much control over the data that you receive.
+	// One user may send a login field that is a date, and another sends a login field that is an email address.
+	// Trying to index the wrong data type into a field throws an exception by default,
+	// and rejects the whole document. The ignore_malformed parameter,
+	// if set to true, allows the exception to be ignored. The malformed field is not indexed,
+	// but other fields in the document are processed normally.
+	IgnoreMalformed bool `json:"ignore_malformed,omitempty"`
+
+	// In JSON documents, dates are represented as strings.
+	// Elasticsearch uses a set of preconfigured formats to recognize and parse these strings into a long value representing milliseconds-since-the-epoch in UTC.
+	// Besides the built-in formats, your own custom formats can be specified using the familiar yyyy/MM/dd syntax:
+	Format TimeFormat `json:"format,omitempty"`
+
+	// 	Elasticsearch tries to index all of the fields you give it,
+	// but sometimes you want to just store the field without indexing it.
+	// For instance, imagine that you are using Elasticsearch as a web session store.
+	// You may want to index the session ID and last update time,
+	//  but you don’t need to query or run aggregations on the session data itself.
+	// The enabled setting, which can be applied only to the top-level mapping definition and to object fields,
+	// causes Elasticsearch to skip parsing of the contents of the field entirely. The JSON can still be retrieved from the _source field, but it is not searchable or stored in any other way:
+	Enabled bool `json:"enabled"`
+
+	Coerce bool `json:"coerce,omitempty"`
 
 	// 自定义
 	UpperCase bool `json:"upper_case,omitempty"`
