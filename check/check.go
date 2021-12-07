@@ -54,7 +54,3 @@ func CheckKeyword(keyword string) error {
 		return fmt.Errorf("keyword:'%s' is invalid", keyword)
 	}
 }
-
-func CheckGeoValue(geoValue string) error {
-	return nil
-}
