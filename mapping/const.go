@@ -2,6 +2,37 @@ package mapping
 
 type FieldType string
 
+var LuceneSupportFieldType = []FieldType{
+	BINARY_FIELD_TYPE,
+	KEYWORD_FIELD_TYPE,
+	CONSTANT_KEYWORD_FIELD_TYPE,
+	WILDCARD_FIELD_TYPE,
+	TEXT_FIELD_TYPE,
+	BOOLEAN_FIELD_TYPE,
+	BYTE_FIELD_TYPE,
+	SHORT_FIELD_TYPE,
+	INTEGER_FIELD_TYPE,
+	LONG_FIELD_TYPE,
+	UNSIGNED_LONG_FIELD_TYPE,
+	HALF_FLOAT_FIELD_TYPE,
+	FLOAT_FIELD_TYPE,
+	DOUBLE_FIELD_TYPE,
+	SCALED_FLOAT_FIELD_TYPE,
+	IP_FIELD_TYPE,
+	DATE_FIELD_TYPE,
+	IP_RANGE_FIELD_TYPE,
+	DATE_RANGE_FIELD_TYPE,
+	INTERGER_RANGE_FIELD_TYPE,
+	LONG_RANGE_FIELD_TYPE,
+	FLOAT_RANGE_FIELD_TYPE,
+	DOUBLE_RANGE_FIELD_TYPE,
+	ALIAS_FIELD_TYPE,
+	OBJECT_FIELD_TYPE,
+	FLATTENED_FIELD_TYPE,
+	NESTED_FIELD_TYPE,
+	JOIN_FIELD_TYPE,
+}
+
 const (
 	UNKNOWN_FIELD_TYPE          FieldType = ""
 	BINARY_FIELD_TYPE           FieldType = "binary"           // base64 string
@@ -142,7 +173,16 @@ const (
 type MappingType string
 
 const (
-	DYNAMIC_Mapping MappingType = "true"
-	STATIC_MAPPING  MappingType = "false"
-	STRICT_MAPPING  MappingType = "strict"
+	// New fields are added to the mapping (default).
+	DYNAMIC_MAPPING MappingType = "true"
+	// New fields are ignored. These fields will not be indexed or searchable,
+	// but will still appear in the _source field of returned hits.
+	// These fields will not be added to the mapping, and new fields must be added explicitly.
+	STATIC_MAPPING MappingType = "false"
+	// If new fields are detected, an exception is thrown and the document is rejected.
+	// New fields must be explicitly added to the mapping.
+	STRICT_MAPPING MappingType = "strict"
+	//New fields are added to the mapping as runtime fields.
+	//These fields are not indexed, and are loaded from _source at query time.
+	RUNTIME_MAPPING MappingType = "runtime"
 )
