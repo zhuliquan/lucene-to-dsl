@@ -3,7 +3,7 @@ package term
 import (
 	"strconv"
 
-	bnd "github.com/zhuliquan/lucene-to-dsl/lucene/internal/bound"
+	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 )
 
 // single side range term or double side range and with boost like this [1 TO 2]^2

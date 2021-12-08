@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	bnd "github.com/zhuliquan/lucene-to-dsl/lucene/internal/bound"
+	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 )
 
 // simple term: is a single term without escape char and whitespace

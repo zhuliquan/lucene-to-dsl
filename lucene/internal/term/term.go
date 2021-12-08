@@ -1,7 +1,7 @@
 package term
 
 import (
-	bnd "github.com/zhuliquan/lucene-to-dsl/lucene/internal/bound"
+	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 )
 
 type Term struct {

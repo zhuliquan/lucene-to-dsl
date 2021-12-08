@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	bnd "github.com/zhuliquan/lucene-to-dsl/lucene/internal/bound"
+	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
 )
 
