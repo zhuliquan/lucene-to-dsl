@@ -188,3 +188,11 @@ func (q *FieldQuery) String() string {
 		return q.Field.String() + " : " + q.Term.String()
 	}
 }
+
+// func (q *FieldQuery) ToASTNode() (dsl.ASTNode, error) {
+// 	if nil == q {
+// 		return nil, fmt.Errorf("")
+// 	} else {
+// 		return dsl.ASTNode
+// 	}
+// }
