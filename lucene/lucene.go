@@ -44,7 +44,7 @@ func ParseLucene(queryString string) (*Lucene, error) {
 
 type Query interface {
 	String() string
-	ToASTNode() (dsl.ASTNode, error)
+	ToASTNode() (dsl.DSLNode, error)
 }
 
 // lucene: consist of or query and or symbol query
