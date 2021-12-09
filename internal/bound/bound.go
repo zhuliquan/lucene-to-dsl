@@ -12,16 +12,27 @@ type Bound struct {
 	RightExclude *RangeValue `json:"right_exclude"`
 }
 
-func (b *Bound) adjust() {
-	if b.LeftInclude != nil && len(b.LeftInclude.InfinityVal) != 0 {
-		b.LeftExclude = &RangeValue{InfinityVal: "*"}
+func (b *Bound) AdjustInf() {
+	if b.LeftInclude.IsInf() {
+		b.LeftExclude = Inf
 		b.LeftInclude = nil
 	}
-	if b.RightInclude != nil && len(b.RightInclude.InfinityVal) != 0 {
-		b.RightExclude = &RangeValue{InfinityVal: "*"}
+	if b.RightInclude.IsInf() {
+		b.RightExclude = Inf
 		b.RightInclude = nil
 	}
 }
+
+// func (b *Bound) ToDSL(field string ) (dsl.DSL, bool) {
+// 	b.adjustInf()
+// 	if b.LeftExclude.IsInf() && b.RightExclude.IsInf() {
+// 		// 变为exists标识
+// 		return nil, false
+// 	} else if b.LeftExclude.IsInf() && !b.RightExclude.IsInf() {
+// 		return DSL{}
+// 	}
+
+// }
 
 type PhraseValue struct {
 	Value []string `parser:"" json:"value"`
@@ -31,6 +42,10 @@ type RangeValue struct {
 	InfinityVal string   `parser:"  @('*')" json:"infinity_val"`
 	PhraseValue []string `parser:"| QUOTE @( REVERSE QUOTE | !QUOTE )* QUOTE" json:"phrase_value"`
 	SingleValue []string `parser:"| @(IDENT|NUMBER|DOT|PLUS|MINUS)+" json:"simple_value"`
+}
+
+func (v *RangeValue) IsInf() bool {
+	return v != nil && len(v.InfinityVal) != 0
 }
 
 func (v *RangeValue) String() string {
