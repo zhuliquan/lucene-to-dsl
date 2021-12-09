@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 // 定义dsl的ast node
@@ -40,6 +41,9 @@ func (n *ExistsNode) GetDSLType() DSLType {
 }
 
 func (n *ExistsNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"exists": DSL{"field": n.Field}}
 }
 
@@ -53,6 +57,9 @@ func (n *IdsNode) GetDSLType() DSLType {
 }
 
 func (n *IdsNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"ids": DSL{"values": n.Values}}
 }
 
@@ -73,6 +80,9 @@ func (n *TermNode) GetDSLType() DSLType {
 }
 
 func (n *TermNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"term": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
 }
 
@@ -88,6 +98,9 @@ func (n *TermsNode) GetDSLType() DSLType {
 }
 
 func (n *TermsNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"terms": DSL{n.Field: n.Values, "boost": n.Boost}}
 }
 
@@ -100,6 +113,9 @@ func (n *RegexpNode) GetDSLType() DSLType {
 }
 
 func (n *RegexpNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"regexp": DSL{n.Field: DSL{"value": n.Value}}}
 }
 
@@ -114,6 +130,9 @@ func (n *FuzzyNode) GetDSLType() DSLType {
 }
 
 func (n *FuzzyNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	var fuzziness string
 	if n.LowFuzziness != 0 && n.HighFuzziness != 0 {
 		fuzziness = fmt.Sprintf("AUTO:%d,%d", n.LowFuzziness, n.HighFuzziness)
@@ -136,22 +155,28 @@ func (n *PrefixNode) GetDSLType() DSLType {
 }
 
 func (n *PrefixNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"prefix": DSL{n.Field: DSL{"values": n.Value}}}
 }
 
 type RangeNode struct {
 	LeafNode
-	Field  string
-	Format string
-	Bound  *bnd.Bound
+	Field   string
+	Bound   *bnd.Bound
+	Mapping *mapping.FieldMapping
 }
 
 func (n *RangeNode) GetDSLType() DSLType {
 	return RANGE_DSL_TYPE
 }
 
-// func (n *RangeNode) ToDSL() DSLType {
-// 	return DSL{"range": DSL{n.Field: DSL{""}}}
+// func (n *RangeNode) ToDSL() DSL {
+// 	if n == nil {
+// 		return nil
+// 	}
+// 	return n.Bound.ToDSL(n.Field, n.Mapping)
 // }
 
 type WildCardNode struct {
@@ -165,6 +190,9 @@ func (n *WildCardNode) GetDSLType() DSLType {
 }
 
 func (n *WildCardNode) ToDSL() DSL {
+	if n == nil {
+		return nil
+	}
 	return DSL{"wildcard": DSL{n.Field: DSL{"values": n.Value, "boost": n.Boost}}}
 
 }
@@ -172,10 +200,6 @@ func (n *WildCardNode) ToDSL() DSL {
 type MatchNode struct {
 	EqNode
 	Boost float64
-}
-
-func (n *MatchNode) GetNodeType() NodeType {
-	return LEAF_NODE_TYPE
 }
 
 func (n *MatchNode) GetDSLType() DSLType {
