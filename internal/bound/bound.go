@@ -1,6 +1,8 @@
 package bound
 
-import "strings"
+import (
+	"strings"
+)
 
 // range bound like this [1, 2] [1, 2) (1, 2] (1, 2)
 type Bound struct {
@@ -8,6 +10,17 @@ type Bound struct {
 	LeftExclude  *RangeValue `json:"left_exclude"`
 	RightInclude *RangeValue `json:"right_include"`
 	RightExclude *RangeValue `json:"right_exclude"`
+}
+
+func (b *Bound) adjust() {
+	if b.LeftInclude != nil && len(b.LeftInclude.InfinityVal) != 0 {
+		b.LeftExclude = &RangeValue{InfinityVal: "*"}
+		b.LeftInclude = nil
+	}
+	if b.RightInclude != nil && len(b.RightInclude.InfinityVal) != 0 {
+		b.RightExclude = &RangeValue{InfinityVal: "*"}
+		b.RightInclude = nil
+	}
 }
 
 type PhraseValue struct {
