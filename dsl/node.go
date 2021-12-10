@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 // 定义dsl的ast node
@@ -163,21 +162,63 @@ func (n *PrefixNode) ToDSL() DSL {
 
 type RangeNode struct {
 	LeafNode
-	Field   string
-	Bound   *bnd.Bound
-	Mapping *mapping.FieldMapping
+	Field  string
+	Bound  *bnd.Bound
+	Boost  float64
+	Format string
 }
 
 func (n *RangeNode) GetDSLType() DSLType {
 	return RANGE_DSL_TYPE
 }
 
-// func (n *RangeNode) ToDSL() DSL {
-// 	if n == nil {
-// 		return nil
-// 	}
-// 	return n.Bound.ToDSL(n.Field, n.Mapping)
-// }
+func (n *RangeNode) ToDSL() DSL {
+	if n == nil || n.Bound == nil {
+		return nil
+
+		// (-inf, +inf) mean field exist
+	} else if n.Bound.LeftValue.IsInf() && n.Bound.RightValue.IsInf() {
+		return DSL{"exists": DSL{"field": n.Field}}
+	}
+
+	var (
+		res  DSL
+		infL = n.Bound.LeftValue.IsInf()
+		infR = n.Bound.RightValue.IsInf()
+	)
+
+	switch n.Bound.GetBoundType() {
+	case bnd.LEFT_INCLUDE_RIGHT_INCLUDE:
+		res = DSL{"gte": n.Bound.LeftValue.Value(), "lte": n.Bound.RightValue.Value()}
+	case bnd.LEFT_INCLUDE_RIGHT_EXCLUDE:
+		if infR {
+			res = DSL{"gte": n.Bound.LeftValue.Value()}
+		} else {
+			res = DSL{"gte": n.Bound.LeftValue.Value(), "lt": n.Bound.RightValue.Value()}
+		}
+	case bnd.LEFT_EXCLUDE_RIGHT_INCLUDE:
+		if infL {
+			res = DSL{"lte": n.Bound.RightValue.Value()}
+		} else {
+			res = DSL{"gt": n.Bound.LeftValue.Value(), "lte": n.Bound.RightValue.Value()}
+		}
+	case bnd.LEFT_EXCLUDE_RIGHT_EXCLUDE:
+		if infL && !infR {
+			res = DSL{"lt": n.Bound.RightValue.Value()}
+		} else if !infL && infR {
+			res = DSL{"gt": n.Bound.LeftValue.Value()}
+		} else {
+			res = DSL{"gt": n.Bound.LeftValue.Value(), "lt": n.Bound.RightValue.Value()}
+		}
+	}
+
+	res["relation"] = "WITHIN"
+	res["boost"] = n.Boost
+	if len(n.Format) != 0 {
+		res["format"] = n.Format
+	}
+	return DSL{"range": DSL{n.Field: res}}
+}
 
 type WildCardNode struct {
 	LeafNode
