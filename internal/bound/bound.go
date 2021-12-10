@@ -2,24 +2,24 @@ package bound
 
 import (
 	"strings"
+
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 // range bound like this [1, 2] [1, 2) (1, 2] (1, 2)
 type Bound struct {
-	LeftInclude  *RangeValue `json:"left_include"`
-	LeftExclude  *RangeValue `json:"left_exclude"`
-	RightInclude *RangeValue `json:"right_include"`
-	RightExclude *RangeValue `json:"right_exclude"`
+	LeftValue    *RangeValue `json:"left_value,omitempty"`
+	RightValue   *RangeValue `json:"right_Value,omitempty"`
+	LeftInclude  bool        `json:"left_include,omitempty"`
+	RightInclude bool        `json:"right_include,omitempty"`
 }
 
 func (b *Bound) AdjustInf() {
-	if b.LeftInclude.IsInf() {
-		b.LeftExclude = Inf
-		b.LeftInclude = nil
+	if b.LeftValue.IsInf() {
+		b.LeftInclude = false
 	}
-	if b.RightInclude.IsInf() {
-		b.RightExclude = Inf
-		b.RightInclude = nil
+	if b.RightValue.IsInf() {
+		b.RightInclude = false
 	}
 }
 
@@ -34,14 +34,11 @@ func (b *Bound) AdjustInf() {
 
 // }
 
-type PhraseValue struct {
-	Value []string `parser:"" json:"value"`
-}
-
 type RangeValue struct {
 	InfinityVal string   `parser:"  @('*')" json:"infinity_val"`
 	PhraseValue []string `parser:"| QUOTE @( REVERSE QUOTE | !QUOTE )* QUOTE" json:"phrase_value"`
 	SingleValue []string `parser:"| @(IDENT|NUMBER|DOT|PLUS|MINUS)+" json:"simple_value"`
+	value       interface{}
 }
 
 func (v *RangeValue) IsInf() bool {
@@ -60,4 +57,15 @@ func (v *RangeValue) String() string {
 	} else {
 		return ""
 	}
+}
+
+func (v *RangeValue) CheckValue(m *mapping.FieldMapping) error {
+	return nil
+}
+
+func (v *RangeValue) Value() interface{} {
+	if v == nil {
+		return nil
+	}
+	return v.value
 }

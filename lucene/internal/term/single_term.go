@@ -157,19 +157,23 @@ func (t *DRangeTerm) GetTermType() TermType {
 }
 
 func (t *DRangeTerm) GetBound() *bnd.Bound {
+	var res *bnd.Bound
 	if t == nil {
 		return nil
 	} else if t.LBRACKET == "[" && t.RBRACKET == "]" {
-		return &bnd.Bound{LeftInclude: t.LValue, RightInclude: t.RValue}
+		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: true, RightInclude: true}
 	} else if t.LBRACKET == "[" && t.RBRACKET == "}" {
-		return &bnd.Bound{LeftInclude: t.LValue, RightExclude: t.RValue}
+		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: true, RightInclude: false}
 	} else if t.LBRACKET == "{" && t.RBRACKET == "]" {
-		return &bnd.Bound{LeftExclude: t.LValue, RightInclude: t.RValue}
+		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: false, RightInclude: true}
 	} else if t.LBRACKET == "{" && t.RBRACKET == "}" {
-		return &bnd.Bound{LeftExclude: t.LValue, RightExclude: t.RValue}
+		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: false, RightInclude: false}
 	} else {
 		return nil
 	}
+	res.LeftInclude = res.LeftInclude && !t.LValue.IsInf()
+	res.RightInclude = res.RightInclude && !t.RValue.IsInf()
+	return res
 }
 
 func (t *DRangeTerm) String() string {
