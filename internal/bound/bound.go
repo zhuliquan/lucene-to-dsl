@@ -14,25 +14,19 @@ type Bound struct {
 	RightInclude bool        `json:"right_include,omitempty"`
 }
 
-func (b *Bound) AdjustInf() {
-	if b.LeftValue.IsInf() {
-		b.LeftInclude = false
-	}
-	if b.RightValue.IsInf() {
-		b.RightInclude = false
+func (n *Bound) GetBoundType() BoundType {
+	if n == nil {
+		return UNKNOWN_BOUND_TYPE
+	} else if n.LeftInclude && n.RightInclude {
+		return LEFT_INCLUDE_RIGHT_INCLUDE
+	} else if n.LeftInclude && !n.RightInclude {
+		return LEFT_INCLUDE_RIGHT_EXCLUDE
+	} else if !n.LeftInclude && n.RightInclude {
+		return LEFT_EXCLUDE_RIGHT_INCLUDE
+	} else {
+		return LEFT_EXCLUDE_RIGHT_EXCLUDE
 	}
 }
-
-// func (b *Bound) ToDSL(field string ) (dsl.DSL, bool) {
-// 	b.adjustInf()
-// 	if b.LeftExclude.IsInf() && b.RightExclude.IsInf() {
-// 		// 变为exists标识
-// 		return nil, false
-// 	} else if b.LeftExclude.IsInf() && !b.RightExclude.IsInf() {
-// 		return DSL{}
-// 	}
-
-// }
 
 type RangeValue struct {
 	InfinityVal string   `parser:"  @('*')" json:"infinity_val"`
