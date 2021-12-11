@@ -69,7 +69,6 @@ type EqNode struct {
 }
 
 type TermNode struct {
-	LeafNode
 	EqNode
 	Boost float64
 }
