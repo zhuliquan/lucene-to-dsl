@@ -54,7 +54,7 @@ type Lucene struct {
 }
 
 func (q *Lucene) String() string {
-	if q != nil {
+	if q == nil {
 		return ""
 	} else if q.OrQuery != nil {
 		var sl = []string{q.OrQuery.String()}
@@ -74,7 +74,7 @@ type OrQuery struct {
 }
 
 func (q *OrQuery) String() string {
-	if q != nil {
+	if q == nil {
 		return ""
 	} else if q.AndQuery != nil {
 		var sl = []string{q.AndQuery.String()}
@@ -89,16 +89,15 @@ func (q *OrQuery) String() string {
 
 //or symbol query: or query is prefix with or symbol
 type OSQuery struct {
-	OrSymbol  *op.OrSymbol  `parser:"@@" json:"or_symbol"`
-	NotSymbol *op.NotSymbol `parser:"@@?" json:"not_symbol"`
-	OrQuery   *OrQuery      `parser:"@@" json:"or_query"`
+	OrSymbol *op.OrSymbol `parser:"@@" json:"or_symbol"`
+	OrQuery  *OrQuery     `parser:"@@" json:"or_query"`
 }
 
 func (q *OSQuery) String() string {
-	if q != nil {
+	if q == nil {
 		return ""
 	} else if q.OrQuery != nil {
-		return q.OrSymbol.String() + q.NotSymbol.String() + q.OrSymbol.String()
+		return q.OrSymbol.String() + q.OrQuery.String()
 	} else {
 		return ""
 	}
@@ -106,20 +105,18 @@ func (q *OSQuery) String() string {
 
 // and query: consist of not query and paren query and field_query
 type AndQuery struct {
-	NotQuery   *NotQuery   `parser:"  @@" json:"not_query"`
-	ParenQuery *ParenQuery `parser:"| @@" json:"paren_query"`
-	FieldQuery *FieldQuery `parser:"| @@" json:"field_query"`
+	NotSymbol  *op.NotSymbol `parser:"@@?" json:"not_symbol"`
+	ParenQuery *ParenQuery   `parser:"( @@ " json:"paren_query"`
+	FieldQuery *FieldQuery   `parser:"| @@)" json:"field_query"`
 }
 
 func (q *AndQuery) String() string {
-	if q != nil {
+	if q == nil {
 		return ""
-	} else if q.NotQuery != nil {
-		return q.NotQuery.String()
 	} else if q.ParenQuery != nil {
-		return q.ParenQuery.String()
+		return q.NotSymbol.String() + q.ParenQuery.String()
 	} else if q.FieldQuery != nil {
-		return q.FieldQuery.String()
+		return q.NotSymbol.String() + q.FieldQuery.String()
 	} else {
 		return ""
 	}
@@ -128,7 +125,6 @@ func (q *AndQuery) String() string {
 // and symbol query: and query is prefix with and symbol
 type AnSQuery struct {
 	AndSymbol *op.AndSymbol `parser:"@@" json:"and_symbol"`
-	NotSymbol *op.NotSymbol `parser:"@@?" json:"not_symbol"`
 	AndQuery  *AndQuery     `parser:"@@" json:"and_query"`
 }
 
@@ -136,23 +132,7 @@ func (q *AnSQuery) String() string {
 	if q == nil {
 		return ""
 	} else if q.AndQuery != nil {
-		return q.AndSymbol.String() + q.NotSymbol.String() + q.AndQuery.String()
-	} else {
-		return ""
-	}
-}
-
-// not query: lucene query is prefix with not symbol
-type NotQuery struct {
-	NotSymbol *op.NotSymbol `parser:"@@" json:"not_symbol"`
-	SubQuery  *Lucene       `parser:"@@" json:"sub_query"`
-}
-
-func (q *NotQuery) String() string {
-	if q == nil {
-		return ""
-	} else if q.SubQuery != nil {
-		return q.NotSymbol.String() + q.SubQuery.String()
+		return q.AndSymbol.String() + q.AndQuery.String()
 	} else {
 		return ""
 	}

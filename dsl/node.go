@@ -246,7 +246,18 @@ func (n *MatchNode) GetDSLType() DSLType {
 	return MATCH_DSL_TYPE
 }
 
-// func (n *MatchNode) ToDSL() DSL {
-// 	return DSL{"match": }
+func (n *MatchNode) ToDSL() DSL {
+	return DSL{"match": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
+}
 
-// }
+type MatchPhraseNode struct {
+	EqNode
+}
+
+func (n *MatchPhraseNode) GetDSLType() DSLType {
+	return MATCH_PHRASE_DSL_TYPE
+}
+
+func (n *MatchPhraseNode) ToDSL() DSL {
+	return DSL{"match_phrase": DSL{n.Field: n.Value}}
+}

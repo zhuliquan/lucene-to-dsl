@@ -55,36 +55,33 @@ func (t *OrTermGroup) String() string {
 }
 
 type OSTermGroup struct {
-	OrSymbol    *op.OrSymbol  `parser:"@@ " json:"or_symbol"`
-	NotSymbol   *op.NotSymbol `parser:"@@?" json:"not_symbol"`
-	OrTermGroup *OrTermGroup  `parser:"@@ " json:"or_term_group"`
+	OrSymbol    *op.OrSymbol `parser:"@@ " json:"or_symbol"`
+	OrTermGroup *OrTermGroup `parser:"@@ " json:"or_term_group"`
 }
 
 func (t *OSTermGroup) String() string {
 	if t == nil {
 		return ""
 	} else if t.OrTermGroup != nil {
-		return t.OrSymbol.String() + t.NotSymbol.String() + t.OrTermGroup.String()
+		return t.OrSymbol.String() + t.OrTermGroup.String()
 	} else {
 		return ""
 	}
 }
 
 type AndTermGroup struct {
-	NotTermGroup   *NotTermGroup   `parser:"  @@" json:"not_term_group"`
-	ParenTermGroup *ParenTermGroup `parser:"| @@" json:"paren_term_group"`
-	TermGroupElem  *TermGroupElem  `parser:"| @@" json:"term_group_elem"`
+	NotSymbol      *op.NotSymbol   `parser:"@@?" json:"not_symbol"`
+	ParenTermGroup *ParenTermGroup `parser:"( @@ " json:"paren_term_group"`
+	TermGroupElem  *TermGroupElem  `parser:"| @@)" json:"term_group_elem"`
 }
 
 func (t *AndTermGroup) String() string {
 	if t == nil {
 		return ""
-	} else if t.NotTermGroup != nil {
-		return t.NotTermGroup.String()
 	} else if t.ParenTermGroup != nil {
-		return t.ParenTermGroup.String()
+		return t.NotSymbol.String() + t.ParenTermGroup.String()
 	} else if t.TermGroupElem != nil {
-		return t.TermGroupElem.String()
+		return t.NotSymbol.String() + t.TermGroupElem.String()
 	} else {
 		return ""
 	}
@@ -92,7 +89,6 @@ func (t *AndTermGroup) String() string {
 
 type AnSTermGroup struct {
 	AndSymbol    *op.AndSymbol `parser:"@@" json:"and_symbol"`
-	NotSymbol    *op.NotSymbol `parser:"@@?" json:"not_symbol"`
 	AndTermGroup *AndTermGroup `parser:"@@" json:"and_term_group"`
 }
 
@@ -100,22 +96,7 @@ func (t *AnSTermGroup) String() string {
 	if t == nil {
 		return ""
 	} else if t.AndTermGroup != nil {
-		return t.AndSymbol.String() + t.NotSymbol.String() + t.AndTermGroup.String()
-	} else {
-		return ""
-	}
-}
-
-type NotTermGroup struct {
-	NotSymbol    *op.NotSymbol   `parser:"@@" json:"not_symbol"`
-	SubTermGroup *LogicTermGroup `parser:"@@" json:"sub_term_group"`
-}
-
-func (t *NotTermGroup) String() string {
-	if t == nil {
-		return ""
-	} else if t.SubTermGroup != nil {
-		return t.NotSymbol.String() + t.SubTermGroup.String()
+		return t.AndSymbol.String() + t.AndTermGroup.String()
 	} else {
 		return ""
 	}

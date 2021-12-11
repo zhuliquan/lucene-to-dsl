@@ -101,8 +101,8 @@ func TestLogicTermGroup(t *testing.T) {
 					AnSTermGroup: []*AnSTermGroup{
 						{
 							AndSymbol: &op.AndSymbol{Symbol: "AND"},
-							NotSymbol: &op.NotSymbol{Symbol: "NOT"},
 							AndTermGroup: &AndTermGroup{
+								NotSymbol: &op.NotSymbol{Symbol: "NOT"},
 								TermGroupElem: &TermGroupElem{
 									SingleTerm: &SingleTerm{Value: []string{"news"}},
 								},
@@ -218,8 +218,8 @@ func TestTermGroup(t *testing.T) {
 						AnSTermGroup: []*AnSTermGroup{
 							{
 								AndSymbol: &op.AndSymbol{Symbol: "AND"},
-								NotSymbol: &op.NotSymbol{Symbol: "NOT"},
 								AndTermGroup: &AndTermGroup{
+									NotSymbol: &op.NotSymbol{Symbol: "NOT"},
 									TermGroupElem: &TermGroupElem{
 										SingleTerm: &SingleTerm{Value: []string{"news"}},
 									},
