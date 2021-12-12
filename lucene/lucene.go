@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
 	tm "github.com/zhuliquan/lucene-to-dsl/lucene/internal/term"
 	tk "github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
@@ -44,13 +43,17 @@ func ParseLucene(queryString string) (*Lucene, error) {
 
 type Query interface {
 	String() string
-	ToASTNode() (dsl.DSLNode, error)
+	GetQueryType() QueryType
 }
 
 // lucene: consist of or query and or symbol query
 type Lucene struct {
 	OrQuery *OrQuery   `parser:"@@" json:"or_query"`
 	OSQuery []*OSQuery `parser:"@@*" json:"or_sym_query"`
+}
+
+func (q *Lucene) GetQueryType() QueryType {
+	return LUCENE_QUERY
 }
 
 func (q *Lucene) String() string {
@@ -73,6 +76,10 @@ type OrQuery struct {
 	AnSQuery []*AnSQuery `parser:"@@*" json:"and_sym_query" `
 }
 
+func (q *OrQuery) GetQueryType() QueryType {
+	return OR_QUERY
+}
+
 func (q *OrQuery) String() string {
 	if q == nil {
 		return ""
@@ -93,6 +100,10 @@ type OSQuery struct {
 	OrQuery  *OrQuery     `parser:"@@" json:"or_query"`
 }
 
+func (q *OSQuery) GetQueryType() QueryType {
+	return OS_QUERY
+}
+
 func (q *OSQuery) String() string {
 	if q == nil {
 		return ""
@@ -105,9 +116,13 @@ func (q *OSQuery) String() string {
 
 // and query: consist of not query and paren query and field_query
 type AndQuery struct {
-	NotSymbol  *op.NotSymbol `parser:"@@?" json:"not_symbol"`
+	NotSymbol  *op.NotSymbol `parser:"  @@?" json:"not_symbol"`
 	ParenQuery *ParenQuery   `parser:"( @@ " json:"paren_query"`
 	FieldQuery *FieldQuery   `parser:"| @@)" json:"field_query"`
+}
+
+func (q *AndQuery) GetQueryType() QueryType {
+	return AND_QUERY
 }
 
 func (q *AndQuery) String() string {
@@ -128,6 +143,10 @@ type AnSQuery struct {
 	AndQuery  *AndQuery     `parser:"@@" json:"and_query"`
 }
 
+func (q *AnSQuery) GetQueryType() QueryType {
+	return ANS_QUERY
+}
+
 func (q *AnSQuery) String() string {
 	if q == nil {
 		return ""
@@ -141,6 +160,10 @@ func (q *AnSQuery) String() string {
 // paren query: lucene query is surround with paren
 type ParenQuery struct {
 	SubQuery *Lucene `parser:"LPAREN WHITESPACE* @@ WHITESPACE* RPAREN" json:"sub_query"`
+}
+
+func (q *ParenQuery) GetQueryType() QueryType {
+	return PAREN_QUERY
 }
 
 func (q *ParenQuery) String() string {
@@ -159,6 +182,10 @@ type FieldQuery struct {
 	Term  *tm.Term  `parser:"@@" json:"term"`
 }
 
+func (q *FieldQuery) GetQueryType() QueryType {
+	return FIELD_QUERY
+}
+
 func (q *FieldQuery) String() string {
 	if q == nil {
 		return ""
@@ -168,11 +195,3 @@ func (q *FieldQuery) String() string {
 		return q.Field.String() + " : " + q.Term.String()
 	}
 }
-
-// func (q *FieldQuery) ToASTNode() (dsl.ASTNode, error) {
-// 	if nil == q {
-// 		return nil, fmt.Errorf("")
-// 	} else {
-// 		return dsl.ASTNode
-// 	}
-// }

@@ -14,16 +14,91 @@ type DSLNode interface {
 	ToDSL() DSL
 }
 
+type OpNode struct{}
+
+func (n *OpNode) GetNodeType() NodeType {
+	return OP_NODE_TYPE
+}
+
 type OrDSLNode struct {
-	Nodes map[string]DSLNode
+	OpNode
+	Nodes []DSLNode
+}
+
+func (n *OrDSLNode) GetDSLType() DSLType {
+	return OR_DSL_TYPE
+}
+
+func (n *OrDSLNode) ToDSL() DSL {
+	var res = []DSL{}
+	for _, node := range n.Nodes {
+		res = append(res, node.ToDSL())
+	}
+	if len(res) == 1 {
+		return res[0]
+	} else {
+		return DSL{"bool": DSL{"should": res}}
+	}
 }
 
 type AndDSLNode struct {
-	Nodes map[string]DSLNode
+	OpNode
+	MustNodes   []DSLNode
+	FilterNodes []DSLNode
+}
+
+func (n *AndDSLNode) GetDSLType() DSLType {
+	return OR_DSL_TYPE
+}
+
+func (n *AndDSLNode) ToDSL() DSL {
+	var FRes = []DSL{}
+	var MRes = []DSL{}
+	for _, node := range n.MustNodes {
+		MRes = append(MRes, node.ToDSL())
+	}
+	for _, node := range n.FilterNodes {
+		FRes = append(FRes, node.ToDSL())
+	}
+
+	if len(FRes) == 1 && len(n.MustNodes) == 0 {
+		return DSL{"bool": DSL{"filter": FRes[0]}}
+	} else if len(FRes) == 1 && len(n.MustNodes) == 1 {
+		return DSL{"bool": DSL{"must": MRes[0], "filter": FRes[0]}}
+	} else if len(FRes) == 1 && len(n.MustNodes) > 1 {
+		return DSL{"bool": DSL{"must": MRes, "filter": FRes[0]}}
+	} else if len(FRes) == 0 && len(n.MustNodes) == 1 {
+		return MRes[0]
+	} else if len(FRes) == 0 && len(n.MustNodes) > 1 {
+		return DSL{"bool": DSL{"must": MRes}}
+	} else if len(FRes) > 1 && len(n.MustNodes) == 0 {
+		return DSL{"bool": DSL{"filter": FRes}}
+	} else if len(FRes) > 1 && len(n.MustNodes) == 1 {
+		return DSL{"bool": DSL{"must": MRes[0], "filter": FRes}}
+	} else {
+		return DSL{"bool": DSL{"must": MRes, "filter": FRes}}
+	}
 }
 
 type NotDSLNode struct {
-	Nodes map[string]DSLNode
+	OpNode
+	Nodes []DSLNode
+}
+
+func (n *NotDSLNode) GetDSLType() DSLType {
+	return NOT_DSL_TYPE
+}
+
+func (n *NotDSLNode) ToDSL() DSL {
+	var res = []DSL{}
+	for _, node := range n.Nodes {
+		res = append(res, node.ToDSL())
+	}
+	if len(res) == 1 {
+		return DSL{"bool": DSL{"must_not": res[0]}}
+	} else {
+		return DSL{"bool": DSL{"must_not": res[1]}}
+	}
 }
 
 type LeafNode struct{}
