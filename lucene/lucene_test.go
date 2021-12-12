@@ -260,6 +260,57 @@ func TestLucene(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:  "TestLucene05",
+			input: `(NOT x:(foo or bar)) AND z:you`,
+			want: &Lucene{
+				OrQuery: &OrQuery{
+					AndQuery: &AndQuery{
+						ParenQuery: &ParenQuery{
+							&Lucene{
+								OrQuery: &OrQuery{
+									AndQuery: &AndQuery{
+										NotSymbol: &operator.NotSymbol{Symbol: "NOT"},
+										FieldQuery: &FieldQuery{
+											Field: &term.Field{Value: []string{"x"}},
+											Term: &term.Term{
+												TermGroup: &term.TermGroup{
+													LogicTermGroup: &term.LogicTermGroup{
+														OrTermGroup: &term.OrTermGroup{AndTermGroup: &term.AndTermGroup{TermGroupElem: &term.TermGroupElem{SingleTerm: &term.SingleTerm{Value: []string{"foo"}}}}},
+														OSTermGroup: []*term.OSTermGroup{
+															{
+																OrSymbol: &operator.OrSymbol{Symbol: "or"},
+																OrTermGroup: &term.OrTermGroup{
+																	AndTermGroup: &term.AndTermGroup{TermGroupElem: &term.TermGroupElem{SingleTerm: &term.SingleTerm{Value: []string{"bar"}}}},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					AnSQuery: []*AnSQuery{
+						{
+							AndSymbol: &operator.AndSymbol{Symbol: "AND"},
+							AndQuery: &AndQuery{
+								FieldQuery: &FieldQuery{
+									Field: &term.Field{Value: []string{"z"}},
+									Term: &term.Term{FuzzyTerm: &term.FuzzyTerm{
+										SingleTerm: &term.SingleTerm{Value: []string{`you`}},
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range testCases {

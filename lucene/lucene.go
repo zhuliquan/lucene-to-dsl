@@ -105,7 +105,7 @@ func (q *OSQuery) String() string {
 
 // and query: consist of not query and paren query and field_query
 type AndQuery struct {
-	NotSymbol  *op.NotSymbol `parser:"@@?" json:"not_symbol"`
+	NotSymbol  *op.NotSymbol `parser:"  @@?" json:"not_symbol"`
 	ParenQuery *ParenQuery   `parser:"( @@ " json:"paren_query"`
 	FieldQuery *FieldQuery   `parser:"| @@)" json:"field_query"`
 }
