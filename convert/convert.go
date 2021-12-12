@@ -20,7 +20,7 @@ func LuceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 
 func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_AND_QUERY_ERR
+		return nil, ErrEmptyAndQuery
 	}
 
 	if node, err := orQueryToDSLNode(q.OrQuery); err != nil {
@@ -40,7 +40,7 @@ func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 
 func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_OR_QUERY_ERR
+		return nil, ErrEmptyOrQuery
 	}
 	if node, err := andQueryToDSLNode(q.AndQuery); err != nil {
 		return nil, err
@@ -59,14 +59,14 @@ func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
 
 func osQueryToDSLNode(q *lucene.OSQuery) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_OR_QUERY_ERR
+		return nil, ErrEmptyOrQuery
 	}
 	return orQueryToDSLNode(q.OrQuery)
 }
 
 func andQueryToDSLNode(q *lucene.AndQuery) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_AND_QUERY_ERR
+		return nil, ErrEmptyAndQuery
 	}
 	if q.FieldQuery != nil {
 		if node, err := fieldQueryToDSLNode(q.FieldQuery); err != nil {
@@ -89,14 +89,14 @@ func andQueryToDSLNode(q *lucene.AndQuery) (dsl.DSLNode, error) {
 
 func ansQueryToDSLNode(q *lucene.AnSQuery) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_AND_QUERY_ERR
+		return nil, ErrEmptyAndQuery
 	}
 	return andQueryToDSLNode(q.AndQuery)
 }
 
 func parenQueryToDSLNode(q *lucene.ParenQuery) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_PAREN_QUERY_ERR
+		return nil, ErrEmptyParenQuery
 	}
 	return luceneToDSLNode(q.SubQuery)
 }
@@ -104,7 +104,7 @@ func parenQueryToDSLNode(q *lucene.ParenQuery) (dsl.DSLNode, error) {
 // very import
 func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	if q == nil {
-		return nil, EMPTY_FIELD_QUERY_ERR
+		return nil, ErrEmptyFieldQuery
 	}
 	fmt.Println(fm)
 	return nil, nil
