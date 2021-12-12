@@ -1,3 +1,11 @@
+package convert
+
+import (
+	"strings"
+
+	"github.com/araddon/dateparse"
+)
+
 func ToUpper(x string) (string, error) {
 	return strings.ToUpper(x), nil
 }
