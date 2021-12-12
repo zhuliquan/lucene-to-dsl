@@ -10,8 +10,9 @@ import (
 
 var fm *mapping.Mapping
 
-func InitConvert(m *mapping.Mapping) {
+func InitConvert(m *mapping.Mapping, covFunc map[string]func(string) (interface{}, error)) error {
 	fm = m
+	return nil
 }
 
 func LuceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
