@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
 	tm "github.com/zhuliquan/lucene-to-dsl/lucene/internal/term"
 	tk "github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
@@ -45,10 +44,7 @@ func ParseLucene(queryString string) (*Lucene, error) {
 type Query interface {
 	String() string
 	GetQueryType() QueryType
-	ToDSLNode(ConvertFunc) (dsl.DSLNode, error)
 }
-
-type ConvertFunc func(Query) (dsl.DSLNode, error)
 
 // lucene: consist of or query and or symbol query
 type Lucene struct {
@@ -198,33 +194,4 @@ func (q *FieldQuery) String() string {
 	} else {
 		return q.Field.String() + " : " + q.Term.String()
 	}
-}
-
-// add to dsl node func for every query
-func (q *Lucene) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
-}
-
-func (q *OrQuery) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
-}
-
-func (q *OSQuery) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
-}
-
-func (q *AndQuery) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
-}
-
-func (q *AnSQuery) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
-}
-
-func (q *ParenQuery) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
-}
-
-func (q *FieldQuery) ToDSLNode(f ConvertFunc) (dsl.DSLNode, error) {
-	return f(q)
 }
