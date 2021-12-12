@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"fmt"
+
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/lucene"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
@@ -104,5 +106,6 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	if q == nil {
 		return nil, EMPTY_FIELD_QUERY_ERR
 	}
+	fmt.Println(fm)
 	return nil, nil
 }
