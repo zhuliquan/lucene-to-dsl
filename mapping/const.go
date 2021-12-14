@@ -361,15 +361,51 @@ const (
 	WEEKYEAR_WEEK_DAY        TimeFormat = "weekyear_week_day"
 	STRICT_WEEKYEAR_WEEK_DAY TimeFormat = "strict_weekyear_week_day"
 
-	// A formatter for a four digit year: yyyy.
+	// A formatter for a four digit year and two digit month of year: yyyy-MM.
 	YEAR_MONTH        TimeFormat = "year_month"
 	STRICT_YEAR_MONTH TimeFormat = "strict_year_month"
 
-	// A formatter for a four digit year and two digit month of year: yyyy-MM.
+	// A formatter for a four digit year: yyyy.
 	YEAR_FORMAT TimeFormat = "year"
 	STRICT_YEAR TimeFormat = "strict_year"
 
 	// A formatter for a four digit year, two digit month of year, and two digit day of month: yyyy-MM-dd.
 	YEAR_MONTH_DAY        TimeFormat = "year_month_day"
 	STRICT_YEAR_MONTH_DAY TimeFormat = "strict_year_month_day"
+)
+
+type Similarity string
+
+const (
+	UNKNOWN_SIMILARITY  Similarity = ""
+	BM25_SIMILARITY     Similarity = "BM25"
+	CLASSSIC_SIMILARITY Similarity = "classic"
+	BOOLEAN_SIMILARITY  Similarity = "boolean"
+)
+
+type TermVector string
+
+const (
+	UNKNOWN_TERM_VECTOR TermVector = ""
+
+	// No term vectors are stored. (default)
+	NO_TERM_VECTOR TermVector = "no"
+
+	// Just the terms in the field are stored.
+	YES_TERM_VECTOR TermVector = "yes"
+
+	// Terms and positions are stored.
+	WITH_POSITIONS TermVector = "with_positions"
+
+	// Terms and character offsets are stored.
+	WITH_OFFSETS TermVector = "with_offsets"
+
+	// Terms, positions, and character offsets are stored.
+	WITH_POSITIONS_OFFSETS TermVector = "with_positions_offsets"
+
+	// Terms, positions, and payloads are stored.
+	WITH_POSITIONS_PAYLOADS TermVector = "with_positions_payloads"
+
+	// Terms, positions, offsets and payloads are stored.
+	WITH_POSITIONS_OFFSETS_PAYLOADS TermVector = "with_positions_offsets_payloads"
 )
