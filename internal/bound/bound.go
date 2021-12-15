@@ -1,6 +1,7 @@
 package bound
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -64,16 +65,49 @@ func (v *RangeValue) Float() (float64, error) {
 	}
 }
 
-func (v *RangeValue) Time(format string) (*time.Time, error) {
+func (v *RangeValue) Time(format []string) (*time.Time, error) {
 	if v == nil {
 		return nil, ErrEmptyValue
 	} else {
-		for i := range 
-		// var s = v.String()
-		// var datePart = strings.Split(s, "||")[0]
-		
-		// var durPart = s.Split(s, "||")
-
+		var s = v.String()
+		if s == "" {
+			return nil, ErrEmptyValue
+		}
+		var sv = strings.Split(s, "||")
+		var timePart = sv[0]
+		var res *time.Time
+		if timePart == "now" {
+			var t = time.Now()
+			res = &t
+		} else {
+			for _, f := range format {
+				if t, err := time.Parse(f, timePart); err == nil {
+					res = &t
+					break
+				}
+			}
+		}
+		if res == nil {
+			return nil, fmt.Errorf("failed to parse date: '%s' according to format: %v", s, format)
+		}
+		if len(sv) > 1 {
+			var dv = strings.Split(sv[1], "/")
+			var durationPart = dv[0]
+			if offsetDuration, err := ParseDuration(durationPart); err != nil {
+				return nil, fmt.Errorf("failed to parse offset duration: '%s', err: %+v", durationPart, err)
+			} else {
+				res.Add(offsetDuration)
+			}
+			if len(dv) > 1 {
+				var roundPart = dv[1]
+				if roundDuration, err := ParseDuration(roundPart); err != nil {
+					return nil, fmt.Errorf("failed to parse round duration: '%s', err: %+v", durationPart, err)
+				} else {
+					res.Round(roundDuration)
+				}
+			}
+		}
+		return res, nil
 	}
 
 }
