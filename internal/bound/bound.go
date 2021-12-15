@@ -1,9 +1,9 @@
 package bound
 
 import (
+	"strconv"
 	"strings"
-
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	"time"
 )
 
 // range bound like this [1, 2] [1, 2) (1, 2] (1, 2)
@@ -32,17 +32,12 @@ type RangeValue struct {
 	InfinityVal string   `parser:"  @('*')" json:"infinity_val"`
 	PhraseValue []string `parser:"| QUOTE @( REVERSE QUOTE | !QUOTE )* QUOTE" json:"phrase_value"`
 	SingleValue []string `parser:"| @(IDENT|NUMBER|DOT|PLUS|MINUS)+" json:"simple_value"`
-	value       interface{}
-}
-
-func (v *RangeValue) IsInf() bool {
-	return v != nil && len(v.InfinityVal) != 0
 }
 
 func (v *RangeValue) String() string {
 	if v == nil {
 		return ""
-	} else if v.PhraseValue != nil {
+	} else if len(v.PhraseValue) != 0 {
 		return strings.Join(v.PhraseValue, "")
 	} else if len(v.InfinityVal) != 0 {
 		return v.InfinityVal
@@ -53,13 +48,36 @@ func (v *RangeValue) String() string {
 	}
 }
 
-func (v *RangeValue) CheckValue(m *mapping.FieldMapping) error {
-	return nil
+func (v *RangeValue) Int() (int, error) {
+	if v == nil {
+		return 0, ErrEmptyValue
+	} else {
+		return strconv.Atoi(v.String())
+	}
 }
 
-func (v *RangeValue) Value() interface{} {
+func (v *RangeValue) Float() (float64, error) {
 	if v == nil {
-		return nil
+		return 0.0, ErrEmptyValue
+	} else {
+		return strconv.ParseFloat(v.String(), 64)
 	}
-	return v.value
+}
+
+func (v *RangeValue) Time(format string) (*time.Time, error) {
+	if v == nil {
+		return nil, ErrEmptyValue
+	} else {
+		for i := range 
+		// var s = v.String()
+		// var datePart = strings.Split(s, "||")[0]
+		
+		// var durPart = s.Split(s, "||")
+
+	}
+
+}
+
+func (v *RangeValue) IsInf() bool {
+	return v != nil && len(v.InfinityVal) != 0
 }

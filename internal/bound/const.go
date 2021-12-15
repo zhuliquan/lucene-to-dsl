@@ -1,7 +1,10 @@
 package bound
 
+import "fmt"
+
 var (
-	Inf = &RangeValue{InfinityVal: "*"}
+	Inf        = &RangeValue{InfinityVal: "*"}
+	ErrEmptyValue = fmt.Errorf("empty value")
 )
 
 type BoundType uint16
