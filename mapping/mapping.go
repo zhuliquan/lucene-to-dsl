@@ -22,9 +22,6 @@ type All struct {
 	Store  bool `json:"store,omitempty"`
 }
 
-type Analyzer struct {
-}
-
 type Property struct {
 	Mapping
 	Type FieldType `json:"type,omitempty"`
@@ -53,8 +50,7 @@ type Property struct {
 	// A gauge is a single-value measurement that can go up or down over time, such as a temperature.
 	// A counter is a single-value cumulative counter that only goes up, such as the number of requests processed by a web server.
 	// By default, no metric type is associated with a field. Only valid for numeric fields.
-	Meta         *Meta `json:"meta,omitempty"`
-	IncludeInAll bool  `json:"include_in_all,omitempty"`
+	Meta *Meta `json:"meta,omitempty"`
 
 	// It is often useful to index the same field in different ways for different purposes.
 	// This is the purpose of multi-fields. For instance, a string field could be mapped as a text field for full-text search, and as a keyword field for sorting or aggregations:
@@ -96,6 +92,8 @@ type Property struct {
 	ExtProperties map[string]interface{} `json:"ext_properties,omitempty"`
 
 	// IMPORTANT: below parameters not used
+	// include in _all
+	IncludeInAll bool `json:"include_in_all,omitempty"`
 
 	// WARNING: Only text fields support the analyzer mapping parameter.
 	//
@@ -108,12 +106,12 @@ type Property struct {
 	// search_quote_analyzeredit
 	// The search_quote_analyzer setting allows you to specify an analyzer for phrases, this is particularly useful when dealing with disabling stop words for phrase queries.
 	// To disable stop words for phrases a field utilising three analyzer settings will be required:
-	// An analyzer setting for indexing all terms including stop words
-	// A search_analyzer setting for non-phrase queries that will remove stop words
-	// A search_quote_analyzer setting for phrase queries that will not remove stop words
-	Analyzer            *Analyzer `json:"analyzer,omitempty"`
-	SearchAnalyzer      *Analyzer `json:"search_analyzer,omitempty"`
-	SearchQuoteAnalyzer *Analyzer `json:"search_quote_analyzer,omitempty"`
+	// 1. An analyzer setting for indexing all terms including stop words
+	// 2. A search_analyzer setting for non-phrase queries that will remove stop words
+	// 3. A search_quote_analyzer setting for phrase queries that will not remove stop words
+	Analyzer            string `json:"analyzer,omitempty"`
+	SearchAnalyzer      string `json:"search_analyzer,omitempty"`
+	SearchQuoteAnalyzer string `json:"search_quote_analyzer,omitempty"`
 
 	// Norms store various normalization factors that are later used at query time in order to compute the score of a document relatively to a query.
 	// Although useful for scoring, norms also require quite a lot of disk (typically in the order of one byte per document per field in your index, even for documents that don’t have this specific field).
@@ -207,7 +205,7 @@ type Property struct {
 	// In JSON documents, dates are represented as strings.
 	// Elasticsearch uses a set of preconfigured formats to recognize and parse these strings into a long value representing milliseconds-since-the-epoch in UTC.
 	// Besides the built-in formats, your own custom formats can be specified using the familiar yyyy/MM/dd syntax:
-	Format TimeFormat `json:"format,omitempty"`
+	Format string `json:"format,omitempty"`
 
 	// 	Elasticsearch tries to index all of the fields you give it, but sometimes you want to just store the field without indexing it.
 	// For instance, imagine that you are using Elasticsearch as a web session store.
