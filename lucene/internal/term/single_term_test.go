@@ -318,6 +318,22 @@ func TestDRangeTerm(t *testing.T) {
 				RightInclude: false,
 			},
 		},
+		{
+			name:  `DRangeTerm08`,
+			input: `{* TO 2012/01/01T09:08.16||8d/M }`,
+			want: &DRangeTerm{
+				LBRACKET: "{",
+				LValue:   &bnd.RangeValue{InfinityVal: "*"},
+				RValue:   &bnd.RangeValue{SingleValue: []string{"2012", "/", "01", "/", "01", "T", "09", ":", "08", ".", "16", "|", "|", "8", "d", "/", "M"}},
+				RBRACKET: "}",
+			},
+			bound: &bnd.Bound{
+				LeftValue:    &bnd.RangeValue{InfinityVal: "*"},
+				RightValue:   &bnd.RangeValue{SingleValue: []string{"2012", "/", "01", "/", "01", "T", "09", ":", "08", ".", "16", "|", "|", "8", "d", "/", "M"}},
+				LeftInclude:  false,
+				RightInclude: false,
+			},
+		},
 	}
 
 	for _, tt := range testCases {
