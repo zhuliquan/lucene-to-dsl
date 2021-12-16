@@ -3,8 +3,6 @@ package dsl
 import (
 	"fmt"
 	"strconv"
-
-	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 )
 
 // 定义dsl的ast node
@@ -236,10 +234,13 @@ func (n *PrefixNode) ToDSL() DSL {
 
 type RangeNode struct {
 	LeafNode
-	Field  string
-	Bound  *bnd.Bound
-	Boost  float64
-	Format string
+	Field        string
+	LeftValue    interface{}
+	RightValue   interface{}
+	LeftInclude  bool
+	RightInclude bool
+	Boost        float64
+	Format       string
 }
 
 func (n *RangeNode) GetDSLType() DSLType {
@@ -247,42 +248,25 @@ func (n *RangeNode) GetDSLType() DSLType {
 }
 
 func (n *RangeNode) ToDSL() DSL {
-	if n == nil || n.Bound == nil {
+	if n == nil {
 		return nil
-
 		// (-inf, +inf) mean field exist
-	} else if n.Bound.LeftValue.IsInf() && n.Bound.RightValue.IsInf() {
+	} else if n.LeftValue == nil && n.RightValue == nil {
 		return DSL{"exists": DSL{"field": n.Field}}
 	}
-
-	var (
-		res  DSL
-		infL = n.Bound.LeftValue.IsInf()
-		infR = n.Bound.RightValue.IsInf()
-	)
-
-	switch n.Bound.GetBoundType() {
-	case bnd.LEFT_INCLUDE_RIGHT_INCLUDE:
-		res = DSL{"gte": n.Bound.LeftValue.Value(), "lte": n.Bound.RightValue.Value()}
-	case bnd.LEFT_INCLUDE_RIGHT_EXCLUDE:
-		if infR {
-			res = DSL{"gte": n.Bound.LeftValue.Value()}
+	var res = DSL{}
+	if n.LeftValue != nil {
+		if n.LeftInclude {
+			res["gte"] = n.LeftValue
 		} else {
-			res = DSL{"gte": n.Bound.LeftValue.Value(), "lt": n.Bound.RightValue.Value()}
+			res["gt"] = n.LeftValue
 		}
-	case bnd.LEFT_EXCLUDE_RIGHT_INCLUDE:
-		if infL {
-			res = DSL{"lte": n.Bound.RightValue.Value()}
+	}
+	if n.RightValue != nil {
+		if n.RightInclude {
+			res["lte"] = n.RightValue
 		} else {
-			res = DSL{"gt": n.Bound.LeftValue.Value(), "lte": n.Bound.RightValue.Value()}
-		}
-	case bnd.LEFT_EXCLUDE_RIGHT_EXCLUDE:
-		if infL && !infR {
-			res = DSL{"lt": n.Bound.RightValue.Value()}
-		} else if !infL && infR {
-			res = DSL{"gt": n.Bound.LeftValue.Value()}
-		} else {
-			res = DSL{"gt": n.Bound.LeftValue.Value(), "lt": n.Bound.RightValue.Value()}
+			res["lt"] = n.RightValue
 		}
 	}
 
