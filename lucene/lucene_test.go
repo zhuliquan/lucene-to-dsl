@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/term"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/operator"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/term"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/token"
 )
 
 func TestLucene(t *testing.T) {

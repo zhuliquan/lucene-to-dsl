@@ -1,10 +1,11 @@
-package bound
+package term
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zhuliquan/datemath_parser"
 )
 
 // range bound like this [1, 2] [1, 2) (1, 2] (1, 2)
@@ -65,51 +66,14 @@ func (v *RangeValue) Float() (float64, error) {
 	}
 }
 
-func (v *RangeValue) Time(format []string) (*time.Time, error) {
+func (v *RangeValue) Time(parser *datemath_parser.DateMathParser) (time.Time, error) {
 	if v == nil {
-		return nil, ErrEmptyValue
+		return time.Unix(0, 0), ErrEmptyValue
+	} else if s := v.String(); s == "" {
+		return time.Unix(0, 0), ErrEmptyValue
 	} else {
-		var s = v.String()
-		if s == "" {
-			return nil, ErrEmptyValue
-		}
-		var sv = strings.Split(s, "||")
-		var timePart = sv[0]
-		var res *time.Time
-		if timePart == "now" {
-			var t = time.Now()
-			res = &t
-		} else {
-			for _, f := range format {
-				if t, err := time.Parse(f, timePart); err == nil {
-					res = &t
-					break
-				}
-			}
-		}
-		if res == nil {
-			return nil, fmt.Errorf("failed to parse date: '%s' according to format: %v", s, format)
-		}
-		if len(sv) > 1 {
-			var dv = strings.Split(sv[1], "/")
-			var durationPart = dv[0]
-			if offsetDuration, err := ParseDuration(durationPart); err != nil {
-				return nil, fmt.Errorf("failed to parse offset duration: '%s', err: %+v", durationPart, err)
-			} else {
-				res.Add(offsetDuration)
-			}
-			if len(dv) > 1 {
-				var roundPart = dv[1]
-				if roundDuration, err := ParseDuration(roundPart); err != nil {
-					return nil, fmt.Errorf("failed to parse round duration: '%s', err: %+v", durationPart, err)
-				} else {
-					res.Round(roundDuration)
-				}
-			}
-		}
-		return res, nil
+		return parser.Parse(v.String())
 	}
-
 }
 
 func (v *RangeValue) IsInf() bool {

@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/token"
 )
 
 func TestSingleTerm(t *testing.T) {
@@ -203,7 +202,7 @@ func TestDRangeTerm(t *testing.T) {
 		name  string
 		input string
 		want  *DRangeTerm
-		bound *bnd.Bound
+		bound *Bound
 	}
 	var testCases = []testCase{
 		{
@@ -211,13 +210,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `[1 TO 2]`,
 			want: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{"1"}},
-				RightValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{"1"}},
+				RightValue:   &RangeValue{SingleValue: []string{"2"}},
 				LeftInclude:  true,
 				RightInclude: true,
 			},
@@ -227,13 +226,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `[1 TO 2 }`,
 			want: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{"1"}},
-				RightValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{"1"}},
+				RightValue:   &RangeValue{SingleValue: []string{"2"}},
 				LeftInclude:  true,
 				RightInclude: false,
 			},
@@ -243,13 +242,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `{ 1 TO 2}`,
 			want: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "}",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{"1"}},
-				RightValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{"1"}},
+				RightValue:   &RangeValue{SingleValue: []string{"2"}},
 				LeftInclude:  false,
 				RightInclude: false,
 			},
@@ -259,13 +258,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `{ 1 TO 2]`,
 			want: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-				RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+				LValue:   &RangeValue{SingleValue: []string{"1"}},
+				RValue:   &RangeValue{SingleValue: []string{"2"}},
 				RBRACKET: "]",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{"1"}},
-				RightValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{"1"}},
+				RightValue:   &RangeValue{SingleValue: []string{"2"}},
 				LeftInclude:  false,
 				RightInclude: true,
 			},
@@ -275,13 +274,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `[10 TO *]`,
 			want: &DRangeTerm{
 				LBRACKET: "[",
-				LValue:   &bnd.RangeValue{SingleValue: []string{"10"}},
-				RValue:   &bnd.RangeValue{InfinityVal: "*"},
+				LValue:   &RangeValue{SingleValue: []string{"10"}},
+				RValue:   &RangeValue{InfinityVal: "*"},
 				RBRACKET: "]",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{"10"}},
-				RightValue:   &bnd.RangeValue{InfinityVal: "*"},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{"10"}},
+				RightValue:   &RangeValue{InfinityVal: "*"},
 				LeftInclude:  true,
 				RightInclude: false,
 			},
@@ -291,13 +290,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `{* TO 2012-01-01}`,
 			want: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &bnd.RangeValue{InfinityVal: "*"},
-				RValue:   &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
+				LValue:   &RangeValue{InfinityVal: "*"},
+				RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				RBRACKET: "}",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{InfinityVal: "*"},
-				RightValue:   &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{InfinityVal: "*"},
+				RightValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 				LeftInclude:  false,
 				RightInclude: false,
 			},
@@ -307,13 +306,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `{* TO "2012-01-01 09:08:16"}`,
 			want: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &bnd.RangeValue{InfinityVal: "*"},
-				RValue:   &bnd.RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
+				LValue:   &RangeValue{InfinityVal: "*"},
+				RValue:   &RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
 				RBRACKET: "}",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{InfinityVal: "*"},
-				RightValue:   &bnd.RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{InfinityVal: "*"},
+				RightValue:   &RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
 				LeftInclude:  false,
 				RightInclude: false,
 			},
@@ -323,13 +322,13 @@ func TestDRangeTerm(t *testing.T) {
 			input: `{* TO 2012/01/01T09:08.16||8d/M }`,
 			want: &DRangeTerm{
 				LBRACKET: "{",
-				LValue:   &bnd.RangeValue{InfinityVal: "*"},
-				RValue:   &bnd.RangeValue{SingleValue: []string{"2012", "/", "01", "/", "01", "T", "09", ":", "08", ".", "16", "|", "|", "8", "d", "/", "M"}},
+				LValue:   &RangeValue{InfinityVal: "*"},
+				RValue:   &RangeValue{SingleValue: []string{"2012", "/", "01", "/", "01", "T", "09", ":", "08", ".", "16", "|", "|", "8", "d", "/", "M"}},
 				RBRACKET: "}",
 			},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{InfinityVal: "*"},
-				RightValue:   &bnd.RangeValue{SingleValue: []string{"2012", "/", "01", "/", "01", "T", "09", ":", "08", ".", "16", "|", "|", "8", "d", "/", "M"}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{InfinityVal: "*"},
+				RightValue:   &RangeValue{SingleValue: []string{"2012", "/", "01", "/", "01", "T", "09", ":", "08", ".", "16", "|", "|", "8", "d", "/", "M"}},
 				LeftInclude:  false,
 				RightInclude: false,
 			},
@@ -360,16 +359,16 @@ func TestSRangeTerm(t *testing.T) {
 		name  string
 		input string
 		want  *SRangeTerm
-		bound *bnd.Bound
+		bound *Bound
 	}
 	var testCases = []testCase{
 		{
 			name:  "SRangeTerm01",
 			input: `<="dsada\455 78"`,
-			want:  &SRangeTerm{Symbol: "<=", Value: &bnd.RangeValue{PhraseValue: []string{`dsada`, `\`, `455`, ` `, `78`}}},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{InfinityVal: "*"},
-				RightValue:   &bnd.RangeValue{PhraseValue: []string{`dsada`, `\`, `455`, ` `, `78`}},
+			want:  &SRangeTerm{Symbol: "<=", Value: &RangeValue{PhraseValue: []string{`dsada`, `\`, `455`, ` `, `78`}}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{InfinityVal: "*"},
+				RightValue:   &RangeValue{PhraseValue: []string{`dsada`, `\`, `455`, ` `, `78`}},
 				LeftInclude:  false,
 				RightInclude: true,
 			},
@@ -377,10 +376,10 @@ func TestSRangeTerm(t *testing.T) {
 		{
 			name:  "SRangeTerm02",
 			input: `<"dsada\\ 78"`,
-			want:  &SRangeTerm{Symbol: "<", Value: &bnd.RangeValue{PhraseValue: []string{`dsada\\`, ` `, `78`}}},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{InfinityVal: "*"},
-				RightValue:   &bnd.RangeValue{PhraseValue: []string{`dsada\\`, ` `, `78`}},
+			want:  &SRangeTerm{Symbol: "<", Value: &RangeValue{PhraseValue: []string{`dsada\\`, ` `, `78`}}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{InfinityVal: "*"},
+				RightValue:   &RangeValue{PhraseValue: []string{`dsada\\`, ` `, `78`}},
 				LeftInclude:  false,
 				RightInclude: false,
 			},
@@ -388,10 +387,10 @@ func TestSRangeTerm(t *testing.T) {
 		{
 			name:  "SRangeTerm03",
 			input: `>=dsada\ 78`,
-			want:  &SRangeTerm{Symbol: ">=", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}}},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
-				RightValue:   &bnd.RangeValue{InfinityVal: "*"},
+			want:  &SRangeTerm{Symbol: ">=", Value: &RangeValue{SingleValue: []string{`dsada\ `, `78`}}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{`dsada\ `, `78`}},
+				RightValue:   &RangeValue{InfinityVal: "*"},
 				LeftInclude:  true,
 				RightInclude: false,
 			},
@@ -399,10 +398,10 @@ func TestSRangeTerm(t *testing.T) {
 		{
 			name:  "SRangeTerm04",
 			input: `>dsada\ 78`,
-			want:  &SRangeTerm{Symbol: ">", Value: &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}}},
-			bound: &bnd.Bound{
-				LeftValue:    &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
-				RightValue:   &bnd.RangeValue{InfinityVal: "*"},
+			want:  &SRangeTerm{Symbol: ">", Value: &RangeValue{SingleValue: []string{`dsada\ `, `78`}}},
+			bound: &Bound{
+				LeftValue:    &RangeValue{SingleValue: []string{`dsada\ `, `78`}},
+				RightValue:   &RangeValue{InfinityVal: "*"},
 				LeftInclude:  false,
 				RightInclude: false,
 			},

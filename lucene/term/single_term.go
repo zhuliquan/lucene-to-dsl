@@ -3,8 +3,6 @@ package term
 import (
 	"fmt"
 	"strings"
-
-	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 )
 
 // simple term: is a single term without escape char and whitespace
@@ -144,8 +142,8 @@ func (t *RegexpTerm) String() string {
 //double side of range term: a term is surrounded by brace / bracket, for instance [1 TO 2] / [1 TO 2} / {1 TO 2] / {1 TO 2}
 type DRangeTerm struct {
 	LBRACKET string          `parser:"@(LBRACE|LBRACK) WHITESPACE*" json:"left_bracket"`
-	LValue   *bnd.RangeValue `parser:"@@ WHITESPACE+ 'TO'" json:"left_value"`
-	RValue   *bnd.RangeValue `parser:"WHITESPACE+ @@" json:"right_value"`
+	LValue   *RangeValue `parser:"@@ WHITESPACE+ 'TO'" json:"left_value"`
+	RValue   *RangeValue `parser:"WHITESPACE+ @@" json:"right_value"`
 	RBRACKET string          `parser:"WHITESPACE* @(RBRACK|RBRACE)" json:"right_bracket"`
 }
 
@@ -156,18 +154,18 @@ func (t *DRangeTerm) GetTermType() TermType {
 	return RANGE_TERM_TYPE
 }
 
-func (t *DRangeTerm) GetBound() *bnd.Bound {
-	var res *bnd.Bound
+func (t *DRangeTerm) GetBound() *Bound {
+	var res *Bound
 	if t == nil {
 		return nil
 	} else if t.LBRACKET == "[" && t.RBRACKET == "]" {
-		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: true, RightInclude: true}
+		res = &Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: true, RightInclude: true}
 	} else if t.LBRACKET == "[" && t.RBRACKET == "}" {
-		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: true, RightInclude: false}
+		res = &Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: true, RightInclude: false}
 	} else if t.LBRACKET == "{" && t.RBRACKET == "]" {
-		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: false, RightInclude: true}
+		res = &Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: false, RightInclude: true}
 	} else if t.LBRACKET == "{" && t.RBRACKET == "}" {
-		res = &bnd.Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: false, RightInclude: false}
+		res = &Bound{LeftValue: t.LValue, RightValue: t.RValue, LeftInclude: false, RightInclude: false}
 	} else {
 		return nil
 	}
@@ -187,7 +185,7 @@ func (t *DRangeTerm) String() string {
 // single side of range term: a term is behind of symbol ('>' / '<' / '>=' / '<=')
 type SRangeTerm struct {
 	Symbol string          `parser:"@COMPARE" json:"symbol"`
-	Value  *bnd.RangeValue `parser:"@@" json:"value"`
+	Value  *RangeValue `parser:"@@" json:"value"`
 	drange *DRangeTerm
 }
 
@@ -205,19 +203,19 @@ func (t *SRangeTerm) toDRangeTerm() *DRangeTerm {
 		return t.drange
 	} else {
 		if t.Symbol == ">" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &bnd.RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 		} else if t.Symbol == ">=" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &bnd.RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
+			t.drange = &DRangeTerm{LBRACKET: "[", LValue: t.Value, RValue: &RangeValue{InfinityVal: "*"}, RBRACKET: "}"}
 		} else if t.Symbol == "<" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &bnd.RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "}"}
 		} else if t.Symbol == "<=" && t.Value != nil {
-			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &bnd.RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
+			t.drange = &DRangeTerm{LBRACKET: "{", LValue: &RangeValue{InfinityVal: "*"}, RValue: t.Value, RBRACKET: "]"}
 		}
 	}
 	return t.drange
 }
 
-func (t *SRangeTerm) GetBound() *bnd.Bound {
+func (t *SRangeTerm) GetBound() *Bound {
 	return t.toDRangeTerm().GetBound()
 }
 

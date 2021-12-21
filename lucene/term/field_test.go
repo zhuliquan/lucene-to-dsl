@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/token"
 )
 
 func TestField(t *testing.T) {

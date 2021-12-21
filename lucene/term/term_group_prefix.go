@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
+	op "github.com/zhuliquan/lucene-to-dsl/lucene/operator"
 )
 
 // prefix term: a term is behind of prefix operator symbol ("+" / "-")

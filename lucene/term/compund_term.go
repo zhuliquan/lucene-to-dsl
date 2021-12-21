@@ -2,8 +2,6 @@ package term
 
 import (
 	"strconv"
-
-	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
 )
 
 // single side range term or double side range and with boost like this [1 TO 2]^2
@@ -36,7 +34,7 @@ func (t *RangeTerm) String() string {
 	}
 }
 
-func (t *RangeTerm) GetBound() *bnd.Bound {
+func (t *RangeTerm) GetBound() *Bound {
 	if t == nil {
 		return nil
 	} else if t.SRangeTerm != nil {
