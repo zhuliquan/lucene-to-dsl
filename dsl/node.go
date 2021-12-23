@@ -9,6 +9,7 @@ import (
 type DSLNode interface {
 	GetNodeType() NodeType
 	GetDSLType() DSLType
+	GetId() string
 	ToDSL() DSL
 }
 
@@ -20,12 +21,14 @@ func (n *OpNode) GetNodeType() NodeType {
 
 type OrDSLNode struct {
 	OpNode
-	Nodes []DSLNode
+	Nodes map[string]DSLNode
 }
 
 func (n *OrDSLNode) GetDSLType() DSLType {
 	return OR_DSL_TYPE
 }
+
+func (n *OrDSLNode) GetId() string { return "OR" }
 
 func (n *OrDSLNode) ToDSL() DSL {
 	var res = []DSL{}
@@ -41,13 +44,15 @@ func (n *OrDSLNode) ToDSL() DSL {
 
 type AndDSLNode struct {
 	OpNode
-	MustNodes   []DSLNode
-	FilterNodes []DSLNode
+	MustNodes   map[string]DSLNode
+	FilterNodes map[string]DSLNode
 }
 
 func (n *AndDSLNode) GetDSLType() DSLType {
 	return OR_DSL_TYPE
 }
+
+func (n *AndDSLNode) GetId() string { return "AND" }
 
 func (n *AndDSLNode) ToDSL() DSL {
 	var FRes = []DSL{}
@@ -80,12 +85,14 @@ func (n *AndDSLNode) ToDSL() DSL {
 
 type NotDSLNode struct {
 	OpNode
-	Nodes []DSLNode
+	Nodes map[string]DSLNode
 }
 
 func (n *NotDSLNode) GetDSLType() DSLType {
 	return NOT_DSL_TYPE
 }
+
+func (n *NotDSLNode) GetId() string { return "NOT" }
 
 func (n *NotDSLNode) ToDSL() DSL {
 	var res = []DSL{}
@@ -112,6 +119,8 @@ func (n *ExistsNode) GetDSLType() DSLType {
 	return EXISTS_DSL_TYPE
 }
 
+func (n *ExistsNode) GetId() string { return n.Field }
+
 func (n *ExistsNode) ToDSL() DSL {
 	if n == nil {
 		return nil
@@ -127,6 +136,8 @@ type IdsNode struct {
 func (n *IdsNode) GetDSLType() DSLType {
 	return IDS_DSL_TYPE
 }
+
+func (n *IdsNode) GetId() string { return "_id" }
 
 func (n *IdsNode) ToDSL() DSL {
 	if n == nil {
@@ -168,6 +179,8 @@ func (n *TermsNode) GetDSLType() DSLType {
 	return TERMS_DSL_TYPE
 }
 
+func (n *TermsNode) GetId() string { return n.Field }
+
 func (n *TermsNode) ToDSL() DSL {
 	if n == nil {
 		return nil
@@ -182,6 +195,8 @@ type RegexpNode struct {
 func (n *RegexpNode) GetDSLType() DSLType {
 	return REGEXP_DSL_TYPE
 }
+
+func (n *RegexpNode) GetId() string { return n.Field }
 
 func (n *RegexpNode) ToDSL() DSL {
 	if n == nil {
@@ -199,6 +214,8 @@ type FuzzyNode struct {
 func (n *FuzzyNode) GetDSLType() DSLType {
 	return FUZZY_DSL_TYPE
 }
+
+func (n *FuzzyNode) GetId() string { return n.Field }
 
 func (n *FuzzyNode) ToDSL() DSL {
 	if n == nil {
@@ -225,6 +242,8 @@ func (n *PrefixNode) GetDSLType() DSLType {
 	return PREFIX_DSL_TYPE
 }
 
+func (n *PrefixNode) GetId() string { return n.Field }
+
 func (n *PrefixNode) ToDSL() DSL {
 	if n == nil {
 		return nil
@@ -246,6 +265,8 @@ type RangeNode struct {
 func (n *RangeNode) GetDSLType() DSLType {
 	return RANGE_DSL_TYPE
 }
+
+func (n *RangeNode) GetId() string { return n.Field }
 
 func (n *RangeNode) ToDSL() DSL {
 	if n == nil {
@@ -288,6 +309,10 @@ func (n *WildCardNode) GetDSLType() DSLType {
 	return WILDCARD_DSL_TYPE
 }
 
+func (n *WildCardNode) GetId() string {
+	return n.Field
+}
+
 func (n *WildCardNode) ToDSL() DSL {
 	if n == nil {
 		return nil
@@ -305,7 +330,11 @@ func (n *MatchNode) GetDSLType() DSLType {
 	return MATCH_DSL_TYPE
 }
 
-func (n *MatchNode) ToDSL() DSL {
+func (n *MatchNode) GetId() string {
+	return n.Field
+}
+
+func (n *MatchNode) GetID() DSL {
 	return DSL{"match": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
 }
 
@@ -317,6 +346,25 @@ func (n *MatchPhraseNode) GetDSLType() DSLType {
 	return MATCH_PHRASE_DSL_TYPE
 }
 
+func (n *MatchPhraseNode) GetId() string {
+	return n.Field
+}
+
 func (n *MatchPhraseNode) ToDSL() DSL {
 	return DSL{"match_phrase": DSL{n.Field: n.Value}}
+}
+
+type QueryStringNode struct {
+	EqNode
+	Boost float64
+}
+
+func (n *QueryStringNode) GetDSLType() DSLType {
+	return QUERY_STRING_NODE_TYPE
+}
+
+func (n *QueryStringNode) GetId() string { return n.Field }
+
+func (n *MatchNode) ToDSL() DSL {
+	return DSL{"query_string": DSL{"query": n.Value, "fields": []string{n.Field}, "boost": n.Boost}}
 }
