@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -9,6 +10,9 @@ import (
 type DSLNode interface {
 	GetNodeType() NodeType
 	GetDSLType() DSLType
+	UnionJoin(DSLNode) (DSLNode, error)
+	InterSect(DSLNode) (DSLNode, error)
+	Inverse() (DSLNode, error)
 	GetId() string
 	ToDSL() DSL
 }
@@ -21,19 +25,33 @@ func (n *OpNode) GetNodeType() NodeType {
 
 type OrDSLNode struct {
 	OpNode
-	Nodes map[string]DSLNode
+	Nodes map[string][]DSLNode
 }
 
 func (n *OrDSLNode) GetDSLType() DSLType {
 	return OR_DSL_TYPE
 }
 
-func (n *OrDSLNode) GetId() string { return "OR" }
+func (n *OrDSLNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *OrDSLNode) InterSect(DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *OrDSLNode) Inverse() (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *OrDSLNode) GetId() string { return "OP:OR" }
 
 func (n *OrDSLNode) ToDSL() DSL {
 	var res = []DSL{}
-	for _, node := range n.Nodes {
-		res = append(res, node.ToDSL())
+	for _, nodes := range n.Nodes {
+		for _, node := range nodes {
+			res = append(res, node.ToDSL())
+		}
 	}
 	if len(res) == 1 {
 		return res[0]
@@ -44,24 +62,40 @@ func (n *OrDSLNode) ToDSL() DSL {
 
 type AndDSLNode struct {
 	OpNode
-	MustNodes   map[string]DSLNode
-	FilterNodes map[string]DSLNode
+	MustNodes   map[string][]DSLNode
+	FilterNodes map[string][]DSLNode
 }
 
 func (n *AndDSLNode) GetDSLType() DSLType {
 	return OR_DSL_TYPE
 }
 
-func (n *AndDSLNode) GetId() string { return "AND" }
+func (n *AndDSLNode) UnionJoin(DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *AndDSLNode) InterSect(DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *AndDSLNode) Inverse() (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *AndDSLNode) GetId() string { return "OP:AND" }
 
 func (n *AndDSLNode) ToDSL() DSL {
 	var FRes = []DSL{}
 	var MRes = []DSL{}
-	for _, node := range n.MustNodes {
-		MRes = append(MRes, node.ToDSL())
+	for _, nodes := range n.MustNodes {
+		for _, node := range nodes {
+			MRes = append(MRes, node.ToDSL())
+		}
 	}
-	for _, node := range n.FilterNodes {
-		FRes = append(FRes, node.ToDSL())
+	for _, nodes := range n.FilterNodes {
+		for _, node := range nodes {
+			FRes = append(FRes, node.ToDSL())
+		}
 	}
 
 	if len(FRes) == 1 && len(n.MustNodes) == 0 {
@@ -85,14 +119,14 @@ func (n *AndDSLNode) ToDSL() DSL {
 
 type NotDSLNode struct {
 	OpNode
-	Nodes map[string]DSLNode
+	Nodes map[string][]DSLNode
 }
 
 func (n *NotDSLNode) GetDSLType() DSLType {
 	return NOT_DSL_TYPE
 }
 
-func (n *NotDSLNode) GetId() string { return "NOT" }
+func (n *NotDSLNode) GetId() string { return "OP:NOT" }
 
 func (n *NotDSLNode) ToDSL() DSL {
 	var res = []DSL{}
@@ -102,8 +136,20 @@ func (n *NotDSLNode) ToDSL() DSL {
 	if len(res) == 1 {
 		return DSL{"bool": DSL{"must_not": res[0]}}
 	} else {
-		return DSL{"bool": DSL{"must_not": res[1]}}
+		return DSL{"bool": DSL{"must_not": res}}
 	}
+}
+
+func (n *NotDSLNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *NotDSLNode) InterSect(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *NotDSLNode) Inverse() (DSLNode, error) {
+	return &AndDSLNode{MustNodes: n.Nodes, FilterNodes: nil}, nil
 }
 
 type LeafNode struct{}
@@ -115,11 +161,27 @@ type ExistsNode struct {
 	Field string
 }
 
-func (n *ExistsNode) GetDSLType() DSLType {
-	return EXISTS_DSL_TYPE
+func (n *ExistsNode) GetDSLType() DSLType { return EXISTS_DSL_TYPE }
+
+// if union same field node, you can return exist node, for example {"exists": {"field" : "x"}} union {"match": {"x": "foo bar"}}
+// "exists": {"field": "x"} > "match": {"x": "foo bar"}
+func (n *ExistsNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	return n, nil
 }
 
-func (n *ExistsNode) GetId() string { return n.Field }
+func (n *ExistsNode) InterSect(node DSLNode) (DSLNode, error) {
+	return node, nil
+}
+
+func (n *ExistsNode) Inverse() (DSLNode, error) {
+	return &NotDSLNode{
+		Nodes: map[string][]DSLNode{
+			n.Field: {n},
+		},
+	}, nil
+}
+
+func (n *ExistsNode) GetId() string { return "LEAF:" + n.Field }
 
 func (n *ExistsNode) ToDSL() DSL {
 	if n == nil {
@@ -133,11 +195,22 @@ type IdsNode struct {
 	Values []string
 }
 
-func (n *IdsNode) GetDSLType() DSLType {
-	return IDS_DSL_TYPE
+func (n *IdsNode) GetDSLType() DSLType { return IDS_DSL_TYPE }
+
+func (n *IdsNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	n.Values = append(n.Values, node.(*IdsNode).Values...)
+	return n, nil
 }
 
-func (n *IdsNode) GetId() string { return "_id" }
+func (n *IdsNode) InterSect(node DSLNode) (DSLNode, error) {
+	return nil, fmt.Errorf("ids node can't intersect join with ids node")
+}
+
+func (n *IdsNode) Inverse() (DSLNode, error) {
+	return nil, fmt.Errorf("ids node can't inverse own")
+}
+
+func (n *IdsNode) GetId() string { return "LEAF:" + "_id" }
 
 func (n *IdsNode) ToDSL() DSL {
 	if n == nil {
@@ -152,6 +225,8 @@ type EqNode struct {
 	Value interface{}
 }
 
+func (n *EqNode) GetId() string { return "LEAF:" + n.Field }
+
 type TermNode struct {
 	EqNode
 	Boost float64
@@ -159,6 +234,62 @@ type TermNode struct {
 
 func (n *TermNode) GetDSLType() DSLType {
 	return TERM_DSL_TYPE
+}
+
+func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	switch node.GetDSLType() {
+	case IDS_DSL_TYPE:
+		return node.UnionJoin(n)
+	case EXISTS_DSL_TYPE:
+		return node.UnionJoin(n)
+	case TERM_DSL_TYPE:
+		var t = node.(*TermNode)
+		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
+			return &TermsNode{
+				Field:  n.Field,
+				Values: []interface{}{n.Value, t.Value},
+				Boost:  n.Boost,
+			}, nil
+		} else {
+			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
+		}
+	case TERMS_DSL_TYPE:
+		var t = node.(*TermsNode)
+		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
+			t.Values = append(t.Values, n.Value)
+			return t, nil
+		} else {
+			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
+		}
+	case PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE:
+		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), node.ToDSL())
+
+	case RANGE_DSL_TYPE:
+		// put compare and collision into range node
+		return node.(*RangeNode).UnionJoin(n)
+
+	case QUERY_STRING_NODE_TYPE:
+		var t = node.(*QueryStringNode)
+		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
+			t.Value = fmt.Sprintf("%s OR %s", t.Value, n.Value)
+			return t, nil
+		} else {
+			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
+		}
+	default:
+		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is unknown", n.ToDSL(), node.ToDSL())
+	}
+}
+
+func (n *TermNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n.Value != node.(*TermNode).Value {
+
+	}
+	return nil, nil
+}
+
+func (n *TermNode) Inverse() (DSLNode, error) {
+	return nil, nil
 }
 
 func (n *TermNode) ToDSL() DSL {
@@ -171,7 +302,7 @@ func (n *TermNode) ToDSL() DSL {
 type TermsNode struct {
 	LeafNode
 	Field  string
-	Values []string
+	Values []interface{}
 	Boost  float64
 }
 
@@ -179,7 +310,19 @@ func (n *TermsNode) GetDSLType() DSLType {
 	return TERMS_DSL_TYPE
 }
 
-func (n *TermsNode) GetId() string { return n.Field }
+func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *TermsNode) InterSect(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *TermsNode) Inverse() (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *TermsNode) GetId() string { return "LEAF:" + n.Field }
 
 func (n *TermsNode) ToDSL() DSL {
 	if n == nil {
@@ -195,8 +338,6 @@ type RegexpNode struct {
 func (n *RegexpNode) GetDSLType() DSLType {
 	return REGEXP_DSL_TYPE
 }
-
-func (n *RegexpNode) GetId() string { return n.Field }
 
 func (n *RegexpNode) ToDSL() DSL {
 	if n == nil {
@@ -214,8 +355,6 @@ type FuzzyNode struct {
 func (n *FuzzyNode) GetDSLType() DSLType {
 	return FUZZY_DSL_TYPE
 }
-
-func (n *FuzzyNode) GetId() string { return n.Field }
 
 func (n *FuzzyNode) ToDSL() DSL {
 	if n == nil {
@@ -242,8 +381,6 @@ func (n *PrefixNode) GetDSLType() DSLType {
 	return PREFIX_DSL_TYPE
 }
 
-func (n *PrefixNode) GetId() string { return n.Field }
-
 func (n *PrefixNode) ToDSL() DSL {
 	if n == nil {
 		return nil
@@ -266,7 +403,19 @@ func (n *RangeNode) GetDSLType() DSLType {
 	return RANGE_DSL_TYPE
 }
 
-func (n *RangeNode) GetId() string { return n.Field }
+func (n *RangeNode) GetId() string { return "LEAF:" + n.Field }
+
+func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *RangeNode) InterSect(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *RangeNode) Inverse() (DSLNode, error) {
+	return nil, nil
+}
 
 func (n *RangeNode) ToDSL() DSL {
 	if n == nil {
@@ -309,10 +458,6 @@ func (n *WildCardNode) GetDSLType() DSLType {
 	return WILDCARD_DSL_TYPE
 }
 
-func (n *WildCardNode) GetId() string {
-	return n.Field
-}
-
 func (n *WildCardNode) ToDSL() DSL {
 	if n == nil {
 		return nil
@@ -330,11 +475,7 @@ func (n *MatchNode) GetDSLType() DSLType {
 	return MATCH_DSL_TYPE
 }
 
-func (n *MatchNode) GetId() string {
-	return n.Field
-}
-
-func (n *MatchNode) GetID() DSL {
+func (n *MatchNode) ToDSL() DSL {
 	return DSL{"match": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
 }
 
@@ -346,10 +487,6 @@ func (n *MatchPhraseNode) GetDSLType() DSLType {
 	return MATCH_PHRASE_DSL_TYPE
 }
 
-func (n *MatchPhraseNode) GetId() string {
-	return n.Field
-}
-
 func (n *MatchPhraseNode) ToDSL() DSL {
 	return DSL{"match_phrase": DSL{n.Field: n.Value}}
 }
@@ -359,12 +496,22 @@ type QueryStringNode struct {
 	Boost float64
 }
 
+func (n *QueryStringNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *QueryStringNode) InterSect(node DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *QueryStringNode) Inverse() (DSLNode, error) {
+	return nil, nil
+}
+
 func (n *QueryStringNode) GetDSLType() DSLType {
 	return QUERY_STRING_NODE_TYPE
 }
 
-func (n *QueryStringNode) GetId() string { return n.Field }
-
-func (n *MatchNode) ToDSL() DSL {
-	return DSL{"query_string": DSL{"query": n.Value, "fields": []string{n.Field}, "boost": n.Boost}}
+func (n *QueryStringNode) ToDSL() DSL {
+	return DSL{"query_string": DSL{"query": n.Value, "default_field": n.Field, "boost": n.Boost}}
 }
