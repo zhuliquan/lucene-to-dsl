@@ -32,7 +32,8 @@ func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 				return nil, err
 			} else {
 				if preNode, ok := nodes[curNode.GetId()]; ok {
-					if curNode.GetNodeType() == dsl.OP_NODE_TYPE {
+					if curNode.GetDSLType() == dsl.AND_DSL_TYPE ||
+						curNode.GetDSLType() == dsl.NOT_DSL_TYPE {
 						nodes[curNode.GetId()] = append(nodes[curNode.GetId()], curNode)
 					} else {
 						if node, err := preNode[0].UnionJoin(curNode); err != nil {
@@ -45,6 +46,13 @@ func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 
 				} else {
 					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
+				}
+			}
+		}
+		if len(nodes) == 1 {
+			for _, ns := range nodes {
+				if len(ns) == 1 {
+					return ns[0], nil
 				}
 			}
 		}
@@ -65,7 +73,7 @@ func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
 				return nil, err
 			} else {
 				if preNode, ok := nodes[curNode.GetId()]; ok {
-					if curNode.GetNodeType() == dsl.OP_NODE_TYPE {
+					if curNode.GetDSLType() == dsl.OR_DSL_TYPE {
 						nodes[curNode.GetId()] = append(nodes[curNode.GetId()], curNode)
 					} else {
 						if node, err := preNode[0].InterSect(curNode); err != nil {
@@ -77,6 +85,13 @@ func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
 					}
 				} else {
 					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
+				}
+			}
+		}
+		if len(nodes) == 1 {
+			for _, ns := range nodes {
+				if len(ns) == 1 {
+					return ns[0], nil
 				}
 			}
 		}
@@ -132,6 +147,7 @@ func parenQueryToDSLNode(q *lucene.ParenQuery) (dsl.DSLNode, error) {
 	return luceneToDSLNode(q.SubQuery)
 }
 
+//TODO: this is very important / should write dependent on mapping package
 func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	if q == nil {
 		return nil, ErrEmptyFieldQuery
@@ -152,6 +168,6 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	return nil, nil
 }
 
-func convertToRange() (dsl.DSLNode, error) {
+// func convertToRange() (dsl.DSLNode, error) {
 
-}
+// }
