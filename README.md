@@ -16,6 +16,7 @@ This package can parse lucene query and conver to dsl used by ES (ElasticSearch)
 - 2、don't support prefix operator `'+'` / `'-'`, for instance `+fo0 -bar`.
 - 3、should give [index mapping of field](https://www.elastic.co/guide/en/elasticsearch/reference/7.15/mapping.html).
 - 4、 will ignore `boost` parameter in field mapping which using in index time boosting.
+- 5、 don't support alias field type (a kind of filed mapping type).
 
 ## Principle
 ### EBNF of Lucene
