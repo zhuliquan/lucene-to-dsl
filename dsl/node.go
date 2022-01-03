@@ -35,6 +35,13 @@ func (n *OrDSLNode) GetDSLType() DSLType {
 }
 
 func (n *OrDSLNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if node == nil && n == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if node == nil && n != nil {
+		return n, nil
+	} else if node != nil && n == nil {
+		return node, nil
+	}
 	var t = node.(*OrDSLNode)
 	for key, curNodes := range t.Nodes {
 		if preNodes, ok := n.Nodes[key]; ok {
@@ -61,6 +68,9 @@ func (n *OrDSLNode) InterSect(DSLNode) (DSLNode, error) {
 }
 
 func (n *OrDSLNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return &NotDSLNode{
 		Nodes: n.Nodes,
 	}, nil
@@ -69,6 +79,9 @@ func (n *OrDSLNode) Inverse() (DSLNode, error) {
 func (n *OrDSLNode) GetId() string { return OR_OP_KEY }
 
 func (n *OrDSLNode) ToDSL() DSL {
+	if n == nil {
+		return EmptyDSL
+	}
 	var res = []DSL{}
 	for _, nodes := range n.Nodes {
 		for _, node := range nodes {
@@ -101,6 +114,9 @@ func (n *AndDSLNode) UnionJoin(DSLNode) (DSLNode, error) {
 }
 
 func (n *AndDSLNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	var t = node.(*AndDSLNode)
 	for key, curNodes := range t.MustNodes {
 		if preNodes, ok := n.MustNodes[key]; ok {
@@ -141,6 +157,9 @@ func (n *AndDSLNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *AndDSLNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	var resNodes = make(map[string][]DSLNode)
 	for key, nodes := range n.MustNodes {
 		resNodes[key] = nodes
@@ -154,6 +173,9 @@ func (n *AndDSLNode) Inverse() (DSLNode, error) {
 func (n *AndDSLNode) GetId() string { return AND_OP_KEY }
 
 func (n *AndDSLNode) ToDSL() DSL {
+	if n == nil {
+		return EmptyDSL
+	}
 	var FRes = []DSL{}
 	var MRes = []DSL{}
 	for _, nodes := range n.MustNodes {
@@ -198,6 +220,9 @@ func (n *NotDSLNode) GetDSLType() DSLType {
 func (n *NotDSLNode) GetId() string { return NOT_OP_KEY }
 
 func (n *NotDSLNode) ToDSL() DSL {
+	if n == nil {
+		return EmptyDSL
+	}
 	var res = []DSL{}
 	for _, nodes := range n.Nodes {
 		for _, node := range nodes {
@@ -216,6 +241,9 @@ func (n *NotDSLNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *NotDSLNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	var t = node.(*NotDSLNode)
 	for key, curNodes := range t.Nodes {
 		if preNodes, ok := n.Nodes[key]; ok {
@@ -239,6 +267,9 @@ func (n *NotDSLNode) InterSect(node DSLNode) (DSLNode, error) {
 
 // 全部都不是的反例是至少有一个
 func (n *NotDSLNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return &OrDSLNode{Nodes: n.Nodes, MinimumShouldMatch: 1}, nil
 }
 
@@ -256,14 +287,27 @@ func (n *ExistsNode) GetDSLType() DSLType { return EXISTS_DSL_TYPE }
 // if union same field node, you can return exist node, for example {"exists": {"field" : "x"}} union {"match": {"x": "foo bar"}}
 // "exists": {"field": "x"} > "match": {"x": "foo bar"}
 func (n *ExistsNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	return n, nil
 }
 
 func (n *ExistsNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	return node, nil
 }
 
 func (n *ExistsNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return &NotDSLNode{
 		Nodes: map[string][]DSLNode{
 			n.Field: {n},
@@ -275,7 +319,7 @@ func (n *ExistsNode) GetId() string { return "LEAF:" + n.Field }
 
 func (n *ExistsNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"exists": DSL{"field": n.Field}}
 }
@@ -288,7 +332,14 @@ type IdsNode struct {
 func (n *IdsNode) GetDSLType() DSLType { return IDS_DSL_TYPE }
 
 func (n *IdsNode) UnionJoin(node DSLNode) (DSLNode, error) {
-	if n.GetDSLType() == IDS_DSL_TYPE {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
+	if node.GetDSLType() == IDS_DSL_TYPE {
 		n.Values = append(n.Values, node.(*IdsNode).Values...)
 		return n, nil
 	} else {
@@ -297,10 +348,16 @@ func (n *IdsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *IdsNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	return nil, fmt.Errorf("ids node can't intersect join with ids node")
 }
 
 func (n *IdsNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return nil, fmt.Errorf("ids node can't inverse own")
 }
 
@@ -308,7 +365,7 @@ func (n *IdsNode) GetId() string { return "LEAF:" + "_id" }
 
 func (n *IdsNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"ids": DSL{"values": n.Values}}
 }
@@ -331,6 +388,13 @@ func (n *TermNode) GetDSLType() DSLType {
 }
 
 func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -359,7 +423,7 @@ func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	case QUERY_STRING_DSL_TYPE:
 		var t = node.(*QueryStringNode)
 		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			t.Value = fmt.Sprintf("%s OR %s", t.Value, n.Value)
+			t.Value = fmt.Sprintf("%v OR %v", t.Value, n.Value)
 			return t, nil
 		} else {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
@@ -373,20 +437,27 @@ func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *TermNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		var t = node.(*TermNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 && reflect.DeepEqual(n.Value, t.Value) {
-			return node, nil
+		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
+			if reflect.DeepEqual(n.Value, t.Value) {
+				return node, nil
+			} else {
+				return &QueryStringNode{EqNode: EqNode{Field: n.Field, Value: fmt.Sprintf("%v AND %v", n.Value, t.Value)}, Boost: n.Boost}, nil
+			}
 		} else {
-			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost/value is conflict", n.ToDSL(), t.ToDSL())
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
 		}
 	case RANGE_DSL_TYPE:
 		// put logic of compare and collision into range node
 		return node.(*RangeNode).UnionJoin(n)
-	case IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
+	case IDS_DSL_TYPE, TERMS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is conflict", n.ToDSL(), node.ToDSL())
 	default:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is unknown", n.ToDSL(), node.ToDSL())
@@ -394,6 +465,9 @@ func (n *TermNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *TermNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return &NotDSLNode{
 		Nodes: map[string][]DSLNode{
 			n.Field: {n},
@@ -403,7 +477,7 @@ func (n *TermNode) Inverse() (DSLNode, error) {
 
 func (n *TermNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"term": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
 }
@@ -420,6 +494,13 @@ func (n *TermsNode) GetDSLType() DSLType {
 }
 
 func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -459,6 +540,9 @@ func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *TermsNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -473,6 +557,9 @@ func (n *TermsNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *TermsNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	var nodes = []DSLNode{}
 	for _, val := range n.Values {
 		nodes = append(nodes, &TermNode{EqNode: EqNode{Field: n.Field, Value: val}, Boost: n.Boost})
@@ -484,7 +571,7 @@ func (n *TermsNode) GetId() string { return "LEAF:" + n.Field }
 
 func (n *TermsNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"terms": DSL{n.Field: n.Values, "boost": n.Boost}}
 }
@@ -498,6 +585,13 @@ func (n *RegexpNode) GetDSLType() DSLType {
 }
 
 func (n *RegexpNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -507,6 +601,9 @@ func (n *RegexpNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *RegexpNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -516,12 +613,15 @@ func (n *RegexpNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *RegexpNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return nil, fmt.Errorf("failed to inverse regexp node")
 }
 
 func (n *RegexpNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"regexp": DSL{n.Field: DSL{"value": n.Value}}}
 }
@@ -537,6 +637,13 @@ func (n *FuzzyNode) GetDSLType() DSLType {
 }
 
 func (n *FuzzyNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -604,6 +711,9 @@ func (n *FuzzyNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *FuzzyNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -620,12 +730,15 @@ func (n *FuzzyNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *FuzzyNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return nil, fmt.Errorf("failed to inverse prefix node")
 }
 
 func (n *FuzzyNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	var fuzziness string
 	if n.LowFuzziness != 0 && n.HighFuzziness != 0 {
@@ -649,6 +762,13 @@ func (n *PrefixNode) GetDSLType() DSLType {
 }
 
 func (n *PrefixNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -658,6 +778,9 @@ func (n *PrefixNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *PrefixNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -667,12 +790,15 @@ func (n *PrefixNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *PrefixNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return nil, fmt.Errorf("failed to inverse prefix node")
 }
 
 func (n *PrefixNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"prefix": DSL{n.Field: DSL{"values": n.Value}}}
 }
@@ -696,21 +822,43 @@ func (n *RangeNode) GetId() string { return "LEAF:" + n.Field }
 
 // TODO: very hard
 func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
+	switch node.GetDSLType() {
+	case EXISTS_DSL_TYPE:
+		return node.UnionJoin(n)
+	case TERMS_DSL_TYPE:
+		return nil, nil
+	case TERM_DSL_TYPE:
+		return nil, nil
+
+	}
 	return nil, nil
 }
 
 // TODO: very hard
 func (n *RangeNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	return nil, nil
 }
 
 func (n *RangeNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return nil, nil
 }
 
 func (n *RangeNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 		// (-inf, +inf) mean field exist
 	} else if n.LeftValue == nil && n.RightValue == nil {
 		return DSL{"exists": DSL{"field": n.Field}}
@@ -750,6 +898,13 @@ func (n *WildCardNode) GetDSLType() DSLType {
 }
 
 func (n *WildCardNode) UnionJoin(node DSLNode) (DSLNode, error) {
+	if n == nil && node == nil {
+		return nil, ErrUnionJoinNilNode
+	} else if n == nil && node != nil {
+		return node, nil
+	} else if n != nil && node == nil {
+		return n, nil
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -759,6 +914,9 @@ func (n *WildCardNode) UnionJoin(node DSLNode) (DSLNode, error) {
 }
 
 func (n *WildCardNode) InterSect(node DSLNode) (DSLNode, error) {
+	if n == nil || node == nil {
+		return nil, ErrIntersectNilNode
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -768,12 +926,15 @@ func (n *WildCardNode) InterSect(node DSLNode) (DSLNode, error) {
 }
 
 func (n *WildCardNode) Inverse() (DSLNode, error) {
+	if n == nil {
+		return nil, ErrInverseNilNode
+	}
 	return nil, fmt.Errorf("failed to inverse wildcard node")
 }
 
 func (n *WildCardNode) ToDSL() DSL {
 	if n == nil {
-		return nil
+		return EmptyDSL
 	}
 	return DSL{"wildcard": DSL{n.Field: DSL{"values": n.Value, "boost": n.Boost}}}
 
@@ -789,6 +950,9 @@ func (n *MatchNode) GetDSLType() DSLType {
 }
 
 func (n *MatchNode) ToDSL() DSL {
+	if n == nil {
+		return EmptyDSL
+	}
 	return DSL{"match": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
 }
 
