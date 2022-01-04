@@ -340,7 +340,8 @@ func (n *IdsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 		return n, nil
 	}
 	if node.GetDSLType() == IDS_DSL_TYPE {
-		n.Values = append(n.Values, node.(*IdsNode).Values...)
+		var t = node.(*IdsNode)
+		n.Values = UnionJoinStrLst(n.Values, t.Values)
 		return n, nil
 	} else {
 		return nil, fmt.Errorf("failed to union join %v and %v, err: term type if conflict", n, node)
@@ -351,7 +352,13 @@ func (n *IdsNode) InterSect(node DSLNode) (DSLNode, error) {
 	if n == nil || node == nil {
 		return nil, ErrIntersectNilNode
 	}
-	return nil, fmt.Errorf("ids node can't intersect join with ids node")
+	if node.GetDSLType() == IDS_DSL_TYPE {
+		var t = node.(*IdsNode)
+		n.Values = IntersectStrLst(n.Values, t.Values)
+		return n, nil
+	} else {
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: term type if conflict", n, node)
+	}
 }
 
 func (n *IdsNode) Inverse() (DSLNode, error) {
@@ -549,7 +556,12 @@ func (n *TermsNode) InterSect(node DSLNode) (DSLNode, error) {
 	case RANGE_DSL_TYPE:
 		// put logic of compare and collision into range node
 		return node.(*RangeNode).UnionJoin(n)
-	case TERM_DSL_TYPE, IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
+
+	case TERM_DSL_TYPE:
+		return nil, nil
+	case TERMS_DSL_TYPE:
+		return nil, nil
+	case IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is conflict", n.ToDSL(), node.ToDSL())
 	default:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is unknown", n.ToDSL(), node.ToDSL())
