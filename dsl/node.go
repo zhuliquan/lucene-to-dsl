@@ -818,6 +818,7 @@ func (n *PrefixNode) ToDSL() DSL {
 type RangeNode struct {
 	LeafNode
 	Field        string
+	NodeType     NodeType
 	LeftValue    interface{}
 	RightValue   interface{}
 	LeftInclude  bool
@@ -849,6 +850,8 @@ func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	case TERM_DSL_TYPE:
 		return nil, nil
 
+	case RANGE_DSL_TYPE:
+
 	}
 	return nil, nil
 }
@@ -858,6 +861,7 @@ func (n *RangeNode) InterSect(node DSLNode) (DSLNode, error) {
 	if n == nil || node == nil {
 		return nil, ErrIntersectNilNode
 	}
+
 	return nil, nil
 }
 

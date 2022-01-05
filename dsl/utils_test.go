@@ -1,8 +1,10 @@
 package dsl
 
 import (
+	"net"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestUnionJoinStrLst(t *testing.T) {
@@ -203,6 +205,117 @@ func TestUniqStrLst(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := UniqStrLst(tt.args.a); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("UniqStrLst() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompareAny(t *testing.T) {
+	type args struct {
+		a   interface{}
+		b   interface{}
+		typ NodeValue
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "CompareInt01",
+			args: args{a: 1, b: 2, typ: INT_VALUE},
+			want: -1,
+		},
+		{
+			name: "CompareInt02",
+			args: args{a: 2, b: 1, typ: INT_VALUE},
+			want: 1,
+		},
+		{
+			name: "CompareInt03",
+			args: args{a: 1, b: 1, typ: INT_VALUE},
+			want: 0,
+		},
+		{
+			name: "CompareFloat01",
+			args: args{a: 1.13, b: 2.1, typ: FLOAT_VALUE},
+			want: -1,
+		},
+		{
+			name: "CompareFloat02",
+			args: args{a: 2.1, b: 1.33, typ: FLOAT_VALUE},
+			want: 1,
+		},
+		{
+			name: "CompareFloat03",
+			args: args{a: 1.3, b: 1.3, typ: FLOAT_VALUE},
+			want: 0,
+		},
+		{
+			name: "CompareDate01",
+			args: args{a: time.Unix(1, 0), b: time.Unix(10, 0), typ: DATE_VALUE},
+			want: -1,
+		},
+		{
+			name: "CompareDate02",
+			args: args{a: time.Unix(10, 0), b: time.Unix(1, 0), typ: DATE_VALUE},
+			want: 1,
+		},
+		{
+			name: "CompareDate03",
+			args: args{a: time.Unix(1, 0), b: time.Unix(1, 0), typ: DATE_VALUE},
+			want: 0,
+		},
+		{
+			name: "CompareIp01",
+			args: args{a: net.ParseIP("12.23.1.1"), b: net.ParseIP("12.200.1.1"), typ: IP_VALUE},
+			want: -1,
+		},
+		{
+			name: "CompareIp02",
+			args: args{a: net.ParseIP("12.200.1.1"), b: net.ParseIP("12.23.1.1"), typ: IP_VALUE},
+			want: 1,
+		},
+		{
+			name: "CompareIp03",
+			args: args{a: net.ParseIP("127.0.0.1"), b: net.ParseIP("127.0.0.001"), typ: IP_VALUE},
+			want: 0,
+		},
+		{
+			name: "CompareString01",
+			args: args{a: "12.23.1.1", b: "12.200.1.1", typ: KEYWORD_VALUE},
+			want: 1,
+		},
+		{
+			name: "CompareString02",
+			args: args{a: "12.200.1.1", b: "12.23.1.1", typ: KEYWORD_VALUE},
+			want: -1,
+		},
+		{
+			name: "CompareString03",
+			args: args{a: "127.0.0.1", b: "127.0.0.1", typ: KEYWORD_VALUE},
+			want: 0,
+		},
+		{
+			name: "CompareInf01",
+			args: args{a: "12.23.1.1", b: nil, typ: KEYWORD_VALUE},
+			want: -1,
+		},
+		{
+			name: "CompareInf02",
+			args: args{a: nil, b: 1, typ: KEYWORD_VALUE},
+			want: 1,
+		},
+		{
+			name: "CompareInf03",
+			args: args{a: nil, b: nil, typ: KEYWORD_VALUE},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CompareAny(tt.args.a, tt.args.b, tt.args.typ); got != tt.want {
+				t.Errorf("CompareAny() = %v, want %v", got, tt.want)
 			}
 		})
 	}
