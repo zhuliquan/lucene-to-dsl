@@ -8,3 +8,5 @@ func (d DSL) String() string {
 	v, _ := json.Marshal(d)
 	return string(v)
 }
+
+var EmptyDSL = DSL{}

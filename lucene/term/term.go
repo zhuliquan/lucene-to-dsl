@@ -1,9 +1,5 @@
 package term
 
-import (
-	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
-)
-
 type Term struct {
 	RegexpTerm *RegexpTerm `parser:"  @@" json:"regexp_term"`
 	FuzzyTerm  *FuzzyTerm  `parser:"| @@" json:"fuzzy_term"`
@@ -43,7 +39,7 @@ func (t *Term) GetTermType() TermType {
 	}
 }
 
-func (t *Term) GetBound() *bnd.Bound {
+func (t *Term) GetBound() *Bound {
 	if t == nil || t.RangeTerm == nil {
 		return nil
 	} else {

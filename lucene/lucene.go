@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/alecthomas/participle"
-	op "github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
-	tm "github.com/zhuliquan/lucene-to-dsl/lucene/internal/term"
-	tk "github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
+	op "github.com/zhuliquan/lucene-to-dsl/lucene/operator"
+	tm "github.com/zhuliquan/lucene-to-dsl/lucene/term"
+	tk "github.com/zhuliquan/lucene-to-dsl/lucene/token"
 )
 
 var LuceneParser *participle.Parser

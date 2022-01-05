@@ -20,7 +20,7 @@ func TestLoadMapping(t *testing.T) {
 			args: args{mappingPath: "./test_mapping_file/keyword_mapping.json"},
 			want: &Mapping{
 				Source: &Source{Enabled: true},
-				Properties: map[string]*FieldMapping{
+				Properties: map[string]*Property{
 					"host_name": {
 						Type: KEYWORD_FIELD_TYPE,
 					},
@@ -36,7 +36,7 @@ func TestLoadMapping(t *testing.T) {
 			name: "test_load_alias_mapping",
 			args: args{mappingPath: "./test_mapping_file/alias_mapping.json"},
 			want: &Mapping{
-				Properties: map[string]*FieldMapping{
+				Properties: map[string]*Property{
 					"distance": {Type: LONG_FIELD_TYPE},
 					"route_length_miles": {
 						Type: ALIAS_FIELD_TYPE,
@@ -53,15 +53,15 @@ func TestLoadMapping(t *testing.T) {
 			name: "test_load_object_mapping",
 			args: args{mappingPath: "./test_mapping_file/object_mapping.json"},
 			want: &Mapping{
-				Properties: map[string]*FieldMapping{
+				Properties: map[string]*Property{
 					"region": {Type: KEYWORD_FIELD_TYPE},
 					"manager": {
 						Mapping: Mapping{
-							Properties: map[string]*FieldMapping{
+							Properties: map[string]*Property{
 								"age": {Type: INTEGER_FIELD_TYPE},
 								"name": {
 									Mapping: Mapping{
-										Properties: map[string]*FieldMapping{
+										Properties: map[string]*Property{
 											"first": {Type: "text"},
 											"last":  {Type: "text"},
 										},
@@ -78,7 +78,7 @@ func TestLoadMapping(t *testing.T) {
 			name: "test_load_flattened_mapping",
 			args: args{mappingPath: "./test_mapping_file/flattened_mapping.json"},
 			want: &Mapping{
-				Properties: map[string]*FieldMapping{
+				Properties: map[string]*Property{
 					"title":  {Type: TEXT_FIELD_TYPE},
 					"labels": {Type: FLATTENED_FIELD_TYPE},
 				},
@@ -89,7 +89,7 @@ func TestLoadMapping(t *testing.T) {
 			name: "test_load_nested_mapping",
 			args: args{mappingPath: "./test_mapping_file/nested_mapping.json"},
 			want: &Mapping{
-				Properties: map[string]*FieldMapping{
+				Properties: map[string]*Property{
 					"user": {Type: NESTED_FIELD_TYPE},
 				},
 			},

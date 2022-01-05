@@ -1,5 +1,7 @@
 package term
 
+import "fmt"
+
 type TermType uint64
 
 const (
@@ -26,4 +28,19 @@ const (
 	NESTED_FIELD_TYPE
 	IP_FIELD_TYPE
 	GEO_FIELD_TYPE
+)
+
+var (
+	Inf           = &RangeValue{InfinityVal: "*"}
+	ErrEmptyValue = fmt.Errorf("empty value")
+)
+
+type BoundType uint16
+
+const (
+	UNKNOWN_BOUND_TYPE         BoundType = iota
+	LEFT_EXCLUDE_RIGHT_INCLUDE BoundType = iota
+	LEFT_EXCLUDE_RIGHT_EXCLUDE
+	LEFT_INCLUDE_RIGHT_INCLUDE
+	LEFT_INCLUDE_RIGHT_EXCLUDE
 )

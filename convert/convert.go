@@ -1,10 +1,9 @@
 package convert
 
 import (
-	"fmt"
-
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/lucene"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/term"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
@@ -27,12 +26,34 @@ func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 	if node, err := orQueryToDSLNode(q.OrQuery); err != nil {
 		return nil, err
 	} else {
-		var nodes = []dsl.DSLNode{node}
+		var nodes = map[string][]dsl.DSLNode{node.GetId(): {node}}
 		for _, query := range q.OSQuery {
-			if node, err := osQueryToDSLNode(query); err != nil {
+			if curNode, err := osQueryToDSLNode(query); err != nil {
 				return nil, err
 			} else {
-				nodes = append(nodes, node)
+				if preNode, ok := nodes[curNode.GetId()]; ok {
+					if curNode.GetDSLType() == dsl.AND_DSL_TYPE ||
+						curNode.GetDSLType() == dsl.NOT_DSL_TYPE {
+						nodes[curNode.GetId()] = append(nodes[curNode.GetId()], curNode)
+					} else {
+						if node, err := preNode[0].UnionJoin(curNode); err != nil {
+							return nil, err
+						} else {
+							delete(nodes, curNode.GetId())
+							nodes[node.GetId()] = []dsl.DSLNode{node}
+						}
+					}
+
+				} else {
+					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
+				}
+			}
+		}
+		if len(nodes) == 1 {
+			for _, ns := range nodes {
+				if len(ns) == 1 {
+					return ns[0], nil
+				}
 			}
 		}
 		return &dsl.OrDSLNode{Nodes: nodes}, nil
@@ -46,12 +67,32 @@ func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
 	if node, err := andQueryToDSLNode(q.AndQuery); err != nil {
 		return nil, err
 	} else {
-		var nodes = []dsl.DSLNode{node}
+		var nodes = map[string][]dsl.DSLNode{node.GetId(): {node}}
 		for _, query := range q.AnSQuery {
-			if node, err := ansQueryToDSLNode(query); err != nil {
+			if curNode, err := ansQueryToDSLNode(query); err != nil {
 				return nil, err
 			} else {
-				nodes = append(nodes, node)
+				if preNode, ok := nodes[curNode.GetId()]; ok {
+					if curNode.GetDSLType() == dsl.OR_DSL_TYPE {
+						nodes[curNode.GetId()] = append(nodes[curNode.GetId()], curNode)
+					} else {
+						if node, err := preNode[0].InterSect(curNode); err != nil {
+							return nil, err
+						} else {
+							delete(nodes, curNode.GetId())
+							nodes[node.GetId()] = []dsl.DSLNode{node}
+						}
+					}
+				} else {
+					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
+				}
+			}
+		}
+		if len(nodes) == 1 {
+			for _, ns := range nodes {
+				if len(ns) == 1 {
+					return ns[0], nil
+				}
 			}
 		}
 		return &dsl.AndDSLNode{MustNodes: nodes}, nil
@@ -69,22 +110,26 @@ func andQueryToDSLNode(q *lucene.AndQuery) (dsl.DSLNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
+	var (
+		node dsl.DSLNode
+		err  error
+	)
 	if q.FieldQuery != nil {
-		if node, err := fieldQueryToDSLNode(q.FieldQuery); err != nil {
+		if node, err = fieldQueryToDSLNode(q.FieldQuery); err != nil {
 			return nil, err
-		} else if q.NotSymbol != nil {
-			return &dsl.NotDSLNode{Nodes: []dsl.DSLNode{node}}, nil
-		} else {
-			return node, nil
+		}
+	} else if q.ParenQuery != nil {
+		if node, err = parenQueryToDSLNode(q.ParenQuery); err != nil {
+			return nil, err
 		}
 	} else {
-		if node, err := parenQueryToDSLNode(q.ParenQuery); err != nil {
-			return nil, err
-		} else if q.NotSymbol != nil {
-			return &dsl.NotDSLNode{Nodes: []dsl.DSLNode{node}}, nil
-		} else {
-			return node, nil
-		}
+		return nil, ErrEmptyAndQuery
+	}
+
+	if q.NotSymbol != nil {
+		return node.Inverse()
+	} else {
+		return node, nil
 	}
 }
 
@@ -102,11 +147,27 @@ func parenQueryToDSLNode(q *lucene.ParenQuery) (dsl.DSLNode, error) {
 	return luceneToDSLNode(q.SubQuery)
 }
 
-// very import
+//TODO: this is very important / should write dependent on mapping package
 func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	if q == nil {
 		return nil, ErrEmptyFieldQuery
+	} else if q.Field == nil || q.Term == nil {
+		return nil, ErrEmptyFieldQuery
 	}
-	fmt.Println(fm)
+	var termType = q.Term.GetTermType()
+
+	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
+
+	}
+
+	switch q.Term.GetTermType() {
+	case term.RANGE_TERM_TYPE:
+		return &dsl.RangeNode{}, nil
+	case term.REGEXP_TERM_TYPE:
+	}
 	return nil, nil
 }
+
+// func convertToRange() (dsl.DSLNode, error) {
+
+// }

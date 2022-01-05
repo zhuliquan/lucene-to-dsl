@@ -6,9 +6,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/participle"
-	bnd "github.com/zhuliquan/lucene-to-dsl/internal/bound"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/operator"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/internal/token"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/operator"
+	"github.com/zhuliquan/lucene-to-dsl/lucene/token"
 )
 
 func TestTerm(t *testing.T) {
@@ -64,8 +63,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "[",
-					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					LValue:   &RangeValue{SingleValue: []string{"1"}},
+					RValue:   &RangeValue{SingleValue: []string{"2"}},
 					RBRACKET: "]",
 				},
 				BoostSymbol: "^7",
@@ -77,8 +76,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "[",
-					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					LValue:   &RangeValue{SingleValue: []string{"1"}},
+					RValue:   &RangeValue{SingleValue: []string{"2"}},
 					RBRACKET: "}",
 				},
 				BoostSymbol: "^7",
@@ -90,8 +89,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "{",
-					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					LValue:   &RangeValue{SingleValue: []string{"1"}},
+					RValue:   &RangeValue{SingleValue: []string{"2"}},
 					RBRACKET: "}",
 				},
 				BoostSymbol: "^7",
@@ -103,8 +102,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "{",
-					LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-					RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+					LValue:   &RangeValue{SingleValue: []string{"1"}},
+					RValue:   &RangeValue{SingleValue: []string{"2"}},
 					RBRACKET: "]",
 				},
 				BoostSymbol: "^7",
@@ -116,8 +115,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "[",
-					LValue:   &bnd.RangeValue{SingleValue: []string{"10"}},
-					RValue:   &bnd.RangeValue{InfinityVal: "*"},
+					LValue:   &RangeValue{SingleValue: []string{"10"}},
+					RValue:   &RangeValue{InfinityVal: "*"},
 					RBRACKET: "]",
 				},
 				BoostSymbol: "^7",
@@ -129,8 +128,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "{",
-					LValue:   &bnd.RangeValue{InfinityVal: "*"},
-					RValue:   &bnd.RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
+					LValue:   &RangeValue{InfinityVal: "*"},
+					RValue:   &RangeValue{SingleValue: []string{"2012", "-", "01", "-", "01"}},
 					RBRACKET: "}",
 				},
 			}},
@@ -141,8 +140,8 @@ func TestTerm(t *testing.T) {
 			want: &Term{RangeTerm: &RangeTerm{
 				DRangeTerm: &DRangeTerm{
 					LBRACKET: "{",
-					LValue:   &bnd.RangeValue{InfinityVal: "*"},
-					RValue:   &bnd.RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
+					LValue:   &RangeValue{InfinityVal: "*"},
+					RValue:   &RangeValue{PhraseValue: []string{"2012", "-", "01", "-", "01", " ", "09", ":", "08", ":", "16"}},
 					RBRACKET: "}",
 				},
 			}},
@@ -154,7 +153,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<=",
-						Value:  &bnd.RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
+						Value:  &RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
 					},
 				},
 			},
@@ -166,7 +165,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<",
-						Value:  &bnd.RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
+						Value:  &RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
 					},
 					BoostSymbol: "^08",
 				},
@@ -179,7 +178,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: ">",
-						Value:  &bnd.RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
+						Value:  &RangeValue{PhraseValue: []string{`dsada`, ` `, `78`}},
 					},
 					BoostSymbol: "^080",
 				},
@@ -192,7 +191,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<=",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
+						Value:  &RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 				},
 			},
@@ -204,7 +203,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: "<",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
+						Value:  &RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 					BoostSymbol: "^08",
 				},
@@ -217,7 +216,7 @@ func TestTerm(t *testing.T) {
 				RangeTerm: &RangeTerm{
 					SRangeTerm: &SRangeTerm{
 						Symbol: ">",
-						Value:  &bnd.RangeValue{SingleValue: []string{`dsada\ `, `78`}},
+						Value:  &RangeValue{SingleValue: []string{`dsada\ `, `78`}},
 					},
 					BoostSymbol: "^080",
 				},
@@ -276,8 +275,8 @@ func TestTerm(t *testing.T) {
 								AndTermGroup: &AndTermGroup{
 									TermGroupElem: &TermGroupElem{DRangeTerm: &DRangeTerm{
 										LBRACKET: "[",
-										LValue:   &bnd.RangeValue{SingleValue: []string{"1"}},
-										RValue:   &bnd.RangeValue{SingleValue: []string{"2"}},
+										LValue:   &RangeValue{SingleValue: []string{"1"}},
+										RValue:   &RangeValue{SingleValue: []string{"2"}},
 										RBRACKET: "]",
 									}},
 								},

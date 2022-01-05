@@ -25,4 +25,22 @@ const (
 
 	MATCH_DSL_TYPE
 	MATCH_PHRASE_DSL_TYPE
+	QUERY_STRING_DSL_TYPE
+)
+
+const (
+	OR_OP_KEY  = "OP:OR"
+	AND_OP_KEY = "OP:AND"
+	NOT_OP_KEY = "OP:NOT"
+)
+
+type NodeValue uint32
+
+const (
+	KEYWORD_VALUE NodeValue = iota
+	PHRASE_VALUE
+	INT_VALUE
+	FLOAT_VALUE
+	IP_VALUE
+	DATE_VALUE
 )
