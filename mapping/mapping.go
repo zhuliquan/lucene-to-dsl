@@ -285,3 +285,7 @@ func LoadMapping(mappingPath string) (*Mapping, error) {
 		}
 	}
 }
+
+// func (m *Mapping) Convert(FieldPath string, value string) (interface{}, error) {
+
+// }
