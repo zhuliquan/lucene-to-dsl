@@ -380,7 +380,8 @@ func (n *IdsNode) ToDSL() DSL {
 type EqNode struct {
 	LeafNode
 	Field string
-	Value interface{}
+	Type  DSLTermType
+	Value *DSLTermValue
 }
 
 func (n *EqNode) GetId() string { return "LEAF:" + n.Field }
@@ -408,11 +409,16 @@ func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	case TERM_DSL_TYPE:
 		var t = node.(*TermNode)
 		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			return &TermsNode{
-				Field:  n.Field,
-				Values: []interface{}{n.Value, t.Value},
-				Boost:  n.Boost,
-			}, nil
+			if CompareAny(n.Value, t.Value, n.Type) == 0 {
+				return n, nil
+			} else {
+				return &TermsNode{
+					Field:  n.Field,
+					Type:   n.Type,
+					Values: []*DSLTermValue{n.Value, t.Value},
+					Boost:  n.Boost,
+				}, nil
+			}
 		} else {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
 		}
@@ -430,7 +436,7 @@ func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	case QUERY_STRING_DSL_TYPE:
 		var t = node.(*QueryStringNode)
 		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			t.Value = fmt.Sprintf("%v OR %v", t.Value, n.Value)
+			// t.Value = fmt.Sprintf("%s OR %v", t.Value.StringTerm, n.Value)
 			return t, nil
 		} else {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
@@ -456,7 +462,8 @@ func (n *TermNode) InterSect(node DSLNode) (DSLNode, error) {
 			if reflect.DeepEqual(n.Value, t.Value) {
 				return node, nil
 			} else {
-				return &QueryStringNode{EqNode: EqNode{Field: n.Field, Value: fmt.Sprintf("%v AND %v", n.Value, t.Value)}, Boost: n.Boost}, nil
+				return nil, nil
+				// return &QueryStringNode{EqNode: EqNode{Field: n.Field, Value: fmt.Sprintf("%v AND %v", n.Value, t.Value)}, Boost: n.Boost}, nil
 			}
 		} else {
 			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
@@ -492,7 +499,8 @@ func (n *TermNode) ToDSL() DSL {
 type TermsNode struct {
 	LeafNode
 	Field  string
-	Values []interface{}
+	Type   DSLTermType
+	Values []*DSLTermValue
 	Boost  float64
 }
 
@@ -532,7 +540,7 @@ func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 			for _, val := range n.Values {
 				s += fmt.Sprintf(" OR %s", val)
 			}
-			t.Value = fmt.Sprintf("%s%s", t.Value, s)
+			// t.Value = fmt.Sprintf("%s%s", t.Value, s)
 			return t, nil
 		} else {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
@@ -817,14 +825,14 @@ func (n *PrefixNode) ToDSL() DSL {
 
 type RangeNode struct {
 	LeafNode
-	Field        string
-	NodeType     NodeType
-	LeftValue    interface{}
-	RightValue   interface{}
-	LeftInclude  bool
-	RightInclude bool
-	Boost        float64
-	Format       string
+	Field       string
+	NodeType    NodeType
+	LeftValue   *DSLTermValue
+	RightValue  *DSLTermValue
+	LeftCmpSym  string
+	RightCmpSym string
+	Boost       float64
+	Format      string
 }
 
 func (n *RangeNode) GetDSLType() DSLType {
@@ -876,23 +884,15 @@ func (n *RangeNode) ToDSL() DSL {
 	if n == nil {
 		return EmptyDSL
 		// (-inf, +inf) mean field exist
-	} else if n.LeftValue == nil && n.RightValue == nil {
+	} else if n.LeftValue == InfValue && n.RightValue == InfValue {
 		return DSL{"exists": DSL{"field": n.Field}}
 	}
 	var res = DSL{}
-	if n.LeftValue != nil {
-		if n.LeftInclude {
-			res["gte"] = n.LeftValue
-		} else {
-			res["gt"] = n.LeftValue
-		}
+	if n.LeftValue != InfValue {
+		res[n.LeftCmpSym] = n.LeftValue
 	}
-	if n.RightValue != nil {
-		if n.RightInclude {
-			res["lte"] = n.RightValue
-		} else {
-			res["lt"] = n.RightValue
-		}
+	if n.RightValue != InfValue {
+		res[n.RightCmpSym] = n.RightValue
 	}
 
 	res["relation"] = "WITHIN"

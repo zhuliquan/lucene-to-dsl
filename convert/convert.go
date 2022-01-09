@@ -2,9 +2,9 @@ package convert
 
 import (
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
-	"github.com/zhuliquan/lucene-to-dsl/lucene"
-	"github.com/zhuliquan/lucene-to-dsl/lucene/term"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	lucene "github.com/zhuliquan/lucene_parser"
+	term "github.com/zhuliquan/lucene_parser/term"
 )
 
 var fm *mapping.Mapping

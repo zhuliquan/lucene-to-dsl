@@ -3,9 +3,7 @@ package dsl
 import (
 	"bytes"
 	"math"
-	"net"
 	"sort"
-	"time"
 )
 
 // union join two string slice
@@ -67,31 +65,29 @@ func UniqStrLst(a []string) []string {
 // positive  mean a > b
 // zero      mean a == b
 // using nil represent inf
-func CompareAny(a, b interface{}, typ NodeValue) int {
-	if a != nil && b == nil {
+func CompareAny(a, b *DSLTermValue, typ DSLTermType) int {
+	if a == InfValue && b != InfValue {
 		return -1
-	} else if a == nil && b != nil {
+	} else if a != InfValue && b == InfValue {
 		return 1
-	} else if a == nil && b == nil {
+	} else if a == InfValue && b == InfValue {
 		return 0
 	}
 
 	switch typ {
 	case INT_VALUE:
-		return a.(int) - b.(int)
+		return a.IntTerm - b.IntTerm
 	case FLOAT_VALUE:
-		var af = a.(float64)
-		var bf = b.(float64)
-		if math.Abs(af-bf) < 1E-6 {
+		if math.Abs(a.FloatTerm-b.FloatTerm) < 1E-6 {
 			return 0
-		} else if af < bf {
+		} else if a.FloatTerm < b.FloatTerm {
 			return -1
 		} else {
 			return 1
 		}
 	case DATE_VALUE:
-		var at = a.(time.Time)
-		var bt = b.(time.Time)
+		var at = a.DateTerm
+		var bt = b.DateTerm
 		if at.UnixNano() == bt.UnixNano() {
 			return 0
 		} else if at.Before(bt) {
@@ -101,13 +97,13 @@ func CompareAny(a, b interface{}, typ NodeValue) int {
 		}
 
 	case IP_VALUE:
-		var ai = a.(net.IP)
-		var bi = b.(net.IP)
+		var ai = a.IpTerm
+		var bi = b.IpTerm
 		return bytes.Compare(ai, bi)
 
 	case KEYWORD_VALUE, PHRASE_VALUE:
-		var as = a.(string)
-		var bs = b.(string)
+		var as = a.StringTerm
+		var bs = b.StringTerm
 		if as > bs {
 			return 1
 		} else if as < bs {

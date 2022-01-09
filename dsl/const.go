@@ -34,13 +34,17 @@ const (
 	NOT_OP_KEY = "OP:NOT"
 )
 
-type NodeValue uint32
+type DSLTermType uint32
 
 const (
-	KEYWORD_VALUE NodeValue = iota
+	KEYWORD_VALUE DSLTermType = iota
 	PHRASE_VALUE
 	INT_VALUE
 	FLOAT_VALUE
 	IP_VALUE
+	IP_CIDR_VALUE
 	DATE_VALUE
 )
+
+// using nil represent infinite value
+var InfValue *DSLTermValue = nil
