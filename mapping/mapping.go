@@ -286,6 +286,19 @@ func LoadMapping(mappingPath string) (*Mapping, error) {
 	}
 }
 
-// func (m *Mapping) Convert(FieldPath string, value string) (interface{}, error) {
+func GetProperty(fields []string, in *Mapping) (*Property, error) {
+	for f, p := range in.Properties {
+		if f == fields[0] {
+			if len(fields) == 1 {
+				return p, nil
+			} else {
+				if !(p.Type == OBJECT_FIELD_TYPE || p.Type == NESTED_FIELD_TYPE || p.Type == FLATTENED_FIELD_TYPE || p.Type == JOIN_FIELD_TYPE) {
+					return nil, fmt.Errorf("don't found")
+				}
+				return p, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("don't found")
 
-// }
+}
