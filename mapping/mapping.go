@@ -35,8 +35,6 @@ type Property struct {
 	// NOTE: The null_value only influences how data is indexed, it doesn’t modify the _source document.
 	NullValue string `json:"null_value,omitempty"`
 
-	Path string `json:"path,omitempty"`
-
 	// Metadata attached to the field. This metadata is opaque to Elasticsearch, it is only useful for multiple applications that work on the same indices to share meta information about fields such as units
 	// NOTE: Field metadata enforces at most 5 entries, that keys have a length that is less than or equal to 20, and that values are strings whose length is less than or equal to 50.
 	// NOTE: Field metadata is updatable by submitting a mapping update. The metadata of the update will override the metadata of the existing field.
@@ -286,19 +284,28 @@ func LoadMapping(mappingPath string) (*Mapping, error) {
 	}
 }
 
-func GetProperty(fields []string, in *Mapping) (*Property, error) {
-	for f, p := range in.Properties {
-		if f == fields[0] {
-			if len(fields) == 1 {
-				return p, nil
-			} else {
-				if !(p.Type == OBJECT_FIELD_TYPE || p.Type == NESTED_FIELD_TYPE || p.Type == FLATTENED_FIELD_TYPE || p.Type == JOIN_FIELD_TYPE) {
-					return nil, fmt.Errorf("don't found")
-				}
-				return p, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("don't found")
+// func GetProperty(field string, in *Mapping) (*Property, error) {
+// 	var fields = strings.Split(field, ".")
+// 	for f, p := range in.Properties {
+// 		var fs = strings.Split(f, ".")
+// 		if strLstHasPrefix(fields, fs) {
+// 			if len(fields) == len(fs) {
+// 				return p, nil
+// 			}
 
-}
+// 		}
+
+// 		if f == fields[0] {
+// 			if len(fields) == 1 {
+// 				return p, nil
+// 			} else {
+// 				if !(p.Type == OBJECT_FIELD_TYPE || p.Type == NESTED_FIELD_TYPE || p.Type == FLATTENED_FIELD_TYPE || p.Type == JOIN_FIELD_TYPE) {
+// 					return nil, fmt.Errorf("don't found")
+// 				}
+// 				return p, nil
+// 			}
+// 		}
+// 	}
+// 	return nil, fmt.Errorf("don't found")
+
+// }

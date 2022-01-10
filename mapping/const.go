@@ -26,7 +26,6 @@ var LuceneSupportFieldType = []FieldType{
 	LONG_RANGE_FIELD_TYPE,
 	FLOAT_RANGE_FIELD_TYPE,
 	DOUBLE_RANGE_FIELD_TYPE,
-	ALIAS_FIELD_TYPE,
 	OBJECT_FIELD_TYPE,
 	FLATTENED_FIELD_TYPE,
 	NESTED_FIELD_TYPE,
@@ -58,7 +57,6 @@ const (
 	LONG_RANGE_FIELD_TYPE       FieldType = "long_range"       // int64 range
 	FLOAT_RANGE_FIELD_TYPE      FieldType = "float_range"      // float32 range
 	DOUBLE_RANGE_FIELD_TYPE     FieldType = "double_range"     // float64 range
-	ALIAS_FIELD_TYPE            FieldType = "alias"            // alias for exists field
 	// properties 嵌套结构
 	OBJECT_FIELD_TYPE    FieldType = "object"
 	FLATTENED_FIELD_TYPE FieldType = "flattened" // flattened field

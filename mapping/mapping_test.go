@@ -33,23 +33,6 @@ func TestLoadMapping(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test_load_alias_mapping",
-			args: args{mappingPath: "./test_mapping_file/alias_mapping.json"},
-			want: &Mapping{
-				Properties: map[string]*Property{
-					"distance": {Type: LONG_FIELD_TYPE},
-					"route_length_miles": {
-						Type: ALIAS_FIELD_TYPE,
-						Path: "distance",
-					},
-					"transit_mode": {
-						Type: KEYWORD_FIELD_TYPE,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
 			name: "test_load_object_mapping",
 			args: args{mappingPath: "./test_mapping_file/object_mapping.json"},
 			want: &Mapping{
