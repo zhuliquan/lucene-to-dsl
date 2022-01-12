@@ -14,7 +14,7 @@ func TestParseDate(t *testing.T) {
 	}{
 		{
 			name:    "test_now",
-			args:    args{x: "2021-01-02 06:07:00+8y"},
+			args:    args{x: "2021-01-02T06:07Z||+8y"},
 			want:    "",
 			wantErr: false,
 		},

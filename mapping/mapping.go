@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 )
 
 type Meta struct {
@@ -259,11 +260,10 @@ type Property struct {
 }
 
 type Mapping struct {
-	MappingType  MappingType          `json:"dynamic,omitempty"`
-	IncludeInAll bool                 `json:"include_in_all,omitempty"`
-	Source       *Source              `json:"_source,omitempty"`
-	All          *All                 `json:"_all,omitempty"`
-	Properties   map[string]*Property `json:"properties,omitempty"`
+	All         *All                 `json:"_all,omitempty"`
+	Source      *Source              `json:"_source,omitempty"`
+	MappingType MappingType          `json:"dynamic,omitempty"`
+	Properties  map[string]*Property `json:"properties,omitempty"`
 }
 
 func (m *Mapping) String() string {
@@ -271,7 +271,10 @@ func (m *Mapping) String() string {
 	return string(b)
 }
 
-func LoadMapping(mappingPath string) (*Mapping, error) {
+var _mapping *Mapping
+var _optFuncs map[string]func(interface{}) (interface{}, error)
+
+func LoadMapping(mappingPath string, optfuncs map[string]func(interface{}) (interface{}, error)) (*Mapping, error) {
 	if data, err := ioutil.ReadFile(mappingPath); err != nil {
 		return nil, fmt.Errorf("failed to read mapping file: %s, err: %+v", mappingPath, err)
 	} else {
@@ -279,33 +282,45 @@ func LoadMapping(mappingPath string) (*Mapping, error) {
 		if err := json.Unmarshal(data, mappingData); err != nil {
 			return nil, fmt.Errorf("failed to parser mapping data: %s, err: %+v", data, err)
 		} else {
+			_mapping = mappingData
 			return mappingData, nil
 		}
 	}
 }
 
-// func GetProperty(field string, in *Mapping) (*Property, error) {
-// 	var fields = strings.Split(field, ".")
-// 	for f, p := range in.Properties {
-// 		var fs = strings.Split(f, ".")
-// 		if strLstHasPrefix(fields, fs) {
-// 			if len(fields) == len(fs) {
-// 				return p, nil
-// 			}
+func GetProperty(field string) (*Property, error) {
+	var fields = strings.Split(field, ".")
+	for f, p := range _mapping.Properties {
+		var fs = strings.Split(f, ".")
+		if strLstHasPrefix(fields, fs) {
+			switch p.Type {
+			case OBJECT_FIELD_TYPE, NESTED_FIELD_TYPE, FLATTENED_FIELD_TYPE:
+				if len(fields) == len(fs) {
+					return nil, fmt.Errorf("don't found")
+				} else {
+					if p.Properties == nil {
+						return p, nil
+					} else {
+						return GetProperty(strings.Join(fields[len(fs):], "."))
+					}
+				}
+			default:
+				if len(fields) == len(fs) {
+					return p, nil
+				}
+				// if len(p.Fields) != nil {
+				// 	for f, p := range p.Fields {
 
-// 		}
+				// 	}
 
-// 		if f == fields[0] {
-// 			if len(fields) == 1 {
-// 				return p, nil
-// 			} else {
-// 				if !(p.Type == OBJECT_FIELD_TYPE || p.Type == NESTED_FIELD_TYPE || p.Type == FLATTENED_FIELD_TYPE || p.Type == JOIN_FIELD_TYPE) {
-// 					return nil, fmt.Errorf("don't found")
-// 				}
-// 				return p, nil
-// 			}
-// 		}
-// 	}
-// 	return nil, fmt.Errorf("don't found")
+				// }
+				return nil, fmt.Errorf("don't found")
+			}
+		}
+	}
+	return nil, fmt.Errorf("don't found")
+}
 
-// }
+func ExtConvertFunc(property string, value interface{}) (interface{}, error) {
+	return _optFuncs[property](value)
+}

@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"fmt"
+
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 	lucene "github.com/zhuliquan/lucene_parser"
@@ -147,27 +149,53 @@ func parenQueryToDSLNode(q *lucene.ParenQuery) (dsl.DSLNode, error) {
 	return luceneToDSLNode(q.SubQuery)
 }
 
-//TODO: this is very important / should write dependent on mapping package
 func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	if q == nil {
 		return nil, ErrEmptyFieldQuery
 	} else if q.Field == nil || q.Term == nil {
 		return nil, ErrEmptyFieldQuery
 	}
+
+	var property, _ = mapping.GetProperty(q.Field.String())
+	if property.NullValue == q.Term.String() || "\""+property.NullValue+"\"" == q.Term.String() {
+		var d = &dsl.ExistsNode{Field: q.Field.String()}
+		return d.Inverse()
+	}
 	var termType = q.Term.GetTermType()
-
 	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
-
+		return convertToRange(q.Field.String(), q.Term, property)
+	} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
+		return convertToSingle(q.Field.String(), q.Term, property)
+	} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
+		return convertToSingle(q.Field.String(), q.Term, property)
+	} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
+		return convertToGroup(q.Field.String(), q.Term, property)
+	} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
+		return convertToRegexp(q.Field.String(), q.Term, property)
+	} else {
+		return nil, fmt.Errorf("con't convert term query: %s", q.String())
 	}
+}
 
-	switch q.Term.GetTermType() {
-	case term.RANGE_TERM_TYPE:
-		return &dsl.RangeNode{}, nil
-	case term.REGEXP_TERM_TYPE:
-	}
+func convertToRange(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
 	return nil, nil
 }
 
-// func convertToRange() (dsl.DSLNode, error) {
+func convertToSingle(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	return nil, nil
+}
 
-// }
+func convertToRegexp(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	var s, _ = termV.Value(func(x string) (interface{}, error) { return x, nil })
+	return &dsl.RegexpNode{EqNode: dsl.EqNode{
+		Field: field,
+		Type:  dsl.PHRASE_VALUE,
+		Value: &dsl.DSLTermValue{
+			StringTerm: s.(string),
+		},
+	}}, nil
+}
+
+func convertToGroup(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	return nil, nil
+}
