@@ -1,10 +1,28 @@
 package convert
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/araddon/dateparse"
 )
+
+func convertToInt64(intValue string) (interface{}, error) {
+	if i, err := strconv.ParseInt(intValue, 10, 64); err != nil {
+		return 0, fmt.Errorf("int_value: '%s' is invalid, err: %s", intValue, err.Error())
+	} else {
+		return i, nil
+	}
+}
+
+func convertToUInt64(intValue string) (interface{}, error) {
+	if i, err := strconv.ParseUint(intValue, 10, 64); err != nil {
+		return 0, fmt.Errorf("int_value: '%s' is invalid, err: %s", intValue, err.Error())
+	} else {
+		return i, nil
+	}
+}
 
 func ToUpper(x string) (string, error) {
 	return strings.ToUpper(x), nil

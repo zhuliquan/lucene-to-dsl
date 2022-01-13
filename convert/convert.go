@@ -182,6 +182,95 @@ func convertToRange(field string, termV *term.Term, property *mapping.Property) 
 }
 
 func convertToSingle(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	switch property.Type {
+	case mapping.BOOLEAN_FIELD_TYPE:
+		if termV.String() == "true" || termV.String() == "false" || termV.String() == "\"true\"" || termV.String() == "\"false\"" {
+			return &dsl.TermNode{}, nil
+		}
+	case mapping.BYTE_FIELD_TYPE:
+		if i, err := termV.Value(convertToInt64); err != nil {
+			return nil, err
+		} else if i64 := i.(int64); i64 < -128 || i64 > 127 {
+			return nil, fmt.Errorf("field: %s is byte type, expect value range [-128, 127]", field)
+		} else {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.INT_VALUE,
+					Value: &dsl.DSLTermValue{
+						IntTerm: i64,
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+	case mapping.SHORT_FIELD_TYPE:
+		if i, err := termV.Value(convertToInt64); err != nil {
+			return nil, err
+		} else if i64 := i.(int64); i64 < -32768 || i64 > 32767 {
+			return nil, fmt.Errorf("field: %s is short type, expect value range [-32768, 32767]", field)
+		} else {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.INT_VALUE,
+					Value: &dsl.DSLTermValue{
+						IntTerm: i64,
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+	case mapping.INTEGER_FIELD_TYPE, mapping.INTERGER_RANGE_FIELD_TYPE:
+		if i, err := termV.Value(convertToInt64); err != nil {
+			return nil, err
+		} else if i64 := i.(int64); i64 < -2147483648 || i64 > 2147483647 {
+			return nil, fmt.Errorf("field: %s is short type, expect value range [-2147483648, 2147483647]", field)
+		} else {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.INT_VALUE,
+					Value: &dsl.DSLTermValue{
+						IntTerm: i64,
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+	case mapping.LONG_FIELD_TYPE:
+		if i, err := termV.Value(convertToInt64); err != nil {
+			return nil, err
+		} else {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.INT_VALUE,
+					Value: &dsl.DSLTermValue{
+						IntTerm: i.(int64),
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+	case mapping.UNSIGNED_LONG_FIELD_TYPE:
+		if i, err := termV.Value(convertToUInt64); err != nil {
+			return nil, err
+		} else {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.UINT_VALUE,
+					Value: &dsl.DSLTermValue{
+						UintTerm: i.(uint64),
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+
+	}
+
 	return nil, nil
 }
 

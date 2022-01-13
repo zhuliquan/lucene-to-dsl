@@ -14,7 +14,8 @@ func (d DSL) String() string {
 }
 
 type DSLTermValue struct {
-	IntTerm    int
+	IntTerm    int64
+	UintTerm   uint64
 	IpTerm     net.IP
 	IpCidrTerm net.IPNet
 	DateTerm   time.Time

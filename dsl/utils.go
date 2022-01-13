@@ -76,7 +76,9 @@ func CompareAny(a, b *DSLTermValue, typ DSLTermType) int {
 
 	switch typ {
 	case INT_VALUE:
-		return a.IntTerm - b.IntTerm
+		return int(a.IntTerm - b.IntTerm)
+	case UINT_VALUE:
+		return int(a.UintTerm - b.UintTerm)
 	case FLOAT_VALUE:
 		if math.Abs(a.FloatTerm-b.FloatTerm) < 1E-6 {
 			return 0

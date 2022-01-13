@@ -16,15 +16,6 @@ func CheckDateValue(dateValue string) error {
 	return nil
 }
 
-// check integer field value
-func CheckIntegerValue(intValue string) error {
-	if _, err := strconv.Atoi(intValue); err != nil {
-		return fmt.Errorf("int_value: '%s' is invalid, err: %s", intValue, err.Error())
-	} else {
-		return nil
-	}
-}
-
 // check float field value
 func CheckFloatValue(floatValue string) error {
 	if _, err := strconv.ParseFloat(floatValue, 64); err != nil {
