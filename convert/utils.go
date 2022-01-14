@@ -2,10 +2,12 @@ package convert
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
 	"github.com/araddon/dateparse"
+	"github.com/zhuliquan/datemath_parser"
 )
 
 func convertToInt64(intValue string) (interface{}, error) {
@@ -21,6 +23,45 @@ func convertToUInt64(intValue string) (interface{}, error) {
 		return 0, fmt.Errorf("int_value: '%s' is invalid, err: %s", intValue, err.Error())
 	} else {
 		return i, nil
+	}
+}
+
+// float field value
+func convertToFloat64(floatValue string) (interface{}, error) {
+	if f, err := strconv.ParseFloat(floatValue, 64); err != nil {
+		return 0.0, fmt.Errorf("float_value: '%s' is invalid, err: %s", floatValue, err.Error())
+	} else {
+		return f, nil
+	}
+}
+
+// parse date math
+func convertToDate(parser *datemath_parser.DateMathParser) func(string) (interface{}, error) {
+	return func(s string) (interface{}, error) {
+		if t, err := parser.Parse(s); err != nil {
+			return nil, err
+		} else {
+			return t, nil
+		}
+	}
+}
+
+// es support ip ip_cidr query like this:
+// {"term": {"ip_field": "172.168.1.0/24"}} or {"term": {"ip_field": "172.168.1.1"}}
+// check ip field value
+func convertToIp(ipValue string) (interface{}, error) {
+	if ip := net.ParseIP(ipValue); ip == nil {
+		return nil, fmt.Errorf("ip value: %s is invalid", ipValue)
+	} else {
+		return ip, nil
+	}
+}
+
+func convertToCidr(ipValue string) (interface{}, error) {
+	if _, cidr, err := net.ParseCIDR(ipValue); err != nil {
+		return nil, err
+	} else {
+		return cidr, nil
 	}
 }
 
