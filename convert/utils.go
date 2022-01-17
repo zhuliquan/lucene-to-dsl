@@ -6,49 +6,37 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/araddon/dateparse"
 	"github.com/zhuliquan/datemath_parser"
 )
 
+// convert to bool value
+func convertToBool(boolValue string) (interface{}, error) {
+	return strconv.ParseBool(boolValue)
+}
+
+// convert to int64 value
 func convertToInt64(intValue string) (interface{}, error) {
-	if i, err := strconv.ParseInt(intValue, 10, 64); err != nil {
-		return 0, fmt.Errorf("int_value: '%s' is invalid, err: %s", intValue, err.Error())
-	} else {
-		return i, nil
-	}
+	return strconv.ParseInt(intValue, 10, 64)
 }
 
+// convert to uint64 value
 func convertToUInt64(intValue string) (interface{}, error) {
-	if i, err := strconv.ParseUint(intValue, 10, 64); err != nil {
-		return 0, fmt.Errorf("int_value: '%s' is invalid, err: %s", intValue, err.Error())
-	} else {
-		return i, nil
-	}
+	return strconv.ParseUint(intValue, 10, 64)
 }
 
-// float field value
+// convert to float value
 func convertToFloat64(floatValue string) (interface{}, error) {
-	if f, err := strconv.ParseFloat(floatValue, 64); err != nil {
-		return 0.0, fmt.Errorf("float_value: '%s' is invalid, err: %s", floatValue, err.Error())
-	} else {
-		return f, nil
-	}
+	return strconv.ParseFloat(floatValue, 64)
 }
 
-// parse date math
+// parse date math expr
 func convertToDate(parser *datemath_parser.DateMathParser) func(string) (interface{}, error) {
 	return func(s string) (interface{}, error) {
-		if t, err := parser.Parse(s); err != nil {
-			return nil, err
-		} else {
-			return t, nil
-		}
+		return parser.Parse(s)
 	}
 }
 
-// es support ip ip_cidr query like this:
-// {"term": {"ip_field": "172.168.1.0/24"}} or {"term": {"ip_field": "172.168.1.1"}}
-// check ip field value
+// convert to ip value， example: {"term": {"ip_field": "172.168.1.1"}}
 func convertToIp(ipValue string) (interface{}, error) {
 	if ip := net.ParseIP(ipValue); ip == nil {
 		return nil, fmt.Errorf("ip value: %s is invalid", ipValue)
@@ -57,6 +45,7 @@ func convertToIp(ipValue string) (interface{}, error) {
 	}
 }
 
+// convert to ip value， example: {"term": {"ip_field": "172.168.1.0/24"}}
 func convertToCidr(ipValue string) (interface{}, error) {
 	if _, cidr, err := net.ParseCIDR(ipValue); err != nil {
 		return nil, err
@@ -71,13 +60,4 @@ func ToUpper(x string) (string, error) {
 
 func ToLower(x string) (string, error) {
 	return strings.ToLower(x), nil
-}
-
-func ParseDate(x string) (string, error) {
-	if t, err := dateparse.ParseAny(x); err != nil {
-		return "", err
-	} else {
-		return t.Format("2006-01-02 15:04:05"), nil
-	}
-
 }

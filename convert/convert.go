@@ -2,7 +2,11 @@ package convert
 
 import (
 	"fmt"
+	"net"
+	"strings"
+	"time"
 
+	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 	lucene "github.com/zhuliquan/lucene_parser"
@@ -178,18 +182,32 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 }
 
 func convertToRange(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	// switch property.Type {
+	// case mapping.POINT_FIELD_TYPE:
+	// 	if termV.String() == "true" || termV.String() ==
+	// }
+
 	return nil, nil
 }
 
 func convertToSingle(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE:
-		if termV.String() == "true" || termV.String() == "false" || termV.String() == "\"true\"" || termV.String() == "\"false\"" {
-			return &dsl.TermNode{}, nil
+		if b, err := termV.Value(convertToBool); err != nil {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.BOOL_VALUE,
+					Value: &dsl.DSLTermValue{
+						BoolTerm: b.(bool),
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
 		}
 	case mapping.BYTE_FIELD_TYPE:
 		if i, err := termV.Value(convertToInt64); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to int8", field, termV.String())
 		} else if i64 := i.(int64); i64 < -128 || i64 > 127 {
 			return nil, fmt.Errorf("field: %s is byte type, expect value range [-128, 127]", field)
 		} else {
@@ -206,7 +224,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		}
 	case mapping.SHORT_FIELD_TYPE:
 		if i, err := termV.Value(convertToInt64); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to int16", field, termV.String())
 		} else if i64 := i.(int64); i64 < -32768 || i64 > 32767 {
 			return nil, fmt.Errorf("field: %s is short type, expect value range [-32768, 32767]", field)
 		} else {
@@ -223,7 +241,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		}
 	case mapping.INTEGER_FIELD_TYPE, mapping.INTERGER_RANGE_FIELD_TYPE:
 		if i, err := termV.Value(convertToInt64); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to int32", field, termV.String())
 		} else if i64 := i.(int64); i64 < -2147483648 || i64 > 2147483647 {
 			return nil, fmt.Errorf("field: %s is short type, expect value range [-2147483648, 2147483647]", field)
 		} else {
@@ -240,7 +258,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		}
 	case mapping.LONG_FIELD_TYPE:
 		if i, err := termV.Value(convertToInt64); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to int64", field, termV.String())
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
@@ -255,7 +273,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		}
 	case mapping.UNSIGNED_LONG_FIELD_TYPE:
 		if i, err := termV.Value(convertToUInt64); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to uint64", field, termV.String())
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
@@ -269,6 +287,90 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 			}, nil
 		}
 
+	case mapping.HALF_FLOAT_FIELD_TYPE, mapping.FLOAT_FIELD_TYPE, mapping.SCALED_FLOAT_FIELD_TYPE, mapping.DOUBLE_FIELD_TYPE:
+		if f, err := termV.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to float", field, termV.String())
+		} else {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.FLOAT_VALUE,
+					Value: &dsl.DSLTermValue{
+						FloatTerm: f.(float64),
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE:
+		if parser, err := datemath_parser.NewDateMathParser(
+			datemath_parser.WithFormat(strings.Split(property.Format, "||")),
+			datemath_parser.WithTimeZone(time.Local.String()),
+		); err != nil {
+			return nil, fmt.Errorf("failed to create date math parser, err: %+v", err)
+		} else {
+			if _, err := termV.Value(convertToDate(parser)); err != nil {
+				return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
+			} else {
+				return &dsl.RangeNode{
+					Field:    field,
+					NodeType: dsl.LEAF_NODE_TYPE,
+				}, nil
+
+			}
+		}
+	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
+		if ip, err := termV.Value(convertToIp); err == nil {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.IP_VALUE,
+					Value: &dsl.DSLTermValue{
+						IpTerm: ip.(net.IP),
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+		if cidr, err := termV.Value(convertToCidr); err == nil {
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field,
+					Type:  dsl.IP_CIDR_VALUE,
+					Value: &dsl.DSLTermValue{
+						IpCidrTerm: cidr.(*net.IPNet),
+					},
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+		return nil, fmt.Errorf("ip value: %s is invalid", termV.String())
+	case mapping.KEYWORD_FIELD_TYPE:
+		var s, _ = termV.Value(func(s string) (interface{}, error) { return s, nil })
+		return &dsl.TermNode{
+			EqNode: dsl.EqNode{
+				Field: field,
+				Type:  dsl.KEYWORD_VALUE,
+				Value: &dsl.DSLTermValue{
+					StringTerm: s.(string),
+				},
+			},
+			Boost: termV.Boost(),
+		}, nil
+
+	case mapping.TEXT_FIELD_TYPE:
+		// var s, _ = termV.Value(func(s string) (interface{}, error) { return s, nil })
+		// return &dsl.TermNode{
+		// 	EqNode: dsl.EqNode{
+		// 		Field: field,
+		// 		Type:  dsl.KEYWORD_VALUE,
+		// 		Value: &dsl.DSLTermValue{
+		// 			StringTerm: s.(string),
+		// 		},
+		// 	},
+		// 	Boost: termV.Boost(),
+		// }, nil
+		return nil, nil
 	}
 
 	return nil, nil
