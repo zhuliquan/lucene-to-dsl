@@ -13,7 +13,7 @@ func LuceneToDSL(luceneQuery string, path string, covFunc map[string]func(string
 	var qry *lucene.Lucene
 	var node dsl.DSLNode
 
-	if fm, err = mapping.LoadMapping(path); err != nil {
+	if fm, err = mapping.LoadMapping(path, nil); err != nil {
 		return nil, err
 	}
 	if err = convert.InitConvert(fm, covFunc); err != nil {

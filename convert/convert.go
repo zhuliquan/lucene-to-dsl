@@ -167,21 +167,21 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	}
 	var termType = q.Term.GetTermType()
 	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
-		return convertToRange(q.Field.String(), q.Term, property)
+		return convertToRange(q.Field, q.Term, property)
 	} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
-		return convertToSingle(q.Field.String(), q.Term, property)
+		return convertToSingle(q.Field, q.Term, property)
 	} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
-		return convertToSingle(q.Field.String(), q.Term, property)
+		return convertToSingle(q.Field, q.Term, property)
 	} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
-		return convertToGroup(q.Field.String(), q.Term, property)
+		return convertToGroup(q.Field, q.Term, property)
 	} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
-		return convertToRegexp(q.Field.String(), q.Term, property)
+		return convertToRegexp(q.Field, q.Term, property)
 	} else {
 		return nil, fmt.Errorf("con't convert term query: %s", q.String())
 	}
 }
 
-func convertToRange(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToRange(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
 	// switch property.Type {
 	// case mapping.POINT_FIELD_TYPE:
 	// 	if termV.String() == "true" || termV.String() ==
@@ -190,13 +190,13 @@ func convertToRange(field string, termV *term.Term, property *mapping.Property) 
 	return nil, nil
 }
 
-func convertToSingle(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE:
 		if b, err := termV.Value(convertToBool); err != nil {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.BOOL_VALUE,
 					Value: &dsl.DSLTermValue{
 						BoolTerm: b.(bool),
@@ -213,7 +213,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.INT_VALUE,
 					Value: &dsl.DSLTermValue{
 						IntTerm: i64,
@@ -230,7 +230,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.INT_VALUE,
 					Value: &dsl.DSLTermValue{
 						IntTerm: i64,
@@ -247,7 +247,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.INT_VALUE,
 					Value: &dsl.DSLTermValue{
 						IntTerm: i64,
@@ -262,7 +262,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.INT_VALUE,
 					Value: &dsl.DSLTermValue{
 						IntTerm: i.(int64),
@@ -277,7 +277,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.UINT_VALUE,
 					Value: &dsl.DSLTermValue{
 						UintTerm: i.(uint64),
@@ -293,7 +293,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		} else {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.FLOAT_VALUE,
 					Value: &dsl.DSLTermValue{
 						FloatTerm: f.(float64),
@@ -313,7 +313,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 				return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
 			} else {
 				return &dsl.RangeNode{
-					Field:    field,
+					Field:    field.String(),
 					NodeType: dsl.LEAF_NODE_TYPE,
 				}, nil
 
@@ -323,7 +323,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		if ip, err := termV.Value(convertToIp); err == nil {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.IP_VALUE,
 					Value: &dsl.DSLTermValue{
 						IpTerm: ip.(net.IP),
@@ -335,7 +335,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		if cidr, err := termV.Value(convertToCidr); err == nil {
 			return &dsl.TermNode{
 				EqNode: dsl.EqNode{
-					Field: field,
+					Field: field.String(),
 					Type:  dsl.IP_CIDR_VALUE,
 					Value: &dsl.DSLTermValue{
 						IpCidrTerm: cidr.(*net.IPNet),
@@ -349,7 +349,7 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 		var s, _ = termV.Value(func(s string) (interface{}, error) { return s, nil })
 		return &dsl.TermNode{
 			EqNode: dsl.EqNode{
-				Field: field,
+				Field: field.String(),
 				Type:  dsl.KEYWORD_VALUE,
 				Value: &dsl.DSLTermValue{
 					StringTerm: s.(string),
@@ -376,10 +376,10 @@ func convertToSingle(field string, termV *term.Term, property *mapping.Property)
 	return nil, nil
 }
 
-func convertToRegexp(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
 	var s, _ = termV.Value(func(x string) (interface{}, error) { return x, nil })
 	return &dsl.RegexpNode{EqNode: dsl.EqNode{
-		Field: field,
+		Field: field.String(),
 		Type:  dsl.PHRASE_VALUE,
 		Value: &dsl.DSLTermValue{
 			StringTerm: s.(string),
@@ -387,6 +387,134 @@ func convertToRegexp(field string, termV *term.Term, property *mapping.Property)
 	}}, nil
 }
 
-func convertToGroup(field string, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
-	return nil, nil
+func convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	return  luceneToDSLNode(convertTermGroupToLucene(field, termV.TermGroup))
+}
+
+func convertTermGroupToLucene(field *term.Field, termGroup *term.TermGroup) *lucene.Lucene {
+	if termGroup == nil {
+		return nil
+	} else {
+		return convertLogicTermGroupToLucene(field, termGroup.LogicTermGroup, termGroup.BoostSymbol)
+	}
+}
+
+func convertLogicTermGroupToLucene(field *term.Field, termGroup *term.LogicTermGroup, boostSymbol string) *lucene.Lucene {
+	if termGroup == nil {
+		return nil
+	} else {
+		var q = &lucene.Lucene{}
+		q.OrQuery = convertOrGroupToOrQuery(field, termGroup.OrTermGroup, boostSymbol)
+		q.OSQuery = []*lucene.OSQuery{}
+		for _, osGroup := range termGroup.OSTermGroup {
+			q.OSQuery = append(q.OSQuery, convertOsGroupToOsQuery(field, osGroup, boostSymbol))
+		}
+		return q
+	}
+}
+
+func convertOsGroupToOsQuery(field *term.Field, osGroup *term.OSTermGroup, boostSymbol string) *lucene.OSQuery {
+	if osGroup == nil {
+		return nil
+	} else {
+		return &lucene.OSQuery{
+			OrSymbol: osGroup.OrSymbol,
+			OrQuery:  convertOrGroupToOrQuery(field, osGroup.OrTermGroup, boostSymbol),
+		}
+	}
+}
+
+func convertOrGroupToOrQuery(field *term.Field, orGroup *term.OrTermGroup, boostSymbol string) *lucene.OrQuery {
+	if orGroup == nil {
+		return nil
+	} else {
+		var q = &lucene.OrQuery{}
+		q.AndQuery = convertAndGroupToAndQuery(field, orGroup.AndTermGroup, boostSymbol)
+		q.AnSQuery = []*lucene.AnSQuery{}
+		for _, ansGroup := range orGroup.AnSTermGroup {
+			q.AnSQuery = append(q.AnSQuery, convertAnsGroupToAnsQuery(field, ansGroup, boostSymbol))
+		}
+		return q
+	}
+}
+
+func convertAnsGroupToAnsQuery(field *term.Field, ansGroup *term.AnSTermGroup, boostSymbol string) *lucene.AnSQuery {
+	if ansGroup == nil {
+		return nil
+	} else {
+		return &lucene.AnSQuery{
+			AndSymbol: ansGroup.AndSymbol,
+			AndQuery:  convertAndGroupToAndQuery(field, ansGroup.AndTermGroup, boostSymbol),
+		}
+	}
+}
+
+func convertAndGroupToAndQuery(field *term.Field, andGroup *term.AndTermGroup, boostSymbol string) *lucene.AndQuery {
+	if andGroup == nil {
+		return nil
+	} else if andGroup.TermGroupElem != nil {
+		return &lucene.AndQuery{
+			NotSymbol:  andGroup.NotSymbol,
+			FieldQuery: convertGroupElemToFieldTerm(field, andGroup.TermGroupElem, boostSymbol),
+		}
+	} else if andGroup.ParenTermGroup != nil {
+		return &lucene.AndQuery{
+			NotSymbol:  andGroup.NotSymbol,
+			ParenQuery: convertParenTermGroupToParentTerm(field, andGroup.ParenTermGroup, boostSymbol),
+		}
+	} else {
+		return nil
+	}
+}
+
+func convertParenTermGroupToParentTerm(field *term.Field, parentTermGroup *term.ParenTermGroup, boostSymbol string) *lucene.ParenQuery {
+	return nil
+}
+
+func convertGroupElemToFieldTerm(field *term.Field, groupElem *term.TermGroupElem, boostSymbol string) *lucene.FieldQuery {
+	if groupElem == nil {
+		return nil
+	} else if groupElem.SingleTerm != nil {
+		return &lucene.FieldQuery{
+			Field: field,
+			Term: &term.Term{
+				FuzzyTerm: &term.FuzzyTerm{
+					SingleTerm:  groupElem.SingleTerm,
+					BoostSymbol: boostSymbol,
+				},
+			},
+		}
+	} else if groupElem.PhraseTerm != nil {
+		return &lucene.FieldQuery{
+			Field: field,
+			Term: &term.Term{
+				FuzzyTerm: &term.FuzzyTerm{
+					PhraseTerm:  groupElem.PhraseTerm,
+					BoostSymbol: boostSymbol,
+				},
+			},
+		}
+	} else if groupElem.SRangeTerm != nil {
+		return &lucene.FieldQuery{
+			Field: field,
+			Term: &term.Term{
+				RangeTerm: &term.RangeTerm{
+					SRangeTerm:  groupElem.SRangeTerm,
+					BoostSymbol: boostSymbol,
+				},
+			},
+		}
+	} else if groupElem.DRangeTerm != nil {
+		return &lucene.FieldQuery{
+			Field: field,
+			Term: &term.Term{
+				RangeTerm: &term.RangeTerm{
+					DRangeTerm:  groupElem.DRangeTerm,
+					BoostSymbol: boostSymbol,
+				},
+			},
+		}
+	} else {
+		return nil
+	}
 }
