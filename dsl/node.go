@@ -826,11 +826,11 @@ func (n *PrefixNode) ToDSL() DSL {
 type RangeNode struct {
 	LeafNode
 	Field       string
-	NodeType    NodeType
+	ValueType   DSLTermType
 	LeftValue   *DSLTermValue
 	RightValue  *DSLTermValue
-	LeftCmpSym  string
-	RightCmpSym string
+	LeftCmpSym  CompareType
+	RightCmpSym CompareType
 	Boost       float64
 	Format      string
 }
@@ -889,10 +889,10 @@ func (n *RangeNode) ToDSL() DSL {
 	}
 	var res = DSL{}
 	if n.LeftValue != InfValue {
-		res[n.LeftCmpSym] = n.LeftValue
+		res[n.LeftCmpSym.String()] = n.LeftValue
 	}
 	if n.RightValue != InfValue {
-		res[n.RightCmpSym] = n.RightValue
+		res[n.RightCmpSym.String()] = n.RightValue
 	}
 
 	res["relation"] = "WITHIN"

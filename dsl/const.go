@@ -50,3 +50,25 @@ const (
 
 // using nil represent infinite value
 var InfValue *DSLTermValue = nil
+
+type CompareType uint32
+
+const (
+	LT CompareType = iota
+	LTE
+	GT
+	GTE
+	EQ
+)
+
+var CompareTypeStrings = map[CompareType]string{
+	LT:  "lt",
+	GT:  "gt",
+	LTE: "lte",
+	GTE: "gte",
+	EQ:  "eq",
+}
+
+func (c CompareType) String() string {
+	return CompareTypeStrings[c]
+}
