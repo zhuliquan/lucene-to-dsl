@@ -859,6 +859,8 @@ func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
 		return nil, nil
 
 	case RANGE_DSL_TYPE:
+		// var otherNode = node.(*RangeNode)
+		// if otherNode.LeftCmpSym == LT
 
 	}
 	return nil, nil

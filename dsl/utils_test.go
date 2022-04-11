@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"math"
 	"net"
 	"reflect"
 	"testing"
@@ -316,6 +317,312 @@ func TestCompareAny(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := CompareAny(tt.args.a, tt.args.b, tt.args.typ); got != tt.want {
 				t.Errorf("CompareAny() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareInt64(t *testing.T) {
+	type args struct {
+		a int64
+		b int64
+		c CompareType
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			name: "test_lt",
+			args: args{a: 1, b: 2, c: LT},
+			want: 1,
+		},
+		{
+			name: "test_gt",
+			args: args{a: 1, b: 2, c: GT},
+			want: 2,
+		},
+		{
+			name: "test_lte",
+			args: args{a: 1, b: 2, c: LTE},
+			want: 1,
+		},
+		{
+			name: "test_gte",
+			args: args{a: 1, b: 2, c: GTE},
+			want: 2,
+		},
+		{
+			name: "test_eq_1",
+			args: args{a: 3, b: 2, c: EQ},
+			want: 3,
+		},
+		{
+			name: "test_eq_2",
+			args: args{a: 2, b: 3, c: EQ},
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareInt64(tt.args.a, tt.args.b, tt.args.c); got != tt.want {
+				t.Errorf("compareInt64() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareUInt64(t *testing.T) {
+	type args struct {
+		a uint64
+		b uint64
+		c CompareType
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint64
+	}{
+		{
+			name: "test_lt",
+			args: args{a: 1, b: 2, c: LT},
+			want: 1,
+		},
+		{
+			name: "test_gt",
+			args: args{a: 1, b: 2, c: GT},
+			want: 2,
+		},
+		{
+			name: "test_lte",
+			args: args{a: 1, b: 2, c: LTE},
+			want: 1,
+		},
+		{
+			name: "test_gte",
+			args: args{a: 1, b: 2, c: GTE},
+			want: 2,
+		},
+		{
+			name: "test_eq_1",
+			args: args{a: 3, b: 2, c: EQ},
+			want: 3,
+		},
+		{
+			name: "test_eq_2",
+			args: args{a: 2, b: 3, c: EQ},
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareUInt64(tt.args.a, tt.args.b, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareUInt64() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareFloat64(t *testing.T) {
+	type args struct {
+		a float64
+		b float64
+		c CompareType
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		{
+			name: "test_lt",
+			args: args{a: 1, b: 2, c: LT},
+			want: 1,
+		},
+		{
+			name: "test_gt",
+			args: args{a: 1, b: 2, c: GT},
+			want: 2,
+		},
+		{
+			name: "test_lte",
+			args: args{a: 1, b: 2, c: LTE},
+			want: 1,
+		},
+		{
+			name: "test_gte",
+			args: args{a: 1, b: 2, c: GTE},
+			want: 2,
+		},
+		{
+			name: "test_eq_1",
+			args: args{a: 3, b: 2, c: EQ},
+			want: 3,
+		},
+		{
+			name: "test_eq_2",
+			args: args{a: 2, b: 3, c: EQ},
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareFloat64(tt.args.a, tt.args.b, tt.args.c); math.Abs(got-tt.want) > 1E-6 {
+				t.Errorf("compareFloat64() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareIp(t *testing.T) {
+	type args struct {
+		a net.IP
+		b net.IP
+		c CompareType
+	}
+	tests := []struct {
+		name string
+		args args
+		want net.IP
+	}{
+		{
+			name: "test_lt",
+			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: LT},
+			want: net.ParseIP("1.2.3.4"),
+		},
+		{
+			name: "test_gt",
+			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: GT},
+			want: net.ParseIP("1.2.4.3"),
+		},
+		{
+			name: "test_lt",
+			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: LTE},
+			want: net.ParseIP("1.2.3.4"),
+		},
+		{
+			name: "test_gt",
+			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: GTE},
+			want: net.ParseIP("1.2.4.3"),
+		},
+		{
+			name: "test_eq_1",
+			args: args{a: net.ParseIP("1.5.3.4"), b: net.ParseIP("1.2.4.3"), c: EQ},
+			want: net.ParseIP("1.5.3.4"),
+		},
+		{
+			name: "test_eq_2",
+			args: args{a: net.ParseIP("1.2.4.3"), b: net.ParseIP("1.5.3.4"), c: EQ},
+			want: net.ParseIP("1.2.4.3"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareIp(tt.args.a, tt.args.b, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareIp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareString(t *testing.T) {
+	type args struct {
+		a string
+		b string
+		c CompareType
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "test_lt",
+			args: args{a: "1", b: "2", c: LT},
+			want: "1",
+		},
+		{
+			name: "test_gt",
+			args: args{a: "1", b: "2", c: GT},
+			want: "2",
+		},
+		{
+			name: "test_lte",
+			args: args{a: "1", b: "2", c: LTE},
+			want: "1",
+		},
+		{
+			name: "test_gte",
+			args: args{a: "1", b: "2", c: GTE},
+			want: "2",
+		},
+		{
+			name: "test_eq_1",
+			args: args{a: "3", b: "2", c: EQ},
+			want: "3",
+		},
+		{
+			name: "test_eq_2",
+			args: args{a: "2", b: "3", c: EQ},
+			want: "2",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareString(tt.args.a, tt.args.b, tt.args.c); got != tt.want {
+				t.Errorf("compareString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_compareDate(t *testing.T) {
+	type args struct {
+		a time.Time
+		b time.Time
+		c CompareType
+	}
+	tests := []struct {
+		name string
+		args args
+		want time.Time
+	}{
+		{
+			name: "test_lt",
+			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: LT},
+			want: time.Unix(1, 0),
+		},
+		{
+			name: "test_gt",
+			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: GT},
+			want: time.Unix(2, 0),
+		},
+		{
+			name: "test_lte",
+			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: LTE},
+			want: time.Unix(1, 0),
+		},
+		{
+			name: "test_gte",
+			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: GTE},
+			want: time.Unix(2, 0),
+		},
+		{
+			name: "test_eq_1",
+			args: args{a: time.Unix(3, 0), b: time.Unix(2, 0), c: EQ},
+			want: time.Unix(3, 0),
+		},
+		{
+			name: "test_eq_2",
+			args: args{a: time.Unix(2, 0), b: time.Unix(3, 0), c: EQ},
+			want: time.Unix(2, 0),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := compareDate(tt.args.a, tt.args.b, tt.args.c); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("compareDate() = %v, want %v", got, tt.want)
 			}
 		})
 	}

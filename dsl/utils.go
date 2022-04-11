@@ -3,7 +3,9 @@ package dsl
 import (
 	"bytes"
 	"math"
+	"net"
 	"sort"
+	"time"
 )
 
 // union join two string slice
@@ -115,5 +117,291 @@ func CompareAny(a, b *DSLTermValue, typ DSLTermType) int {
 		}
 	default:
 		return 0
+	}
+}
+
+func compareInt64(a, b int64, c CompareType) int64 {
+	switch c {
+	case LT:
+		return ltInt64(a, b)
+	case GT:
+		return gtInt64(a, b)
+	case LTE:
+		return lteInt64(a, b)
+	case GTE:
+		return gteInt64(a, b)
+	default:
+		return a
+	}
+}
+
+func ltInt64(a, b int64) int64 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func lteInt64(a, b int64) int64 {
+	if a <= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gtInt64(a, b int64) int64 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gteInt64(a, b int64) int64 {
+	if a >= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func compareUInt64(a, b uint64, c CompareType) uint64 {
+	switch c {
+	case LT:
+		return ltUInt64(a, b)
+	case GT:
+		return gtUInt64(a, b)
+	case LTE:
+		return lteUInt64(a, b)
+	case GTE:
+		return gteUInt64(a, b)
+	default:
+		return a
+	}
+}
+
+func ltUInt64(a, b uint64) uint64 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func lteUInt64(a, b uint64) uint64 {
+	if a <= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gtUInt64(a, b uint64) uint64 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gteUInt64(a, b uint64) uint64 {
+	if a >= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func compareFloat64(a, b float64, c CompareType) float64 {
+	switch c {
+	case LT:
+		return ltFloat64(a, b)
+	case GT:
+		return gtFloat64(a, b)
+	case LTE:
+		return lteFloat64(a, b)
+	case GTE:
+		return gteFloat64(a, b)
+	default:
+		return a
+	}
+}
+
+func ltFloat64(a, b float64) float64 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func lteFloat64(a, b float64) float64 {
+	if a <= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gtFloat64(a, b float64) float64 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gteFloat64(a, b float64) float64 {
+	if a >= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func compareIp(a, b net.IP, c CompareType) net.IP {
+	switch c {
+	case LT:
+		return ltIP(a, b)
+	case GT:
+		return gtIP(a, b)
+	case LTE:
+		return lteIP(a, b)
+	case GTE:
+		return gteIP(a, b)
+	default:
+		return a
+	}
+}
+
+func ltIP(a, b net.IP) net.IP {
+	var res = bytes.Compare([]byte(a), []byte(b))
+	if res < 0 {
+		return a
+	} else {
+		return b
+	}
+}
+
+func lteIP(a, b net.IP) net.IP {
+	var res = bytes.Compare([]byte(a), []byte(b))
+	if res <= 0 {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gtIP(a, b net.IP) net.IP {
+	var res = bytes.Compare([]byte(a), []byte(b))
+	if res > 0 {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gteIP(a, b net.IP) net.IP {
+	var res = bytes.Compare([]byte(a), []byte(b))
+	if res >= 0 {
+		return a
+	} else {
+		return b
+	}
+}
+
+func compareDate(a, b time.Time, c CompareType) time.Time {
+	switch c {
+	case LT:
+		return ltDate(a, b)
+	case GT:
+		return gtDate(a, b)
+	case LTE:
+		return lteDate(a, b)
+	case GTE:
+		return gteDate(a, b)
+	default:
+		return a
+	}
+}
+
+func ltDate(a, b time.Time) time.Time {
+	if a.UnixNano() < b.UnixNano() {
+		return a
+	} else {
+		return b
+	}
+}
+
+func lteDate(a, b time.Time) time.Time {
+	if a.UnixNano() <= b.UnixNano() {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gtDate(a, b time.Time) time.Time {
+	if a.UnixNano() > b.UnixNano() {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gteDate(a, b time.Time) time.Time {
+	if a.UnixNano() >= b.UnixNano() {
+		return a
+	} else {
+		return b
+	}
+}
+
+func compareString(a, b string, c CompareType) string {
+	switch c {
+	case LT:
+		return ltString(a, b)
+	case GT:
+		return gtString(a, b)
+	case LTE:
+		return lteString(a, b)
+	case GTE:
+		return gteString(a, b)
+	default:
+		return a
+	}
+}
+
+func ltString(a, b string) string {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func lteString(a, b string) string {
+	if a <= b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gtString(a, b string) string {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func gteString(a, b string) string {
+	if a >= b {
+		return a
+	} else {
+		return b
 	}
 }
