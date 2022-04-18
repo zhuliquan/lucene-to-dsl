@@ -15,6 +15,17 @@ import (
 )
 
 var fm *mapping.Mapping
+var dateParser *datemath_parser.DateMathParser
+
+var (
+	maxIP = net.IP([]byte{
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+	})
+	minIP = net.IP([]byte{0, 0, 0, 0})
+)
 
 func InitConvert(m *mapping.Mapping, covFunc map[string]func(string) (interface{}, error)) error {
 	fm = m
@@ -184,12 +195,9 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 
 func convertToRange(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
 	var (
-		bound      = termV.GetBound()
-		valueType  dsl.DSLTermType
-		leftValue  *dsl.DSLTermValue
-		rightValue *dsl.DSLTermValue
-		leftCmp    dsl.CompareType
-		rightCmp   dsl.CompareType
+		bound    = termV.GetBound()
+		leftCmp  dsl.CompareType
+		rightCmp dsl.CompareType
 	)
 
 	if bound.LeftInclude {
@@ -199,215 +207,439 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 	}
 
 	if bound.RightInclude {
-		leftCmp = dsl.LTE
+		rightCmp = dsl.LTE
 	} else {
-		leftCmp = dsl.LT
+		rightCmp = dsl.LT
 	}
 
 	switch property.Type {
 	case mapping.BYTE_FIELD_TYPE:
-		valueType = dsl.INT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int8", field, bound.LeftValue.String())
-			} else if li64 := li.(int64); li64 < math.MinInt8 || li64 > math.MaxInt8 {
-				return nil, fmt.Errorf("field: %s is byte type, expect left value range [%d, %d]", field, math.MinInt8, math.MaxInt8)
-			} else {
-				leftValue = &dsl.DSLTermValue{IntTerm: li64}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt8}
-		}
-		if !bound.RightValue.IsInf() {
-			if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int8", field, bound.RightValue.String())
-			} else if ri64 := ri.(int64); ri64 < math.MinInt8 || ri64 > math.MaxInt8 {
-				return nil, fmt.Errorf("field: %s is byte type, expect right value range [%d, %d]", field, math.MinInt8, math.MaxInt8)
-			} else {
-				rightValue = &dsl.DSLTermValue{IntTerm: ri64}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt8}
-		}
-
+		return convertToInt8Range(field, termV, leftCmp, rightCmp)
 	case mapping.SHORT_FIELD_TYPE:
-		valueType = dsl.INT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int16", field, bound.LeftValue.String())
-			} else if li64 := li.(int64); li64 < math.MinInt16 || li64 > math.MaxInt16 {
-				return nil, fmt.Errorf("field: %s is int16 type, expect left value range [%d, %d]", field, math.MinInt16, math.MaxInt16)
-			} else {
-				leftValue = &dsl.DSLTermValue{IntTerm: li64}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt16}
-		}
-		if !bound.RightValue.IsInf() {
-			if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int16", field, bound.RightValue.String())
-			} else if ri64 := ri.(int64); ri64 < math.MinInt16 || ri64 > math.MaxInt16 {
-				return nil, fmt.Errorf("field: %s is int16 type, expect right value range [%d, %d]", field, math.MinInt16, math.MaxInt16)
-			} else {
-				rightValue = &dsl.DSLTermValue{IntTerm: ri64}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt16}
-		}
-
+		return convertToInt16Range(field, termV, leftCmp, rightCmp)
 	case mapping.INTEGER_FIELD_TYPE, mapping.INTERGER_RANGE_FIELD_TYPE:
-		valueType = dsl.INT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int32", field, bound.LeftValue.String())
-			} else if li64 := li.(int64); li64 < math.MinInt32 || li64 > math.MaxInt32 {
-				return nil, fmt.Errorf("field: %s is int32 type, expect left value range [%d, %d]", field, math.MinInt32, math.MaxInt32)
-			} else {
-				leftValue = &dsl.DSLTermValue{IntTerm: li64}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt32}
-		}
-		if !bound.RightValue.IsInf() {
-			if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int32", field, bound.RightValue.String())
-			} else if ri64 := ri.(int64); ri64 < math.MinInt32 || ri64 > math.MaxInt32 {
-				return nil, fmt.Errorf("field: %s is int32 type, expect right value range [%d, %d]", field, math.MinInt32, math.MaxInt32)
-			} else {
-				rightValue = &dsl.DSLTermValue{IntTerm: ri64}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt32}
-		}
-
+		return convertToInt32Range(field, termV, leftCmp, rightCmp)
 	case mapping.LONG_FIELD_TYPE, mapping.LONG_RANGE_FIELD_TYPE:
-		valueType = dsl.INT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int64", field, bound.LeftValue.String())
-			} else {
-				leftValue = &dsl.DSLTermValue{IntTerm: li.(int64)}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt64}
-		}
-		if !bound.RightValue.IsInf() {
-			if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int64", field, bound.RightValue.String())
-			} else {
-				rightValue = &dsl.DSLTermValue{IntTerm: ri.(int64)}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt64}
-		}
-
+		return convertToInt64Range(field, termV, leftCmp, rightCmp)
 	case mapping.UNSIGNED_LONG_FIELD_TYPE:
-		valueType = dsl.UINT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if li, err := bound.LeftValue.Value(convertToUInt64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to uint64", field, bound.LeftValue.String())
-			} else {
-				leftValue = &dsl.DSLTermValue{UintTerm: li.(uint64)}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{UintTerm: math.MaxUint64}
-		}
-		if !bound.RightValue.IsInf() {
-			if ri, err := bound.RightValue.Value(convertToUInt64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to uint64", field, bound.RightValue.String())
-			} else {
-				rightValue = &dsl.DSLTermValue{UintTerm: ri.(uint64)}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt64}
-		}
-
+		return convertToUint64Range(field, termV, leftCmp, rightCmp)
 	case mapping.HALF_FLOAT_FIELD_TYPE:
-		valueType = dsl.FLOAT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float64", field, bound.LeftValue.String())
-			} else if lf64 := lf.(float64); lf64 < -65504 || lf64 > 65504 {
-				return nil, fmt.Errorf("field: %s is float32 type, expect right value range [%d, %d]", field, -65504, 65504)
-			} else {
-				leftValue = &dsl.DSLTermValue{FloatTerm: lf64}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{FloatTerm: -65504}
-		}
-
-		if !bound.RightValue.IsInf() {
-			if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float64", field, bound.LeftValue.String())
-			} else if lf64 := lf.(float64); lf64 < -65504 || lf64 > 65504 {
-				return nil, fmt.Errorf("field: %s is float32 type, expect right value range [%d, %d]", field, -65504, 65504)
-			} else {
-				rightValue = &dsl.DSLTermValue{FloatTerm: lf64}
-			}
-
-		} else {
-			rightValue = &dsl.DSLTermValue{FloatTerm: 65504}
-		}
-
+		return convertToFloat16Range(field, termV, leftCmp, rightCmp)
 	case mapping.FLOAT_FIELD_TYPE, mapping.FLOAT_RANGE_FIELD_TYPE:
-		valueType = dsl.FLOAT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float64", field, bound.LeftValue.String())
-			} else if lf64 := lf.(float64); lf64 < -math.MaxFloat32 || lf64 > math.MaxFloat32 {
-				return nil, fmt.Errorf("field: %s is float32 type, expect right value range [%f, %f]", field, -math.MaxFloat32, math.MaxFloat32)
-			} else {
-				leftValue = &dsl.DSLTermValue{FloatTerm: lf64}
-			}
-
-		} else {
-			leftValue = &dsl.DSLTermValue{FloatTerm: -math.MaxFloat32}
-		}
-
-		if !bound.RightValue.IsInf() {
-			if rf, err := bound.RightValue.Value(convertToFloat64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to float64", field, bound.RightValue.String())
-			} else if rf64 := rf.(float64); rf64 < -math.MaxFloat32 || rf64 > math.MaxFloat32 {
-				return nil, fmt.Errorf("field: %s is float32 type, expect right value range [%f, %f]", field, -math.MaxFloat32, math.MaxFloat32)
-			} else {
-				rightValue = &dsl.DSLTermValue{FloatTerm: rf64}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{FloatTerm: math.MaxFloat32}
-		}
-
+		return convertToFloat32Range(field, termV, leftCmp, rightCmp)
 	case mapping.DOUBLE_FIELD_TYPE, mapping.DOUBLE_RANGE_FIELD_TYPE:
-		valueType = dsl.FLOAT_VALUE
-		if !bound.LeftValue.IsInf() {
-			if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
-				return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float64", field, bound.LeftValue.String())
-			} else {
-				leftValue = &dsl.DSLTermValue{FloatTerm: lf.(float64)}
-			}
-		} else {
-			leftValue = &dsl.DSLTermValue{FloatTerm: -math.MaxFloat64}
-		}
-		if !bound.RightValue.IsInf() {
-			if rf, err := bound.RightValue.Value(convertToFloat64); err != nil {
-				return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to float64", field, bound.RightValue.String())
-			} else {
-				rightValue = &dsl.DSLTermValue{FloatTerm: rf.(float64)}
-			}
-		} else {
-			rightValue = &dsl.DSLTermValue{FloatTerm: math.MaxFloat64}
-		}
-	
-	// case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
-	// 	valueType = dsl.IP_VALUE
-	// 	if !bound.LeftValue.IsInf() {
+		return convertToFloat64Range(field, termV, leftCmp, rightCmp)
+	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
+		return convertToIPRange(field, termV, leftCmp, rightCmp)
+	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE:
+		return convertToDateRange(field, termV, leftCmp, rightCmp)
+	default:
+		return convertToStringRange(field, termV, leftCmp, rightCmp)
+	}
+}
 
-	// 	}
+func convertToStringRange(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
 
-	// }
+	if !bound.LeftValue.IsInf() {
+		leftValue = &dsl.DSLTermValue{StringTerm: bound.LeftValue.String()}
+	} else {
+		leftValue = &dsl.DSLTermValue{StringTerm: ""}
+	}
+	if !bound.RightValue.IsInf() {
+		rightValue = &dsl.DSLTermValue{StringTerm: bound.RightValue.String()}
+	} else {
+		rightValue = &dsl.DSLTermValue{StringTerm: "~"}
+	}
 
 	return &dsl.RangeNode{
 		Field:       field.String(),
-		ValueType:   valueType,
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToDateRange(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+
+	if !bound.LeftValue.IsInf() {
+		if ld, err := bound.LeftValue.Value(convertToDate(dateParser)); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to date", field, bound.LeftValue.String())
+		} else {
+			leftValue = &dsl.DSLTermValue{DateTerm: ld.(time.Time)}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{DateTerm: time.Unix(0, 0)}
+	}
+	if !bound.RightValue.IsInf() {
+		if rd, err := bound.RightValue.Value(convertToDate(dateParser)); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to date", field, bound.RightValue.String())
+		} else {
+			rightValue = &dsl.DSLTermValue{DateTerm: rd.(time.Time)}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{DateTerm: time.Unix(math.MaxInt64, 999999999)}
+	}
+
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToInt8Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+
+	if !bound.LeftValue.IsInf() {
+		if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int8", field, bound.LeftValue.String())
+		} else if li64 := li.(int64); li64 < math.MinInt8 || li64 > math.MaxInt8 {
+			return nil, fmt.Errorf("field: %s is byte type, expect left value range [%d, %d]", field, math.MinInt8, math.MaxInt8)
+		} else {
+			leftValue = &dsl.DSLTermValue{IntTerm: li64}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt8}
+	}
+	if !bound.RightValue.IsInf() {
+		if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int8", field, bound.RightValue.String())
+		} else if ri64 := ri.(int64); ri64 < math.MinInt8 || ri64 > math.MaxInt8 {
+			return nil, fmt.Errorf("field: %s is byte type, expect right value range [%d, %d]", field, math.MinInt8, math.MaxInt8)
+		} else {
+			rightValue = &dsl.DSLTermValue{IntTerm: ri64}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt8}
+	}
+
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToInt16Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int16", field, bound.LeftValue.String())
+		} else if li64 := li.(int64); li64 < math.MinInt16 || li64 > math.MaxInt16 {
+			return nil, fmt.Errorf("field: %s is int16 type, expect left value range [%d, %d]", field, math.MinInt16, math.MaxInt16)
+		} else {
+			leftValue = &dsl.DSLTermValue{IntTerm: li64}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt16}
+	}
+	if !bound.RightValue.IsInf() {
+		if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int16", field, bound.RightValue.String())
+		} else if ri64 := ri.(int64); ri64 < math.MinInt16 || ri64 > math.MaxInt16 {
+			return nil, fmt.Errorf("field: %s is int16 type, expect right value range [%d, %d]", field, math.MinInt16, math.MaxInt16)
+		} else {
+			rightValue = &dsl.DSLTermValue{IntTerm: ri64}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt16}
+	}
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToInt32Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int32", field, bound.LeftValue.String())
+		} else if li64 := li.(int64); li64 < math.MinInt32 || li64 > math.MaxInt32 {
+			return nil, fmt.Errorf("field: %s is int32 type, expect left value range [%d, %d]", field, math.MinInt32, math.MaxInt32)
+		} else {
+			leftValue = &dsl.DSLTermValue{IntTerm: li64}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt32}
+	}
+	if !bound.RightValue.IsInf() {
+		if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int32", field, bound.RightValue.String())
+		} else if ri64 := ri.(int64); ri64 < math.MinInt32 || ri64 > math.MaxInt32 {
+			return nil, fmt.Errorf("field: %s is int32 type, expect right value range [%d, %d]", field, math.MinInt32, math.MaxInt32)
+		} else {
+			rightValue = &dsl.DSLTermValue{IntTerm: ri64}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt32}
+	}
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToInt64Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if li, err := bound.LeftValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to int64", field, bound.LeftValue.String())
+		} else {
+			leftValue = &dsl.DSLTermValue{IntTerm: li.(int64)}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{IntTerm: math.MinInt64}
+	}
+	if !bound.RightValue.IsInf() {
+		if ri, err := bound.RightValue.Value(convertToInt64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to int64", field, bound.RightValue.String())
+		} else {
+			rightValue = &dsl.DSLTermValue{IntTerm: ri.(int64)}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{IntTerm: math.MaxInt64}
+	}
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToUint64Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if li, err := bound.LeftValue.Value(convertToUInt64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to uint64", field, bound.LeftValue.String())
+		} else {
+			leftValue = &dsl.DSLTermValue{UintTerm: li.(uint64)}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{UintTerm: 0}
+	}
+	if !bound.RightValue.IsInf() {
+		if ri, err := bound.RightValue.Value(convertToUInt64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to uint64", field, bound.RightValue.String())
+		} else {
+			rightValue = &dsl.DSLTermValue{UintTerm: ri.(uint64)}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{UintTerm: math.MaxUint64}
+	}
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.INT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToFloat16Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float16", field, bound.LeftValue.String())
+		} else if lf64 := lf.(float64); lf64 < -65504 || lf64 > 65504 {
+			return nil, fmt.Errorf("field: %s is float16 type, expect right value range [%d, %d]", field, -65504, 65504)
+		} else {
+			leftValue = &dsl.DSLTermValue{FloatTerm: lf64}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{FloatTerm: -65504}
+	}
+
+	if !bound.RightValue.IsInf() {
+		if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float16", field, bound.LeftValue.String())
+		} else if lf64 := lf.(float64); lf64 < -65504 || lf64 > 65504 {
+			return nil, fmt.Errorf("field: %s is float16 type, expect right value range [%d, %d]", field, -65504, 65504)
+		} else {
+			rightValue = &dsl.DSLTermValue{FloatTerm: lf64}
+		}
+
+	} else {
+		rightValue = &dsl.DSLTermValue{FloatTerm: 65504}
+	}
+
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.FLOAT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToFloat32Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float32", field, bound.LeftValue.String())
+		} else if lf64 := lf.(float64); lf64 < -math.MaxFloat32 || lf64 > math.MaxFloat32 {
+			return nil, fmt.Errorf("field: %s is float32 type, expect right value range [%f, %f]", field, -math.MaxFloat32, math.MaxFloat32)
+		} else {
+			leftValue = &dsl.DSLTermValue{FloatTerm: lf64}
+		}
+
+	} else {
+		leftValue = &dsl.DSLTermValue{FloatTerm: -math.MaxFloat32}
+	}
+
+	if !bound.RightValue.IsInf() {
+		if rf, err := bound.RightValue.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to float32", field, bound.RightValue.String())
+		} else if rf64 := rf.(float64); rf64 < -math.MaxFloat32 || rf64 > math.MaxFloat32 {
+			return nil, fmt.Errorf("field: %s is float32 type, expect right value range [%f, %f]", field, -math.MaxFloat32, math.MaxFloat32)
+		} else {
+			rightValue = &dsl.DSLTermValue{FloatTerm: rf64}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{FloatTerm: math.MaxFloat32}
+	}
+
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.FLOAT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToFloat64Range(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if lf, err := bound.LeftValue.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect to float64", field, bound.LeftValue.String())
+		} else {
+			leftValue = &dsl.DSLTermValue{FloatTerm: lf.(float64)}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{FloatTerm: -math.MaxFloat64}
+	}
+	if !bound.RightValue.IsInf() {
+		if rf, err := bound.RightValue.Value(convertToFloat64); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect to float64", field, bound.RightValue.String())
+		} else {
+			rightValue = &dsl.DSLTermValue{FloatTerm: rf.(float64)}
+		}
+	} else {
+		rightValue = &dsl.DSLTermValue{FloatTerm: math.MaxFloat64}
+	}
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.FLOAT_VALUE,
+		LeftValue:   leftValue,
+		RightValue:  rightValue,
+		LeftCmpSym:  leftCmp,
+		RightCmpSym: rightCmp,
+		Boost:       termV.Boost(),
+	}, nil
+}
+
+func convertToIPRange(field *term.Field, termV *term.Term, leftCmp, rightCmp dsl.CompareType) (dsl.DSLNode, error) {
+	var (
+		bound      = termV.GetBound()
+		leftValue  *dsl.DSLTermValue
+		rightValue *dsl.DSLTermValue
+	)
+	if !bound.LeftValue.IsInf() {
+		if li, err := bound.LeftValue.Value(convertToIp); err != nil {
+			return nil, fmt.Errorf("field: %s left value: %s is invalid, expect ip", field, bound.LeftValue.String())
+		} else {
+			leftValue = &dsl.DSLTermValue{IpTerm: li.(net.IP)}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{IpTerm: minIP}
+	}
+
+	if !bound.RightValue.IsInf() {
+		if ri, err := bound.RightValue.Value(convertToIp); err != nil {
+			return nil, fmt.Errorf("field: %s right value: %s is invalid, expect ip", field, bound.RightValue.String())
+		} else {
+			leftValue = &dsl.DSLTermValue{IpTerm: ri.(net.IP)}
+		}
+	} else {
+		leftValue = &dsl.DSLTermValue{IpTerm: maxIP}
+	}
+	return &dsl.RangeNode{
+		Field:       field.String(),
+		ValueType:   dsl.IP_VALUE,
 		LeftValue:   leftValue,
 		RightValue:  rightValue,
 		LeftCmpSym:  leftCmp,
