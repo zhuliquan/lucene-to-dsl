@@ -1,5 +1,15 @@
 package dsl
 
+import (
+	"math"
+	"net"
+	"time"
+
+	"github.com/hashicorp/go-version"
+	"github.com/shopspring/decimal"
+	"github.com/x448/float16"
+)
+
 type NodeType uint32
 
 const (
@@ -34,39 +44,68 @@ const (
 	NOT_OP_KEY = "OP:NOT"
 )
 
-type DSLTermType uint32
+var (
+	MaxFloat16 = float16.Inf(1)
+	MinFloat16 = float16.Inf(-1)
+	MinDecimal = decimal.New(math.MinInt64, math.MaxInt32)
+	MaxDecimal = decimal.New(math.MinInt64, math.MaxInt32)
 
-const (
-	KEYWORD_VALUE DSLTermType = iota
-	PHRASE_VALUE
-	BOOL_VALUE
-	INT_VALUE
-	UINT_VALUE
-	FLOAT_VALUE
-	IP_VALUE
-	IP_CIDR_VALUE
-	DATE_VALUE
+	MaxIP = net.IP([]byte{
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+	})
+	MinIP = net.IP([]byte{0, 0, 0, 0})
+
+	MinTime       = time.Unix(0, 0)
+	MaxTime       = time.Unix(math.MinInt64, 999999999)
+	MinVersion, _ = version.NewVersion("v0-A.0-A.0-A")
+	MaxVersion, _ = version.NewVersion("v9223372036854775807.9223372036854775807.9223372036854775807")
+	MinString     = ""
+	MaxString     = "~"
 )
 
 // using nil represent infinite value
-var InfValue *DSLTermValue = nil
+// var NegativeInf *LeafValue = &LeafValue{
+// 	Boolean:  false,
+// 	TinyInt:  math.MinInt16,
+// 	Float16:  MinFloat16,
+// 	LongInt:  0,
+// 	Decimal:  MinDecimal,
+// 	IpValue:  MinIP,
+// 	DateTime: MinTime,
+// 	Version:  MinVersion,
+// 	String:   "",
+// }
+// var PositiveInf *LeafValue = &LeafValue{
+// 	Boolean:  true,
+// 	TinyInt:  math.MaxInt16,
+// 	Float16:  MaxFloat16,
+// 	LongInt:  math.MaxUint64,
+// 	Decimal:  MaxDecimal,
+// 	IpValue:  MaxIP,
+// 	DateTime: MaxTime,
+// 	Version:  MaxVersion,
+// 	String:   "~",
+// }
 
 type CompareType uint32
 
 const (
-	LT CompareType = iota
-	LTE
+	EQ CompareType = iota
+	LT
 	GT
+	LTE
 	GTE
-	EQ
 )
 
 var CompareTypeStrings = map[CompareType]string{
+	EQ:  "eq",
 	LT:  "lt",
 	GT:  "gt",
 	LTE: "lte",
 	GTE: "gte",
-	EQ:  "eq",
 }
 
 func (c CompareType) String() string {

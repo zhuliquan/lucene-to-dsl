@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"github.com/zhuliquan/datemath_parser"
 )
 
@@ -17,25 +18,52 @@ func convertToBool(boolValue string) (interface{}, error) {
 	return strconv.ParseBool(boolValue)
 }
 
-// convert to int64 value
-func convertToInt64(intValue string) (interface{}, error) {
-	return strconv.ParseInt(intValue, 10, 64)
+// convert to int value
+func convertToInt(bits int) func(string) (interface{}, error) {
+	return func(intValue string) (interface{}, error) {
+		if v, err := strconv.ParseInt(intValue, 10, bits); err != nil {
+			return nil, err
+		} else {
+			return v, nil
+		}
+	}
 }
 
-// convert to uint64 value
-func convertToUInt64(intValue string) (interface{}, error) {
-	return strconv.ParseUint(intValue, 10, 64)
+// convert to uint value
+func convertToUInt(bits int) func(string) (interface{}, error) {
+	return func(intValue string) (interface{}, error) {
+		if v, err := strconv.ParseUint(intValue, 10, bits); err != nil {
+			return nil, err
+		} else {
+			return v, nil
+		}
+	}
 }
 
 // convert to float value
-func convertToFloat64(floatValue string) (interface{}, error) {
-	return strconv.ParseFloat(floatValue, 64)
+func convertToFloat(bits int) func(string) (interface{}, error) {
+	return func(floatValue string) (interface{}, error) {
+		if v, err := strconv.ParseFloat(floatValue, bits); err != nil {
+			return nil, err
+		} else {
+			return v, nil
+		}
+	}
 }
 
 // parse date math expr
 func convertToDate(parser *datemath_parser.DateMathParser) func(string) (interface{}, error) {
 	return func(s string) (interface{}, error) {
 		return parser.Parse(s)
+	}
+}
+
+// parse version
+func convertToVersion(versionValue string) (interface{}, error) {
+	if v, err := version.NewVersion(versionValue); err != nil {
+		return nil, err
+	} else {
+		return v, nil
 	}
 }
 

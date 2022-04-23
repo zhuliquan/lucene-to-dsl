@@ -6,63 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/zhuliquan/datemath_parser"
 )
-
-func Test_convertToInt64(t *testing.T) {
-	type args struct {
-		intValue string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    interface{}
-		wantErr bool
-	}{
-		{
-			name:    "Test_convertToInt64_01",
-			args:    args{intValue: "8908"},
-			want:    int64(8908),
-			wantErr: false,
-		},
-		{
-			name:    "Test_convertToInt64_02",
-			args:    args{intValue: "-8908"},
-			want:    int64(-8908),
-			wantErr: false,
-		},
-		{
-			name:    "Test_convertToInt64_03",
-			args:    args{intValue: "+8908"},
-			want:    int64(8908),
-			wantErr: false,
-		},
-		{
-			name:    "Test_convertToInt64_04",
-			args:    args{intValue: "3.45"},
-			want:    int64(0),
-			wantErr: true,
-		},
-		{
-			name:    "Test_convertToInt64_05",
-			args:    args{intValue: "xxdasda3.45"},
-			want:    int64(0),
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := convertToInt64(tt.args.intValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToInt64() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func Test_convertToBool(t *testing.T) {
 	type args struct {
@@ -144,13 +90,19 @@ func Test_convertToUInt64(t *testing.T) {
 		{
 			name:    "test_error_case_1",
 			args:    args{"xxxx"},
-			want:    uint64(0),
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "test_error_case_2",
 			args:    args{"-1"},
-			want:    uint64(0),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "test_over_uint64",
+			args:    args{"18446744073709551616"},
+			want:    nil,
 			wantErr: true,
 		},
 		{
@@ -162,7 +114,7 @@ func Test_convertToUInt64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := convertToUInt64(tt.args.intValue)
+			got, err := convertToUInt(64)(tt.args.intValue)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("convertToUInt64() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -187,7 +139,7 @@ func Test_convertToFloat64(t *testing.T) {
 		{
 			name:    "test_error_case",
 			args:    args{"1.3x"},
-			want:    0.0,
+			want:    nil,
 			wantErr: true,
 		},
 		{
@@ -195,6 +147,12 @@ func Test_convertToFloat64(t *testing.T) {
 			args:    args{"1.2"},
 			want:    1.2,
 			wantErr: false,
+		},
+		{
+			name:    "test_over_case_1",
+			args:    args{"2.797693134862315708145274237317043567981e+308"},
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name:    "test_ok_case_2",
@@ -205,7 +163,7 @@ func Test_convertToFloat64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := convertToFloat64(tt.args.floatValue)
+			got, err := convertToFloat(64)(tt.args.floatValue)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("convertToFloat64() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -399,6 +357,132 @@ func Test_toLower(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("toLower() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertToVersion(t *testing.T) {
+	type args struct {
+		versionValue string
+	}
+	version1, _ := version.NewVersion("v1.1.0")
+	version2, _ := version.NewVersion("1.2.0")
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name: "test_version_v1",
+			args: args{
+				versionValue: "v1.1.0",
+			},
+			want:    version1,
+			wantErr: false,
+		},
+		{
+			name: "test_version_v2",
+			args: args{
+				versionValue: "1.2.0",
+			},
+			want:    version2,
+			wantErr: false,
+		},
+		{
+			name: "test_wrong_version",
+			args: args{
+				versionValue: "dsadad",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertToVersion(tt.args.versionValue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertToVersion() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertToVersion() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_convertToInt(t *testing.T) {
+	type args struct {
+		bits     int
+		intValue string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name:    "test_over_int32",
+			args:    args{bits: 32, intValue: "214748364790"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "test_correct_int32",
+			args:    args{bits: 32, intValue: "2147483647"},
+			want:    int64(2147483647),
+			wantErr: false,
+		},
+		{
+			name:    "Test_convertToInt64_01",
+			args:    args{intValue: "8908"},
+			want:    int64(8908),
+			wantErr: false,
+		},
+		{
+			name:    "Test_convertToInt64_02",
+			args:    args{bits: 32, intValue: "-8908"},
+			want:    int64(-8908),
+			wantErr: false,
+		},
+		{
+			name:    "Test_convertToInt64_03",
+			args:    args{bits: 32, intValue: "+8908"},
+			want:    int64(8908),
+			wantErr: false,
+		},
+		{
+			name:    "Test_convertToInt64_04",
+			args:    args{bits: 32, intValue: "3.45"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Test_convertToInt64_05",
+			args:    args{bits: 32, intValue: "xxdasda3.45"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "Test_convert_wrong_int64",
+			args:    args{bits: 64, intValue: "9223372036854775808"},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := convertToInt(tt.args.bits)(tt.args.intValue)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("convertToInt32() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			t.Logf("error: %v", err)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertToInt32() = %v, want %v", got, tt.want)
 			}
 		})
 	}
