@@ -6,6 +6,10 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/go-version"
+	"github.com/x448/float16"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 func TestUnionJoinStrLst(t *testing.T) {
@@ -213,10 +217,17 @@ func TestUniqStrLst(t *testing.T) {
 
 func TestCompareAny(t *testing.T) {
 	type args struct {
-		a   *DSLTermValue
-		b   *DSLTermValue
-		typ DSLTermType
+		a   LeafValue
+		b   LeafValue
+		typ mapping.FieldType
 	}
+	version1, _ := version.NewVersion("v1.1.0")
+	version2, _ := version.NewVersion("1.1.0")
+	version3, _ := version.NewVersion("v1.1.0-rc")
+	version4, _ := version.NewVersion("v0-A.0-A.0-A")
+	version5, _ := version.NewVersion("0")
+	version6, _ := version.NewVersion("v0.0.0")
+	version7, _ := version.NewVersion("v0-a.0-a.0-a")
 	tests := []struct {
 		name string
 		args args
@@ -224,93 +235,113 @@ func TestCompareAny(t *testing.T) {
 	}{
 		{
 			name: "CompareInt01",
-			args: args{a: &DSLTermValue{IntTerm: 1}, b: &DSLTermValue{IntTerm: 2}, typ: INT_VALUE},
+			args: args{a: int64(1), b: int64(2), typ: mapping.SHORT_FIELD_TYPE},
 			want: -1,
 		},
 		{
 			name: "CompareInt02",
-			args: args{a: &DSLTermValue{IntTerm: 2}, b: &DSLTermValue{IntTerm: 1}, typ: INT_VALUE},
+			args: args{a: int64(2), b: int64(1), typ: mapping.SHORT_FIELD_TYPE},
 			want: 1,
 		},
 		{
 			name: "CompareInt03",
-			args: args{a: &DSLTermValue{IntTerm: 1}, b: &DSLTermValue{IntTerm: 1}, typ: INT_VALUE},
+			args: args{a: int64(1), b: int64(1), typ: mapping.SHORT_FIELD_TYPE},
 			want: 0,
 		},
 		{
 			name: "CompareFloat01",
-			args: args{a: &DSLTermValue{FloatTerm: 1.13}, b: &DSLTermValue{FloatTerm: 2.1}, typ: FLOAT_VALUE},
+			args: args{a: float16.Fromfloat32(1.13), b: float16.Fromfloat32(2.1), typ: mapping.HALF_FLOAT_FIELD_TYPE},
 			want: -1,
 		},
 		{
 			name: "CompareFloat02",
-			args: args{a: &DSLTermValue{FloatTerm: 2.1}, b: &DSLTermValue{FloatTerm: 1.33}, typ: FLOAT_VALUE},
+			args: args{a: float16.Fromfloat32(2.1), b: float16.Fromfloat32(1.33), typ: mapping.HALF_FLOAT_FIELD_TYPE},
 			want: 1,
 		},
 		{
 			name: "CompareFloat03",
-			args: args{a: &DSLTermValue{FloatTerm: 1.3}, b: &DSLTermValue{FloatTerm: 1.3}, typ: FLOAT_VALUE},
+			args: args{a: float16.Fromfloat32(1.3), b: float16.Fromfloat32(1.3), typ: mapping.HALF_FLOAT_FIELD_TYPE},
 			want: 0,
 		},
 		{
 			name: "CompareDate01",
-			args: args{a: &DSLTermValue{DateTerm: time.Unix(1, 0)}, b: &DSLTermValue{DateTerm: time.Unix(10, 0)}, typ: DATE_VALUE},
+			args: args{a: time.Unix(1, 0), b: time.Unix(10, 0), typ: mapping.DATE_FIELD_TYPE},
 			want: -1,
 		},
 		{
 			name: "CompareDate02",
-			args: args{a: &DSLTermValue{DateTerm: time.Unix(10, 0)}, b: &DSLTermValue{DateTerm: time.Unix(1, 0)}, typ: DATE_VALUE},
+			args: args{a: time.Unix(10, 0), b: time.Unix(1, 0), typ: mapping.DATE_FIELD_TYPE},
 			want: 1,
 		},
 		{
 			name: "CompareDate03",
-			args: args{a: &DSLTermValue{DateTerm: time.Unix(1, 0)}, b: &DSLTermValue{DateTerm: time.Unix(1, 0)}, typ: DATE_VALUE},
+			args: args{a: time.Unix(1, 0), b: time.Unix(1, 0), typ: mapping.DATE_FIELD_TYPE},
 			want: 0,
 		},
 		{
 			name: "CompareIp01",
-			args: args{a: &DSLTermValue{IpTerm: net.ParseIP("12.23.1.1")}, b: &DSLTermValue{IpTerm: net.ParseIP("12.200.1.1")}, typ: IP_VALUE},
+			args: args{a: net.ParseIP("12.23.1.1"), b: net.ParseIP("12.200.1.1"), typ: mapping.IP_FIELD_TYPE},
 			want: -1,
 		},
 		{
 			name: "CompareIp02",
-			args: args{a: &DSLTermValue{IpTerm: net.ParseIP("12.200.1.1")}, b: &DSLTermValue{IpTerm: net.ParseIP("12.23.1.1")}, typ: IP_VALUE},
+			args: args{a: net.ParseIP("12.200.1.1"), b: net.ParseIP("12.23.1.1"), typ: mapping.IP_FIELD_TYPE},
 			want: 1,
 		},
 		{
 			name: "CompareIp03",
-			args: args{a: &DSLTermValue{IpTerm: net.ParseIP("127.0.0.1")}, b: &DSLTermValue{IpTerm: net.ParseIP("127.0.0.001")}, typ: IP_VALUE},
+			args: args{a: net.ParseIP("127.0.0.1"), b: net.ParseIP("127.0.0.001"), typ: mapping.IP_FIELD_TYPE},
 			want: 0,
 		},
 		{
 			name: "CompareString01",
-			args: args{a: &DSLTermValue{StringTerm: "12.23.1.1"}, b: &DSLTermValue{StringTerm: "12.200.1.1"}, typ: KEYWORD_VALUE},
+			args: args{a: "12.23.1.1", b: "12.200.1.1", typ: mapping.KEYWORD_FIELD_TYPE},
 			want: 1,
 		},
 		{
 			name: "CompareString02",
-			args: args{a: &DSLTermValue{StringTerm: "12.200.1.1"}, b: &DSLTermValue{StringTerm: "12.23.1.1"}, typ: KEYWORD_VALUE},
+			args: args{a: "12.200.1.1", b: "12.23.1.1", typ: mapping.KEYWORD_FIELD_TYPE},
 			want: -1,
 		},
 		{
 			name: "CompareString03",
-			args: args{a: &DSLTermValue{StringTerm: "127.0.0.1"}, b: &DSLTermValue{StringTerm: "127.0.0.1"}, typ: KEYWORD_VALUE},
+			args: args{a: "127.0.0.1", b: "127.0.0.1", typ: mapping.KEYWORD_FIELD_TYPE},
 			want: 0,
 		},
 		{
-			name: "CompareInf01",
-			args: args{a: &DSLTermValue{StringTerm: "12.23.1.1"}, b: InfValue, typ: KEYWORD_VALUE},
-			want: -1,
+			name: "CompareVersion01",
+			args: args{a: version1, b: version2, typ: mapping.VERSION_FIELD_TYPE},
+			want: 0,
 		},
 		{
-			name: "CompareInf02",
-			args: args{a: InfValue, b: &DSLTermValue{IntTerm: 1}, typ: KEYWORD_VALUE},
+			name: "CompareVersion02",
+			args: args{a: version1, b: version3, typ: mapping.VERSION_FIELD_TYPE},
 			want: 1,
 		},
 		{
-			name: "CompareInf03",
-			args: args{a: InfValue, b: InfValue, typ: KEYWORD_VALUE},
+			name: "CompareVersion03",
+			args: args{a: version3, b: version2, typ: mapping.VERSION_FIELD_TYPE},
+			want: -1,
+		},
+		{
+			name: "CompareVersion04",
+			args: args{a: version4, b: version6, typ: mapping.VERSION_FIELD_TYPE},
+			want: -1,
+		},
+		{
+			name: "CompareVersion05",
+			args: args{a: version5, b: version6, typ: mapping.VERSION_FIELD_TYPE},
 			want: 0,
+		},
+		{
+			name: "CompareVersion06",
+			args: args{a: version4, b: version5, typ: mapping.VERSION_FIELD_TYPE},
+			want: -1,
+		},
+		{
+			name: "CompareVersion07",
+			args: args{a: version4, b: version7, typ: mapping.VERSION_FIELD_TYPE},
+			want: -1,
 		},
 	}
 	for _, tt := range tests {

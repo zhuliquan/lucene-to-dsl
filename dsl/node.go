@@ -5,6 +5,8 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 // 定义dsl的ast node
@@ -265,7 +267,7 @@ func (n *NotDSLNode) InterSect(node DSLNode) (DSLNode, error) {
 	return n, nil
 }
 
-// 全部都不是的反例是至少有一个
+// 全部都不是的反例是至少有一个:
 func (n *NotDSLNode) Inverse() (DSLNode, error) {
 	if n == nil {
 		return nil, ErrInverseNilNode
@@ -380,8 +382,8 @@ func (n *IdsNode) ToDSL() DSL {
 type EqNode struct {
 	LeafNode
 	Field string
-	Type  DSLTermType
-	Value *DSLTermValue
+	Type  mapping.FieldType
+	Value LeafValue
 }
 
 func (n *EqNode) GetId() string { return "LEAF:" + n.Field }
@@ -415,7 +417,7 @@ func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
 				return &TermsNode{
 					Field:  n.Field,
 					Type:   n.Type,
-					Values: []*DSLTermValue{n.Value, t.Value},
+					Values: []LeafValue{n.Value, t.Value},
 					Boost:  n.Boost,
 				}, nil
 			}
@@ -499,8 +501,8 @@ func (n *TermNode) ToDSL() DSL {
 type TermsNode struct {
 	LeafNode
 	Field  string
-	Type   DSLTermType
-	Values []*DSLTermValue
+	Type   mapping.FieldType
+	Values []LeafValue
 	Boost  float64
 }
 
@@ -536,10 +538,11 @@ func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	case QUERY_STRING_DSL_TYPE:
 		var t = node.(*QueryStringNode)
 		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			var s = ""
-			for _, val := range n.Values {
-				s += fmt.Sprintf(" OR %s", val)
-			}
+			// var s = ""
+			// for _, val := range n.Values {
+			// TODO: 需要 %s 修改
+			// s += fmt.Sprintf(" OR %s", val)
+			// }
 			// t.Value = fmt.Sprintf("%s%s", t.Value, s)
 			return t, nil
 		} else {
@@ -826,9 +829,9 @@ func (n *PrefixNode) ToDSL() DSL {
 type RangeNode struct {
 	LeafNode
 	Field       string
-	ValueType   DSLTermType
-	LeftValue   *DSLTermValue
-	RightValue  *DSLTermValue
+	ValueType   mapping.FieldType
+	LeftValue   LeafValue
+	RightValue  LeafValue
 	LeftCmpSym  CompareType
 	RightCmpSym CompareType
 	Boost       float64
@@ -885,18 +888,10 @@ func (n *RangeNode) Inverse() (DSLNode, error) {
 func (n *RangeNode) ToDSL() DSL {
 	if n == nil {
 		return EmptyDSL
-		// (-inf, +inf) mean field exist
-	} else if n.LeftValue == InfValue && n.RightValue == InfValue {
-		return DSL{"exists": DSL{"field": n.Field}}
 	}
 	var res = DSL{}
-	if n.LeftValue != InfValue {
-		res[n.LeftCmpSym.String()] = n.LeftValue
-	}
-	if n.RightValue != InfValue {
-		res[n.RightCmpSym.String()] = n.RightValue
-	}
-
+	res[n.LeftCmpSym.String()] = n.LeftValue
+	res[n.RightCmpSym.String()] = n.RightValue
 	res["relation"] = "WITHIN"
 	res["boost"] = n.Boost
 	if len(n.Format) != 0 {

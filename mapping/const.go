@@ -39,6 +39,7 @@ const (
 	CONSTANT_KEYWORD_FIELD_TYPE FieldType = "constant_keyword" // constant keyword
 	WILDCARD_FIELD_TYPE         FieldType = "wildcard"         // wildcard
 	TEXT_FIELD_TYPE             FieldType = "text"             // text
+	VERSION_FIELD_TYPE          FieldType = "version"          // version， like 1.1.2
 	BOOLEAN_FIELD_TYPE          FieldType = "boolean"          // true / false
 	BYTE_FIELD_TYPE             FieldType = "byte"             // signed int8
 	SHORT_FIELD_TYPE            FieldType = "short"            // signed int16

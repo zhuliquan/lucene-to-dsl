@@ -2,10 +2,16 @@ package dsl
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"net"
 	"sort"
 	"time"
+
+	"github.com/hashicorp/go-version"
+	"github.com/shopspring/decimal"
+	"github.com/x448/float16"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 // union join two string slice
@@ -67,47 +73,44 @@ func UniqStrLst(a []string) []string {
 // positive  mean a > b
 // zero      mean a == b
 // using nil represent inf
-func CompareAny(a, b *DSLTermValue, typ DSLTermType) int {
-	if a == InfValue && b != InfValue {
-		return -1
-	} else if a != InfValue && b == InfValue {
-		return 1
-	} else if a == InfValue && b == InfValue {
-		return 0
-	}
-
+func CompareAny(a, b LeafValue, typ mapping.FieldType) int {
+	var ret = 0
 	switch typ {
-	case INT_VALUE:
-		return int(a.IntTerm - b.IntTerm)
-	case UINT_VALUE:
-		return int(a.UintTerm - b.UintTerm)
-	case FLOAT_VALUE:
-		if math.Abs(a.FloatTerm-b.FloatTerm) < 1E-6 {
+	case mapping.BYTE_FIELD_TYPE, mapping.SHORT_FIELD_TYPE,
+		mapping.INTEGER_FIELD_TYPE, mapping.INTERGER_RANGE_FIELD_TYPE,
+		mapping.LONG_FIELD_TYPE, mapping.LONG_RANGE_FIELD_TYPE:
+		ret = int(a.(int64) - b.(int64))
+	case mapping.UNSIGNED_LONG_FIELD_TYPE:
+		ret = int(a.(uint64) - b.(uint64))
+	case mapping.FLOAT_FIELD_TYPE, mapping.FLOAT_RANGE_FIELD_TYPE,
+		mapping.DOUBLE_FIELD_TYPE, mapping.DOUBLE_RANGE_FIELD_TYPE:
+		var af = a.(float64)
+		var bf = b.(float64)
+		if math.Abs(af-bf) < 1E-6 {
 			return 0
-		} else if a.FloatTerm < b.FloatTerm {
+		} else if af < bf {
 			return -1
 		} else {
 			return 1
 		}
-	case DATE_VALUE:
-		var at = a.DateTerm
-		var bt = b.DateTerm
-		if at.UnixNano() == bt.UnixNano() {
+	case mapping.HALF_FLOAT_FIELD_TYPE:
+		var af = a.(float16.Float16).Float32()
+		var bf = b.(float16.Float16).Float32()
+		if math.Abs(float64(af-bf)) < 1E-6 {
 			return 0
-		} else if at.Before(bt) {
+		} else if af < bf {
 			return -1
 		} else {
 			return 1
 		}
-
-	case IP_VALUE:
-		var ai = a.IpTerm
-		var bi = b.IpTerm
-		return bytes.Compare(ai, bi)
-
-	case KEYWORD_VALUE, PHRASE_VALUE:
-		var as = a.StringTerm
-		var bs = b.StringTerm
+	case mapping.SCALED_FLOAT_FIELD_TYPE:
+		var ad = a.(decimal.Decimal)
+		var bd = b.(decimal.Decimal)
+		return ad.Cmp(bd)
+	case mapping.KEYWORD_FIELD_TYPE, mapping.TEXT_FIELD_TYPE,
+		mapping.WILDCARD_FIELD_TYPE, mapping.CONSTANT_KEYWORD_FIELD_TYPE:
+		var as = a.(string)
+		var bs = b.(string)
 		if as > bs {
 			return 1
 		} else if as < bs {
@@ -115,7 +118,34 @@ func CompareAny(a, b *DSLTermValue, typ DSLTermType) int {
 		} else {
 			return 0
 		}
+	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE:
+		var at = a.(time.Time)
+		var bt = b.(time.Time)
+		if at.UnixNano() == bt.UnixNano() {
+			return 0
+		} else if at.Before(bt) {
+			return -1
+		} else {
+			return 1
+		}
+	case mapping.VERSION_FIELD_TYPE:
+		var av = a.(*version.Version)
+		var bv = b.(*version.Version)
+		return av.Compare(bv)
+	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
+		var ai = []byte(a.(net.IP))
+		var bi = []byte(b.(net.IP))
+		return bytes.Compare(ai, bi)
 	default:
+		return 0
+	}
+	if ret > 0 {
+		fmt.Println(a, b)
+		return 1
+	} else if ret < 0 {
+		fmt.Println(a, b)
+		return -1
+	} else {
 		return 0
 	}
 }

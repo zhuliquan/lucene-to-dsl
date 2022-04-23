@@ -1,5 +1,15 @@
 package dsl
 
+import (
+	"math"
+	"net"
+	"time"
+
+	"github.com/hashicorp/go-version"
+	"github.com/shopspring/decimal"
+	"github.com/x448/float16"
+)
+
 type NodeType uint32
 
 const (
@@ -34,39 +44,78 @@ const (
 	NOT_OP_KEY = "OP:NOT"
 )
 
-type DSLTermType uint32
+var (
+	MinUint    = uint64(0)
+	MinFloat16 = float16.Fromfloat32(-65504)
+	MaxFloat16 = float16.Fromfloat32(65504)
+	MinDecimal = decimal.New(math.MinInt64, math.MaxInt32)
+	MaxDecimal = decimal.New(math.MinInt64, math.MaxInt32)
 
-const (
-	KEYWORD_VALUE DSLTermType = iota
-	PHRASE_VALUE
-	BOOL_VALUE
-	INT_VALUE
-	UINT_VALUE
-	FLOAT_VALUE
-	IP_VALUE
-	IP_CIDR_VALUE
-	DATE_VALUE
+	MaxIP = net.IP([]byte{
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
+	})
+	MinIP = net.IP([]byte{0, 0, 0, 0})
+
+	MinTime       = time.Unix(math.MinInt64, 0)
+	MaxTime       = time.Unix(math.MaxInt64, 999999999)
+	MinVersion, _ = version.NewVersion("v0-A.0-A.0-A")
+	MaxVersion, _ = version.NewVersion("v9223372036854775807.9223372036854775807.9223372036854775807")
+	MinString     = ""
+	MaxString     = "~"
 )
 
-// using nil represent infinite value
-var InfValue *DSLTermValue = nil
+var MinInt = map[int]int64{
+	8:  int64(math.MinInt8),
+	16: int64(math.MinInt16),
+	32: int64(math.MinInt32),
+	64: int64(math.MinInt64),
+}
+var MaxInt = map[int]int64{
+	8:  int64(math.MaxInt8),
+	16: int64(math.MaxInt16),
+	32: int64(math.MaxInt32),
+	64: int64(math.MaxInt64),
+}
+var MaxUint = map[int]uint64{
+	8:  uint64(math.MaxUint8),
+	16: uint64(math.MaxUint16),
+	32: uint64(math.MaxUint32),
+	64: uint64(math.MaxUint64),
+}
+
+var MinFloat = map[int]interface{}{
+	16:  MinFloat16,
+	32:  -math.MaxFloat32,
+	64:  -math.MaxFloat64,
+	128: MinDecimal,
+}
+
+var MaxFloat = map[int]interface{}{
+	16:  MaxFloat16,
+	32:  math.MaxFloat32,
+	64:  math.MaxFloat64,
+	128: MaxDecimal,
+}
 
 type CompareType uint32
 
 const (
-	LT CompareType = iota
-	LTE
+	EQ CompareType = iota
+	LT
 	GT
+	LTE
 	GTE
-	EQ
 )
 
 var CompareTypeStrings = map[CompareType]string{
+	EQ:  "eq",
 	LT:  "lt",
 	GT:  "gt",
 	LTE: "lte",
 	GTE: "gte",
-	EQ:  "eq",
 }
 
 func (c CompareType) String() string {
