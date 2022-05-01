@@ -311,6 +311,7 @@ func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Prop
 				RightCmpSym: dsl.LTE,
 				Boost:       termV.Boost(),
 			}, nil
+
 		}
 		return nil, fmt.Errorf("ip value: %s is invalid", termV.String())
 
