@@ -22,6 +22,7 @@ var LuceneSupportFieldType = []FieldType{
 	DATE_FIELD_TYPE,
 	IP_RANGE_FIELD_TYPE,
 	DATE_RANGE_FIELD_TYPE,
+	DATE_NANOS_FIELD_TYPE,
 	INTERGER_RANGE_FIELD_TYPE,
 	LONG_RANGE_FIELD_TYPE,
 	FLOAT_RANGE_FIELD_TYPE,
@@ -52,6 +53,7 @@ const (
 	SCALED_FLOAT_FIELD_TYPE     FieldType = "scaled_float"     // scaled float
 	IP_FIELD_TYPE               FieldType = "ip"               // ipv4 / ipv6
 	DATE_FIELD_TYPE             FieldType = "date"             // date
+	DATE_NANOS_FIELD_TYPE       FieldType = "date_nanos"       // date_nanos
 	IP_RANGE_FIELD_TYPE         FieldType = "ip_range"         // ip range
 	DATE_RANGE_FIELD_TYPE       FieldType = "date_range"       // date range
 	INTERGER_RANGE_FIELD_TYPE   FieldType = "integer_range"    // int32 range
