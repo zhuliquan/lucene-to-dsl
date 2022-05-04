@@ -212,7 +212,7 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 		rightValue = rv
 	}
 
-	return &dsl.RangeNode{
+	var node = &dsl.RangeNode{
 		Field:       field.String(),
 		ValueType:   property.Type,
 		LeftValue:   leftValue,
@@ -220,7 +220,12 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 		LeftCmpSym:  leftCmp,
 		RightCmpSym: rightCmp,
 		Boost:       termV.Boost(),
-	}, nil
+	}
+	if err := dsl.CheckValidRangeNode(node); err != nil {
+		return nil, fmt.Errorf("field: %s value: %s is invalid, err: %s", field, termV.String(), err)
+	} else {
+		return node, nil
+	}
 }
 
 func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
