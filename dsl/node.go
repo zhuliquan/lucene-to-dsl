@@ -971,6 +971,7 @@ func (n *MatchNode) ToDSL() DSL {
 
 type MatchPhraseNode struct {
 	EqNode
+	Boost float64
 }
 
 func (n *MatchPhraseNode) GetDSLType() DSLType {
@@ -979,6 +980,18 @@ func (n *MatchPhraseNode) GetDSLType() DSLType {
 
 func (n *MatchPhraseNode) ToDSL() DSL {
 	return DSL{"match_phrase": DSL{n.Field: n.Value}}
+}
+
+func (n *MatchPhraseNode) UnionJoin(DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *MatchPhraseNode) InterSect(DSLNode) (DSLNode, error) {
+	return nil, nil
+}
+
+func (n *MatchPhraseNode) Inverse() (DSLNode, error) {
+	return nil, nil
 }
 
 type QueryStringNode struct {

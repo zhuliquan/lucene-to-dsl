@@ -1,5 +1,10 @@
 package mapping
 
+func checkTypeSupportLucene(typ FieldType) bool {
+	_, ok := luceneSupportFieldType[typ]
+	return ok
+}
+
 func strLstHasPrefix(va, vb []string) bool {
 	if len(vb) > len(va) {
 		return false

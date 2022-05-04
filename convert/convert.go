@@ -3,9 +3,7 @@ package convert
 import (
 	"fmt"
 	"net"
-	"strings"
 
-	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
@@ -15,33 +13,6 @@ import (
 )
 
 var fm *mapping.Mapping
-
-type termValue interface {
-	Value(func(string) (interface{}, error)) (interface{}, error)
-}
-
-type rangeValue interface {
-	termValue
-	IsInf(int) bool
-}
-
-var convertToString = func(s string) (interface{}, error) { return s, nil }
-
-var fieldTypeBits = map[mapping.FieldType]int{
-	mapping.BYTE_FIELD_TYPE:           8,
-	mapping.SHORT_FIELD_TYPE:          16,
-	mapping.INTEGER_FIELD_TYPE:        32,
-	mapping.INTERGER_RANGE_FIELD_TYPE: 32,
-	mapping.LONG_FIELD_TYPE:           64,
-	mapping.LONG_RANGE_FIELD_TYPE:     64,
-	mapping.UNSIGNED_LONG_FIELD_TYPE:  64,
-	mapping.HALF_FLOAT_FIELD_TYPE:     16,
-	mapping.FLOAT_FIELD_TYPE:          32,
-	mapping.FLOAT_RANGE_FIELD_TYPE:    32,
-	mapping.DOUBLE_FIELD_TYPE:         64,
-	mapping.DOUBLE_RANGE_FIELD_TYPE:   64,
-	mapping.SCALED_FLOAT_FIELD_TYPE:   128,
-}
 
 func InitConvert(m *mapping.Mapping, covFunc map[string]func(string) (interface{}, error)) error {
 	fm = m
@@ -189,17 +160,14 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	}
 
 	var property, _ = mapping.GetProperty(q.Field.String())
-	if property.NullValue == q.Term.String() || "\""+property.NullValue+"\"" == q.Term.String() {
-		var d = &dsl.ExistsNode{Field: q.Field.String()}
-		return d.Inverse()
-	}
+
 	var termType = q.Term.GetTermType()
 	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
 		return convertToRange(q.Field, q.Term, property)
 	} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 		return convertToSingle(q.Field, q.Term, property)
 	} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
-		return convertToSingle(q.Field, q.Term, property)
+		return convertToPhrase(q.Field, q.Term, property)
 	} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
 		return convertToGroup(q.Field, q.Term, property)
 	} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
@@ -256,6 +224,26 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 }
 
 func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	strVal, _ := termV.Value(convertToString)
+	if strVal.(string) == "*" {
+		return &dsl.ExistsNode{
+			Field: field.String(),
+		}, nil
+	}
+	if property.NullValue == strVal {
+		return (&dsl.ExistsNode{
+			Field: field.String(),
+		}).Inverse()
+	}
+	return convertToNormal(field, termV, property, strVal.(string))
+}
+
+func convertToPhrase(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+	strVal, _ := termV.Value(convertToString)
+	return convertToNormal(field, termV, property, strVal.(string))
+}
+
+func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Property, strVal string) (dsl.DSLNode, error) {
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE,
 		mapping.BYTE_FIELD_TYPE, mapping.SHORT_FIELD_TYPE,
@@ -264,7 +252,7 @@ func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Prop
 		mapping.HALF_FLOAT_FIELD_TYPE, mapping.SCALED_FLOAT_FIELD_TYPE,
 		mapping.FLOAT_FIELD_TYPE, mapping.FLOAT_RANGE_FIELD_TYPE,
 		mapping.VERSION_FIELD_TYPE,
-		mapping.KEYWORD_FIELD_TYPE, mapping.CONSTANT_KEYWORD_FIELD_TYPE:
+		mapping.KEYWORD_FIELD_TYPE, mapping.CONSTANT_KEYWORD_FIELD_TYPE, mapping.WILDCARD_FIELD_TYPE:
 		if val, err := termValueToLeafValue(termV, property); err != nil {
 			return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s, err: %s",
 				field, termV.String(), property.Type, err)
@@ -278,16 +266,41 @@ func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Prop
 				Boost: termV.Boost(),
 			}, nil
 		}
-	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE:
+	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
 		var dateParser = getDateParserFromMapping(property)
 		if _, err := termV.Value(convertToDate(dateParser)); err != nil {
 			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
 		} else {
-			// return &dsl.RangeNode{
-			// 	Field:     field.String(),
-			// 	ValeuType: dsl.LEAF_NODE_TYPE,
-			// }, nil
-			return nil, nil
+			// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
+			// var lowerDate, upperDate = getDateRange(d.(time.Time))
+			// if reflect.DeepEqual(lowerDate, upperDate) {
+			// 	return &dsl.TermNode{
+			// 		EqNode: dsl.EqNode{
+			// 			Field: field.String(),
+			// 			Type:  mapping.KEYWORD_FIELD_TYPE,
+			// 			Value: strVal,
+			// 		},
+			// 		Boost: termV.Boost(),
+			// 	}, nil
+			// } else {
+			// 	return &dsl.RangeNode{
+			// 		Field:       field.String(),
+			// 		ValueType:   property.Type,
+			// 		LeftValue:   lowerDate,
+			// 		RightValue:  upperDate,
+			// 		LeftCmpSym:  dsl.GTE,
+			// 		RightCmpSym: dsl.LTE,
+			// 		Boost:       termV.Boost(),
+			// 	}, nil
+			// }
+			return &dsl.TermNode{
+				EqNode: dsl.EqNode{
+					Field: field.String(),
+					Type:  mapping.KEYWORD_FIELD_TYPE,
+					Value: strVal,
+				},
+				Boost: termV.Boost(),
+			}, nil
 
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
@@ -313,31 +326,40 @@ func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Prop
 			}, nil
 
 		}
-		return nil, fmt.Errorf("ip value: %s is invalid", termV.String())
+		return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s",
+			field, termV.String(), property.Type)
 
-	case mapping.TEXT_FIELD_TYPE, mapping.WILDCARD_FIELD_TYPE:
-		// var s, _ = termV.Value(func(s string) (interface{}, error) { return s, nil })
-		// return &dsl.MatchNode{
-		// 	EqNode: dsl.EqNode{
-		// 		Field: field,
-		// 		Type:  dsl.KEYWORD_VALUE,
-		// 		Value: &dsl.LeafValue{
-		// 			StringTerm: s.(string),
-		// 		},
-		// 	},
-		// 	Boost: termV.Boost(),
-		// }, nil
-		return nil, nil
+	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
+		if termV.GetTermType()|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
+			return &dsl.QueryStringNode{
+				EqNode: dsl.EqNode{
+					Field: field.String(),
+					Type:  property.Type,
+					Value: strVal,
+				},
+				Boost: termV.Boost(),
+			}, nil
+		} else {
+			return &dsl.MatchPhraseNode{
+				EqNode: dsl.EqNode{
+					Field: field.String(),
+					Type:  property.Type,
+					Value: strVal,
+				},
+				Boost: termV.Boost(),
+			}, nil
+		}
+	default:
+		return nil, fmt.Errorf("field: %s mapping type: %s don't support lucene", field, property.Type)
 	}
-	return nil, nil
 }
 
 func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
-	var s, _ = termV.Value(func(x string) (interface{}, error) { return x, nil })
+	var valStr, _ = termV.Value(convertToString)
 	return &dsl.RegexpNode{EqNode: dsl.EqNode{
 		Field: field.String(),
 		Type:  property.Type,
-		Value: s,
+		Value: valStr,
 	}}, nil
 }
 
@@ -422,7 +444,9 @@ func convertAndGroupToAndQuery(field *term.Field, andGroup *term.AndTermGroup, b
 }
 
 func convertParenTermGroupToParentTerm(field *term.Field, parentTermGroup *term.ParenTermGroup, boostSymbol string) *lucene.ParenQuery {
-	return nil
+	return &lucene.ParenQuery{
+		SubQuery: convertLogicTermGroupToLucene(field, parentTermGroup.SubTermGroup, boostSymbol),
+	}
 }
 
 func convertGroupElemToFieldTerm(field *term.Field, groupElem *term.TermGroupElem, boostSymbol string) *lucene.FieldQuery {
@@ -542,7 +566,7 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		} else {
 			return termV.Value(convertToIp)
 		}
-	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE:
+	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
 		var dateParser = getDateParserFromMapping(property)
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
@@ -579,17 +603,5 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		} else {
 			return termV.Value(convertToString)
 		}
-	}
-}
-
-func getDateParserFromMapping(property *mapping.Property) *datemath_parser.DateMathParser {
-	var opts = []datemath_parser.DateMathParserOption{}
-	if property.Format != "" {
-		opts = append(opts, datemath_parser.WithFormat(strings.Split(property.Format, "||")))
-	}
-	if dp, err := datemath_parser.NewDateMathParser(opts...); err != nil {
-		panic(err)
-	} else {
-		return dp
 	}
 }

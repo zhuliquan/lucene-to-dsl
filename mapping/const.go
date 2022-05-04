@@ -2,35 +2,36 @@ package mapping
 
 type FieldType string
 
-var LuceneSupportFieldType = []FieldType{
-	BINARY_FIELD_TYPE,
-	KEYWORD_FIELD_TYPE,
-	CONSTANT_KEYWORD_FIELD_TYPE,
-	WILDCARD_FIELD_TYPE,
-	TEXT_FIELD_TYPE,
-	BOOLEAN_FIELD_TYPE,
-	BYTE_FIELD_TYPE,
-	SHORT_FIELD_TYPE,
-	INTEGER_FIELD_TYPE,
-	LONG_FIELD_TYPE,
-	UNSIGNED_LONG_FIELD_TYPE,
-	HALF_FLOAT_FIELD_TYPE,
-	FLOAT_FIELD_TYPE,
-	DOUBLE_FIELD_TYPE,
-	SCALED_FLOAT_FIELD_TYPE,
-	IP_FIELD_TYPE,
-	DATE_FIELD_TYPE,
-	IP_RANGE_FIELD_TYPE,
-	DATE_RANGE_FIELD_TYPE,
-	DATE_NANOS_FIELD_TYPE,
-	INTERGER_RANGE_FIELD_TYPE,
-	LONG_RANGE_FIELD_TYPE,
-	FLOAT_RANGE_FIELD_TYPE,
-	DOUBLE_RANGE_FIELD_TYPE,
-	OBJECT_FIELD_TYPE,
-	FLATTENED_FIELD_TYPE,
-	NESTED_FIELD_TYPE,
-	JOIN_FIELD_TYPE,
+var luceneSupportFieldType = map[FieldType]byte{
+	BINARY_FIELD_TYPE:           1,
+	KEYWORD_FIELD_TYPE:          1,
+	CONSTANT_KEYWORD_FIELD_TYPE: 1,
+	WILDCARD_FIELD_TYPE:         1,
+	TEXT_FIELD_TYPE:             1,
+	MATCH_ONLY_TEXT_FIELD_TYPE:  1,
+	BOOLEAN_FIELD_TYPE:          1,
+	BYTE_FIELD_TYPE:             1,
+	SHORT_FIELD_TYPE:            1,
+	INTEGER_FIELD_TYPE:          1,
+	LONG_FIELD_TYPE:             1,
+	UNSIGNED_LONG_FIELD_TYPE:    1,
+	HALF_FLOAT_FIELD_TYPE:       1,
+	FLOAT_FIELD_TYPE:            1,
+	DOUBLE_FIELD_TYPE:           1,
+	SCALED_FLOAT_FIELD_TYPE:     1,
+	IP_FIELD_TYPE:               1,
+	DATE_FIELD_TYPE:             1,
+	IP_RANGE_FIELD_TYPE:         1,
+	DATE_RANGE_FIELD_TYPE:       1,
+	DATE_NANOS_FIELD_TYPE:       1,
+	INTERGER_RANGE_FIELD_TYPE:   1,
+	LONG_RANGE_FIELD_TYPE:       1,
+	FLOAT_RANGE_FIELD_TYPE:      1,
+	DOUBLE_RANGE_FIELD_TYPE:     1,
+	OBJECT_FIELD_TYPE:           1,
+	FLATTENED_FIELD_TYPE:        1,
+	NESTED_FIELD_TYPE:           1,
+	JOIN_FIELD_TYPE:             1,
 }
 
 const (
@@ -40,6 +41,7 @@ const (
 	CONSTANT_KEYWORD_FIELD_TYPE FieldType = "constant_keyword" // constant keyword
 	WILDCARD_FIELD_TYPE         FieldType = "wildcard"         // wildcard
 	TEXT_FIELD_TYPE             FieldType = "text"             // text
+	MATCH_ONLY_TEXT_FIELD_TYPE  FieldType = "match_only_text"  // match_only_text
 	VERSION_FIELD_TYPE          FieldType = "version"          // version， like 1.1.2
 	BOOLEAN_FIELD_TYPE          FieldType = "boolean"          // true / false
 	BYTE_FIELD_TYPE             FieldType = "byte"             // signed int8

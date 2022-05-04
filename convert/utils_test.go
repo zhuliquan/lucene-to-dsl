@@ -12,6 +12,7 @@ import (
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 func Test_convertToBool(t *testing.T) {
@@ -525,6 +526,280 @@ func Test_convertToInt(t *testing.T) {
 			t.Logf("error: %v", err)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("convertToInt32() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getMonthDay(t *testing.T) {
+	type args struct {
+		year  int
+		month time.Month
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "test_leap_Feb_01",
+			args: args{
+				year:  2000,
+				month: time.February,
+			},
+			want: 29,
+		},
+		{
+			name: "test_leap_Feb_02",
+			args: args{
+				year:  1600,
+				month: time.February,
+			},
+			want: 29,
+		},
+		{
+			name: "test_leap_Feb_03",
+			args: args{
+				year:  2008,
+				month: time.February,
+			},
+			want: 29,
+		},
+		{
+			name: "test_leap_Feb_04",
+			args: args{
+				year:  1900,
+				month: time.February,
+			},
+			want: 28,
+		},
+		{
+			name: "test_no_leap_Jan",
+			args: args{
+				year:  2007,
+				month: time.January,
+			},
+			want: 31,
+		},
+		{
+			name: "test_no_leap_Feb",
+			args: args{
+				year:  2007,
+				month: time.February,
+			},
+			want: 28,
+		},
+		{
+			name: "test_no_leap_Mar",
+			args: args{
+				year:  2007,
+				month: time.March,
+			},
+			want: 31,
+		},
+		{
+			name: "test_no_leap_Apr",
+			args: args{
+				year:  2007,
+				month: time.April,
+			},
+			want: 30,
+		},
+		{
+			name: "test_no_leap_May",
+			args: args{
+				year:  2007,
+				month: time.May,
+			},
+			want: 31,
+		},
+		{
+			name: "test_no_leap_Jun",
+			args: args{
+				year:  2007,
+				month: time.June,
+			},
+			want: 30,
+		},
+		{
+			name: "test_no_leap_Jul",
+			args: args{
+				year:  2007,
+				month: time.July,
+			},
+			want: 31,
+		},
+		{
+			name: "test_no_leap_Aug",
+			args: args{
+				year:  2007,
+				month: time.July,
+			},
+			want: 31,
+		},
+		{
+			name: "test_no_leap_Sep",
+			args: args{
+				year:  2007,
+				month: time.September,
+			},
+			want: 30,
+		},
+		{
+			name: "test_no_leap_Oct",
+			args: args{
+				year:  2007,
+				month: time.October,
+			},
+			want: 31,
+		},
+		{
+			name: "test_no_leap_Nov",
+			args: args{
+				year:  2007,
+				month: time.November,
+			},
+			want: 30,
+		},
+		{
+			name: "test_no_leap_Dec",
+			args: args{
+				year:  2007,
+				month: time.December,
+			},
+			want: 31,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getMonthDay(tt.args.year, tt.args.month); got != tt.want {
+				t.Errorf("getMonthDay() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getDateRange(t *testing.T) {
+	type args struct {
+		t time.Time
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  time.Time
+		want1 time.Time
+	}{
+		{
+			name: "split_date_01",
+			args: args{
+				t: time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
+			},
+			want:  time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
+		},
+		{
+			name: "split_date_02",
+			args: args{
+				t: time.Date(1900, time.February, 2, 2, 2, 2, 0, time.UTC),
+			},
+			want:  time.Date(1900, time.February, 2, 2, 2, 2, 0, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 2, 2, 999999999, time.UTC),
+		},
+		{
+			name: "split_date_03",
+			args: args{
+				t: time.Date(1900, time.February, 2, 2, 2, 0, 0, time.UTC),
+			},
+			want:  time.Date(1900, time.February, 2, 2, 2, 0, 0, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 2, 59, 999999999, time.UTC),
+		},
+		{
+			name: "split_date_04",
+			args: args{
+				t: time.Date(1900, time.February, 2, 2, 0, 0, 0, time.UTC),
+			},
+			want:  time.Date(1900, time.February, 2, 2, 0, 0, 0, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 59, 59, 999999999, time.UTC),
+		},
+		{
+			name: "split_date_05",
+			args: args{
+				t: time.Date(1900, time.February, 2, 0, 0, 0, 0, time.UTC),
+			},
+			want:  time.Date(1900, time.February, 2, 0, 0, 0, 0, time.UTC),
+			want1: time.Date(1900, time.February, 2, 23, 59, 59, 999999999, time.UTC),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := getDateRange(tt.args.t)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getDateRange() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("getDateRange() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+
+	k, _ := time.Parse("2006", "2009")
+	fmt.Println(k)
+}
+
+func Test_getDateParserFromMapping(t *testing.T) {
+	type args struct {
+		property *mapping.Property
+	}
+	tests := []struct {
+		name string
+		args args
+		want *datemath_parser.DateMathParser
+	}{
+		{
+			name: "test_date_nanos_with_no_format",
+			args: args{
+				property: &mapping.Property{
+					Type: mapping.DATE_NANOS_FIELD_TYPE,
+				},
+			},
+			want: &datemath_parser.DateMathParser{
+				Formats: []string{
+					"yyyy-MM-ddTHH:mm:ss.SSSSSSZ", "yyyy-MM-dd", "epoch_millis",
+				},
+			},
+		},
+		{
+			name: "test_date_with_no_format",
+			args: args{
+				property: &mapping.Property{
+					Type: mapping.DATE_RANGE_FIELD_TYPE,
+				},
+			},
+			want: &datemath_parser.DateMathParser{
+				Formats: []string{
+					"yyyy-MM-ddTHH:mm:ss.SSSZ", "yyyy-MM-dd", "epoch_millis",
+				},
+			},
+		},
+		{
+			name: "test_date_with_format",
+			args: args{
+				property: &mapping.Property{
+					Type:   mapping.DATE_RANGE_FIELD_TYPE,
+					Format: "yyyy-MM-dd||xxxx-DDD||epoch_millis",
+				},
+			},
+			want: &datemath_parser.DateMathParser{
+				Formats: []string{
+					"yyyy-MM-dd", "xxxx-DDD", "epoch_millis",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getDateParserFromMapping(tt.args.property); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getDateParserFromMapping() = %v, want %v", got, tt.want)
 			}
 		})
 	}

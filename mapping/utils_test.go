@@ -1,6 +1,8 @@
 package mapping
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_strLstHasPrefix(t *testing.T) {
 	type args struct {
@@ -62,6 +64,35 @@ func Test_strLstHasPrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := strLstHasPrefix(tt.args.va, tt.args.vb); got != tt.want {
 				t.Errorf("strLstHasPrefix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_checkTypeSupportLucene(t *testing.T) {
+	type args struct {
+		typ FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_true",
+			args: args{typ: KEYWORD_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_false",
+			args: args{typ: SHAPE_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := checkTypeSupportLucene(tt.args.typ); got != tt.want {
+				t.Errorf("checkTypeSupportLucene() = %v, want %v", got, tt.want)
 			}
 		})
 	}

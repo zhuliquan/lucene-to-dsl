@@ -12,6 +12,7 @@ import (
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 // convert func tools
@@ -105,6 +106,8 @@ func convertToCidr(ipValue string) (interface{}, error) {
 	}
 }
 
+var convertToString = func(s string) (interface{}, error) { return s, nil }
+
 var monthDay = map[time.Month]int{
 	time.January:  31,
 	time.March:    31,
@@ -134,16 +137,13 @@ func getMonthDay(year int, month time.Month) int {
 
 }
 
-// max year is 2262, ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/date_nanos.html
-const maxYear = 2262
-const maxMonth = time.December
-const maxMonthDay = 31
 const maxHour = 23
 const maxMinute = 59
 const maxSecond = 59
 const maxNano = 999999999
 
 // get date range for prefix date, i.g. given 2021-01-01, we can get [2021-01-01 00:00:00 2021-01-01 23:59:59]
+// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
 func getDateRange(t time.Time) (time.Time, time.Time) {
 	var month = t.Month()
 	var dateArr = []int{t.Year(), int(month), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond()}
@@ -163,14 +163,55 @@ func getDateRange(t time.Time) (time.Time, time.Time) {
 	if dateArr[2] != 0 {
 		return t, time.Date(dateArr[0], month, dateArr[2], maxHour, maxMinute, maxSecond, maxNano, location)
 	}
-	if dateArr[1] != 0 {
-		var maxDay = getMonthDay(dateArr[0], month)
-		return t, time.Date(dateArr[0], month, maxDay, maxHour, maxMinute, maxSecond, maxNano, location)
+
+	return t, t
+}
+
+func getDateParserFromMapping(property *mapping.Property) *datemath_parser.DateMathParser {
+	var opts = []datemath_parser.DateMathParserOption{}
+	if property.Format != "" {
+		opts = append(opts, datemath_parser.WithFormat(strings.Split(property.Format, "||")))
+	} else {
+		if property.Type == mapping.DATE_NANOS_FIELD_TYPE {
+			opts = append(opts, datemath_parser.WithFormat(
+				[]string{"strict_date_optional_time_nanos", "epoch_millis"},
+			))
+		} else {
+			opts = append(opts, datemath_parser.WithFormat(
+				[]string{"strict_date_optional_time", "epoch_millis"},
+			))
+		}
 	}
-	if dateArr[0] != 0 {
-		return t, time.Date(dateArr[0], maxMonth, maxMonthDay, maxHour, maxMinute, maxSecond, maxNano, location)
+	if dp, err := datemath_parser.NewDateMathParser(opts...); err != nil {
+		panic(err)
+	} else {
+		return dp
 	}
-	return t, time.Date(maxYear, maxMonth, maxMonthDay, maxHour, maxMinute, maxSecond, maxNano, location)
+}
+
+type termValue interface {
+	Value(func(string) (interface{}, error)) (interface{}, error)
+}
+
+type rangeValue interface {
+	termValue
+	IsInf(int) bool
+}
+
+var fieldTypeBits = map[mapping.FieldType]int{
+	mapping.BYTE_FIELD_TYPE:           8,
+	mapping.SHORT_FIELD_TYPE:          16,
+	mapping.INTEGER_FIELD_TYPE:        32,
+	mapping.INTERGER_RANGE_FIELD_TYPE: 32,
+	mapping.LONG_FIELD_TYPE:           64,
+	mapping.LONG_RANGE_FIELD_TYPE:     64,
+	mapping.UNSIGNED_LONG_FIELD_TYPE:  64,
+	mapping.HALF_FLOAT_FIELD_TYPE:     16,
+	mapping.FLOAT_FIELD_TYPE:          32,
+	mapping.FLOAT_RANGE_FIELD_TYPE:    32,
+	mapping.DOUBLE_FIELD_TYPE:         64,
+	mapping.DOUBLE_RANGE_FIELD_TYPE:   64,
+	mapping.SCALED_FLOAT_FIELD_TYPE:   128,
 }
 
 func toUpper(x string) (string, error) {
