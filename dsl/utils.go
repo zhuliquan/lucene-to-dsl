@@ -14,15 +14,31 @@ import (
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
+func valueLstToStrLst(vl []LeafValue) []string {
+	var rl = make([]string, len(vl), len(vl))
+	for i, v := range vl {
+		rl[i] = v.(string)
+	}
+	return rl
+}
+
+func strLstToValueLst(vl []string) []LeafValue {
+	var rl = make([]LeafValue, len(vl), len(vl))
+	for i, v := range vl {
+		rl[i] = v
+	}
+	return rl
+}
+
 // union join two string slice
-func UnionJoinStrLst(al, bl []string) []string {
-	sort.Strings(al)
-	sort.Strings(bl)
-	var cl = make([]string, 0, len(al)+len(bl))
+func UnionJoinValueLst(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
+	sort.Slice(al, func(i, j int) bool { return CompareAny(al[i], al[j], typ) < 0 })
+	sort.Slice(bl, func(i, j int) bool { return CompareAny(bl[i], bl[j], typ) < 0 })
+	var cl = make([]LeafValue, 0, len(al)+len(bl))
 	var i, j, na, nb = 0, 0, len(al), len(bl)
 
 	for i < na || j < nb {
-		if i == na || (j < nb && al[i] > bl[j]) {
+		if i == na || (j < nb && CompareAny(al[i], bl[j], typ) > 0) {
 			cl = append(cl, bl[j])
 			j += 1
 		} else {
@@ -30,13 +46,13 @@ func UnionJoinStrLst(al, bl []string) []string {
 			i += 1
 		}
 	}
-	return UniqStrLst(cl)
+	return UniqValueLst(cl, typ)
 }
 
-func IntersectStrLst(al, bl []string) []string {
-	sort.Strings(al)
-	sort.Strings(bl)
-	var cl = make([]string, 0, len(al)+len(bl))
+func IntersectValueLst(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
+	sort.Slice(al, func(i, j int) bool { return CompareAny(al[i], al[j], typ) < 0 })
+	sort.Slice(bl, func(i, j int) bool { return CompareAny(bl[i], bl[j], typ) < 0 })
+	var cl = make([]LeafValue, 0, len(al)+len(bl))
 	var i, j, na, nb = 0, 0, len(al), len(bl)
 
 	for i < na && j < nb {
@@ -44,25 +60,25 @@ func IntersectStrLst(al, bl []string) []string {
 			cl = append(cl, al[i])
 			i += 1
 			j += 1
-		} else if al[i] > bl[j] {
+		} else if CompareAny(al[i], bl[j], typ) > 0 {
 			j += 1
 		} else {
 			i += 1
 		}
 	}
-	return UniqStrLst(cl)
+	return UniqValueLst(cl, typ)
 }
 
 // uniq a sort string slice
-func UniqStrLst(a []string) []string {
+func UniqValueLst(a []LeafValue, typ mapping.FieldType) []LeafValue {
 	if len(a) == 0 || len(a) == 1 {
 		return a
 	}
-	var r = []string{}
+	var r = []LeafValue{}
 	for i, n := 0, len(a); i < n; i++ {
 		if i == 0 {
 			r = append(r, a[i])
-		} else if a[i] != a[i-1] {
+		} else if CompareAny(a[i], a[i-1], typ) != 0 {
 			r = append(r, a[i])
 		}
 	}
@@ -86,7 +102,7 @@ func CompareAny(a, b LeafValue, typ mapping.FieldType) int {
 		mapping.DOUBLE_FIELD_TYPE, mapping.DOUBLE_RANGE_FIELD_TYPE:
 		var af = a.(float64)
 		var bf = b.(float64)
-		if math.Abs(af-bf) < 1E-6 {
+		if math.Abs(af-bf) <= eps {
 			return 0
 		} else if af < bf {
 			return -1
@@ -96,7 +112,7 @@ func CompareAny(a, b LeafValue, typ mapping.FieldType) int {
 	case mapping.HALF_FLOAT_FIELD_TYPE:
 		var af = a.(float16.Float16).Float32()
 		var bf = b.(float16.Float16).Float32()
-		if math.Abs(float64(af-bf)) < 1E-6 {
+		if math.Abs(float64(af-bf)) <= eps {
 			return 0
 		} else if af < bf {
 			return -1
@@ -150,288 +166,10 @@ func CompareAny(a, b LeafValue, typ mapping.FieldType) int {
 	}
 }
 
-func compareInt64(a, b int64, c CompareType) int64 {
-	switch c {
-	case LT:
-		return ltInt64(a, b)
-	case GT:
-		return gtInt64(a, b)
-	case LTE:
-		return lteInt64(a, b)
-	case GTE:
-		return gteInt64(a, b)
-	default:
-		return a
+func CheckValidRangeNode(node *RangeNode) error {
+	var cmp = CompareAny(node.LeftValue, node.RightValue, node.ValueType)
+	if cmp > 0 || (cmp == 0 && (node.LeftCmpSym == GT || node.RightCmpSym == LT)) {
+		return fmt.Errorf("range is conflict")
 	}
-}
-
-func ltInt64(a, b int64) int64 {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func lteInt64(a, b int64) int64 {
-	if a <= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gtInt64(a, b int64) int64 {
-	if a > b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gteInt64(a, b int64) int64 {
-	if a >= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func compareUInt64(a, b uint64, c CompareType) uint64 {
-	switch c {
-	case LT:
-		return ltUInt64(a, b)
-	case GT:
-		return gtUInt64(a, b)
-	case LTE:
-		return lteUInt64(a, b)
-	case GTE:
-		return gteUInt64(a, b)
-	default:
-		return a
-	}
-}
-
-func ltUInt64(a, b uint64) uint64 {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func lteUInt64(a, b uint64) uint64 {
-	if a <= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gtUInt64(a, b uint64) uint64 {
-	if a > b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gteUInt64(a, b uint64) uint64 {
-	if a >= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func compareFloat64(a, b float64, c CompareType) float64 {
-	switch c {
-	case LT:
-		return ltFloat64(a, b)
-	case GT:
-		return gtFloat64(a, b)
-	case LTE:
-		return lteFloat64(a, b)
-	case GTE:
-		return gteFloat64(a, b)
-	default:
-		return a
-	}
-}
-
-func ltFloat64(a, b float64) float64 {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func lteFloat64(a, b float64) float64 {
-	if a <= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gtFloat64(a, b float64) float64 {
-	if a > b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gteFloat64(a, b float64) float64 {
-	if a >= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func compareIp(a, b net.IP, c CompareType) net.IP {
-	switch c {
-	case LT:
-		return ltIP(a, b)
-	case GT:
-		return gtIP(a, b)
-	case LTE:
-		return lteIP(a, b)
-	case GTE:
-		return gteIP(a, b)
-	default:
-		return a
-	}
-}
-
-func ltIP(a, b net.IP) net.IP {
-	var res = bytes.Compare([]byte(a), []byte(b))
-	if res < 0 {
-		return a
-	} else {
-		return b
-	}
-}
-
-func lteIP(a, b net.IP) net.IP {
-	var res = bytes.Compare([]byte(a), []byte(b))
-	if res <= 0 {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gtIP(a, b net.IP) net.IP {
-	var res = bytes.Compare([]byte(a), []byte(b))
-	if res > 0 {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gteIP(a, b net.IP) net.IP {
-	var res = bytes.Compare([]byte(a), []byte(b))
-	if res >= 0 {
-		return a
-	} else {
-		return b
-	}
-}
-
-func compareDate(a, b time.Time, c CompareType) time.Time {
-	switch c {
-	case LT:
-		return ltDate(a, b)
-	case GT:
-		return gtDate(a, b)
-	case LTE:
-		return lteDate(a, b)
-	case GTE:
-		return gteDate(a, b)
-	default:
-		return a
-	}
-}
-
-func ltDate(a, b time.Time) time.Time {
-	if a.UnixNano() < b.UnixNano() {
-		return a
-	} else {
-		return b
-	}
-}
-
-func lteDate(a, b time.Time) time.Time {
-	if a.UnixNano() <= b.UnixNano() {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gtDate(a, b time.Time) time.Time {
-	if a.UnixNano() > b.UnixNano() {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gteDate(a, b time.Time) time.Time {
-	if a.UnixNano() >= b.UnixNano() {
-		return a
-	} else {
-		return b
-	}
-}
-
-func compareString(a, b string, c CompareType) string {
-	switch c {
-	case LT:
-		return ltString(a, b)
-	case GT:
-		return gtString(a, b)
-	case LTE:
-		return lteString(a, b)
-	case GTE:
-		return gteString(a, b)
-	default:
-		return a
-	}
-}
-
-func ltString(a, b string) string {
-	if a < b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func lteString(a, b string) string {
-	if a <= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gtString(a, b string) string {
-	if a > b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func gteString(a, b string) string {
-	if a >= b {
-		return a
-	} else {
-		return b
-	}
+	return nil
 }

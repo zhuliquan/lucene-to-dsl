@@ -2,7 +2,6 @@ package dsl
 
 import (
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 
@@ -13,11 +12,16 @@ import (
 type DSLNode interface {
 	GetNodeType() NodeType
 	GetDSLType() DSLType
+	// union_join / intersect / inverse 都是基于同层相同id的node 合并 与取反。
 	UnionJoin(DSLNode) (DSLNode, error)
 	InterSect(DSLNode) (DSLNode, error)
 	Inverse() (DSLNode, error)
 	GetId() string
 	ToDSL() DSL
+}
+
+type boostNode interface {
+	getBoost() float64
 }
 
 type OpNode struct{}
@@ -47,16 +51,17 @@ func (n *OrDSLNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	var t = node.(*OrDSLNode)
 	for key, curNodes := range t.Nodes {
 		if preNodes, ok := n.Nodes[key]; ok {
-			if key == AND_OP_KEY || key == NOT_OP_KEY {
-				n.Nodes[key] = append(preNodes, curNodes...)
-			} else {
-				if newNode, err := preNodes[0].UnionJoin(curNodes[0]); err != nil {
-					return nil, err
-				} else {
-					delete(n.Nodes, key)
-					n.Nodes[key] = []DSLNode{newNode}
-				}
-			}
+			// if key == AND_OP_KEY || key == NOT_OP_KEY {
+			// 	n.Nodes[key] = append(preNodes, curNodes...)
+			// } else {
+			// 	if newNode, err := preNodes[0].UnionJoin(curNodes[0]); err != nil {
+			// 		return nil, err
+			// 	} else {
+			// 		delete(n.Nodes, key)
+			// 		n.Nodes[key] = []DSLNode{newNode}
+			// 	}
+			// }
+			n.Nodes[key] = append(preNodes, curNodes...)
 
 		} else {
 			n.Nodes[key] = curNodes
@@ -343,7 +348,12 @@ func (n *IdsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	}
 	if node.GetDSLType() == IDS_DSL_TYPE {
 		var t = node.(*IdsNode)
-		n.Values = UnionJoinStrLst(n.Values, t.Values)
+		n.Values = valueLstToStrLst(
+			UnionJoinValueLst(
+				strLstToValueLst(n.Values),
+				strLstToValueLst(t.Values),
+				mapping.KEYWORD_FIELD_TYPE),
+		)
 		return n, nil
 	} else {
 		return nil, fmt.Errorf("failed to union join %v and %v, err: term type if conflict", n, node)
@@ -356,7 +366,12 @@ func (n *IdsNode) InterSect(node DSLNode) (DSLNode, error) {
 	}
 	if node.GetDSLType() == IDS_DSL_TYPE {
 		var t = node.(*IdsNode)
-		n.Values = IntersectStrLst(n.Values, t.Values)
+		n.Values = valueLstToStrLst(
+			IntersectValueLst(
+				strLstToValueLst(n.Values),
+				strLstToValueLst(t.Values),
+				mapping.KEYWORD_FIELD_TYPE),
+		)
 		return n, nil
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: term type if conflict", n, node)
@@ -393,6 +408,10 @@ type TermNode struct {
 	Boost float64
 }
 
+func (n *TermNode) getBoost() float64 {
+	return n.Boost
+}
+
 func (n *TermNode) GetDSLType() DSLType {
 	return TERM_DSL_TYPE
 }
@@ -405,44 +424,33 @@ func (n *TermNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	} else if n != nil && node == nil {
 		return n, nil
 	}
+
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		var t = node.(*TermNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			if CompareAny(n.Value, t.Value, n.Type) == 0 {
-				return n, nil
-			} else {
-				return &TermsNode{
-					Field:  n.Field,
-					Type:   n.Type,
-					Values: []LeafValue{n.Value, t.Value},
-					Boost:  n.Boost,
-				}, nil
-			}
+		if CompareAny(n.Value, t.Value, n.Type) == 0 {
+			return n, nil
 		} else {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
+			return &TermsNode{
+				Field:  n.Field,
+				Type:   n.Type,
+				Values: []LeafValue{n.Value, t.Value},
+				Boost:  n.Boost,
+			}, nil
 		}
 	case TERMS_DSL_TYPE:
 		var t = node.(*TermsNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			t.Values = append(t.Values, n.Value)
-			return t, nil
-		} else {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
-		}
+		t.Values = UnionJoinValueLst(t.Values, []LeafValue{n.Value}, t.Type)
+		return t, nil
+
 	case RANGE_DSL_TYPE:
 		// put logic of compare and collision into range node
 		return node.(*RangeNode).UnionJoin(n)
 	case QUERY_STRING_DSL_TYPE:
 		var t = node.(*QueryStringNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			// t.Value = fmt.Sprintf("%s OR %v", t.Value.StringTerm, n.Value)
-			return t, nil
-		} else {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
-		}
+		return t, nil
 	case IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), node.ToDSL())
 
@@ -455,23 +463,22 @@ func (n *TermNode) InterSect(node DSLNode) (DSLNode, error) {
 	if n == nil || node == nil {
 		return nil, ErrIntersectNilNode
 	}
+	if bn, ok := node.(boostNode); ok {
+		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), node.ToDSL())
+		}
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		var t = node.(*TermNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			if reflect.DeepEqual(n.Value, t.Value) {
-				return node, nil
-			} else {
-				return nil, nil
-				// return &QueryStringNode{EqNode: EqNode{Field: n.Field, Value: fmt.Sprintf("%v AND %v", n.Value, t.Value)}, Boost: n.Boost}, nil
-			}
+		if CompareAny(t.Value, n.Value, n.Type) == 0 {
+			return node, nil
 		} else {
-			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
+			return &QueryStringNode{EqNode: EqNode{Field: n.Field, Value: fmt.Sprintf("%v AND %v", n.Value, t.Value)}, Boost: n.Boost}, nil
 		}
 	case RANGE_DSL_TYPE:
-		// put logic of compare and collision into range node
 		return node.(*RangeNode).UnionJoin(n)
 	case IDS_DSL_TYPE, TERMS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is conflict", n.ToDSL(), node.ToDSL())
@@ -506,6 +513,10 @@ type TermsNode struct {
 	Boost  float64
 }
 
+func (n *TermsNode) getBoost() float64 {
+	return n.Boost
+}
+
 func (n *TermsNode) GetDSLType() DSLType {
 	return TERMS_DSL_TYPE
 }
@@ -518,6 +529,11 @@ func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	} else if n != nil && node == nil {
 		return n, nil
 	}
+	if bn, ok := node.(boostNode); ok {
+		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), node.ToDSL())
+		}
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -525,29 +541,19 @@ func (n *TermsNode) UnionJoin(node DSLNode) (DSLNode, error) {
 		return node.UnionJoin(n)
 	case TERMS_DSL_TYPE:
 		var t = node.(*TermsNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			t.Values = append(t.Values, n.Values...)
-			return t, nil
-		} else {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
-		}
+		t.Values = UnionJoinValueLst(t.Values, n.Values, n.Type)
+		return t, nil
 	case RANGE_DSL_TYPE:
-		// put logic of compare and collision into range node
 		return node.(*RangeNode).UnionJoin(n)
-
 	case QUERY_STRING_DSL_TYPE:
 		var t = node.(*QueryStringNode)
-		if math.Abs(n.Boost-t.Boost) <= 1E-6 {
-			// var s = ""
-			// for _, val := range n.Values {
-			// TODO: 需要 %s 修改
-			// s += fmt.Sprintf(" OR %s", val)
-			// }
-			// t.Value = fmt.Sprintf("%s%s", t.Value, s)
-			return t, nil
-		} else {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), t.ToDSL())
-		}
+		// var s = ""
+		// for _, val := range n.Values {
+		// TODO: 需要 %s 修改
+		// s += fmt.Sprintf(" OR %s", val)
+		// }
+		// t.Value = fmt.Sprintf("%s%s", t.Value, s)
+		return t, nil
 	case IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), node.ToDSL())
 
@@ -561,14 +567,18 @@ func (n *TermsNode) InterSect(node DSLNode) (DSLNode, error) {
 	if n == nil || node == nil {
 		return nil, ErrIntersectNilNode
 	}
+	if bn, ok := node.(boostNode); ok {
+		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), node.ToDSL())
+		}
+	}
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
 	case RANGE_DSL_TYPE:
-		// put logic of compare and collision into range node
 		return node.(*RangeNode).UnionJoin(n)
-
 	case TERM_DSL_TYPE:
+		// TODO: 如果 values 存在还行/ 不存在就要怎么办？
 		return nil, nil
 	case TERMS_DSL_TYPE:
 		return nil, nil
@@ -676,7 +686,7 @@ func (n *FuzzyNode) UnionJoin(node DSLNode) (DSLNode, error) {
 			return nil, fmt.Errorf("failed to union join %s to %s, err: value is conflict", t.ToDSL(), n.ToDSL())
 		}
 
-		var low, high int
+		var low, hig int
 		if t.HighFuzziness == 0 && n.HighFuzziness == 0 {
 			if t.LowFuzziness < n.LowFuzziness {
 				return &FuzzyNode{EqNode: n.EqNode, LowFuzziness: t.LowFuzziness, HighFuzziness: n.LowFuzziness}, nil
@@ -688,26 +698,26 @@ func (n *FuzzyNode) UnionJoin(node DSLNode) (DSLNode, error) {
 		} else if t.HighFuzziness != 0 && n.HighFuzziness == 0 {
 			if t.LowFuzziness < n.LowFuzziness {
 				low = t.LowFuzziness
-				high = n.LowFuzziness
+				hig = n.LowFuzziness
 			} else {
 				low = n.LowFuzziness
-				high = t.LowFuzziness
+				hig = t.LowFuzziness
 			}
 
-			if high < t.HighFuzziness {
-				high = t.HighFuzziness
+			if hig < t.HighFuzziness {
+				hig = t.HighFuzziness
 			}
 		} else if t.HighFuzziness == 0 && n.HighFuzziness != 0 {
 			if t.LowFuzziness < n.LowFuzziness {
 				low = t.LowFuzziness
-				high = n.LowFuzziness
+				hig = n.LowFuzziness
 			} else {
 				low = n.LowFuzziness
-				high = t.LowFuzziness
+				hig = t.LowFuzziness
 			}
 
-			if high < n.HighFuzziness {
-				high = n.HighFuzziness
+			if hig < n.HighFuzziness {
+				hig = n.HighFuzziness
 			}
 		} else {
 			if t.LowFuzziness < n.LowFuzziness {
@@ -717,14 +727,14 @@ func (n *FuzzyNode) UnionJoin(node DSLNode) (DSLNode, error) {
 			}
 
 			if t.HighFuzziness < n.HighFuzziness {
-				high = n.HighFuzziness
+				hig = n.HighFuzziness
 			} else {
-				high = t.HighFuzziness
+				hig = t.HighFuzziness
 			}
 		}
 
-		if low != high {
-			return &FuzzyNode{EqNode: n.EqNode, LowFuzziness: low, HighFuzziness: high}, nil
+		if low != hig {
+			return &FuzzyNode{EqNode: n.EqNode, LowFuzziness: low, HighFuzziness: hig}, nil
 		} else {
 			return &FuzzyNode{EqNode: n.EqNode, LowFuzziness: low}, nil
 		}
@@ -838,13 +848,16 @@ type RangeNode struct {
 	Format      string
 }
 
+func (n *RangeNode) getBoost() float64 {
+	return n.Boost
+}
+
 func (n *RangeNode) GetDSLType() DSLType {
 	return RANGE_DSL_TYPE
 }
 
 func (n *RangeNode) GetId() string { return "LEAF:" + n.Field }
 
-// TODO: very hard
 func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	if n == nil && node == nil {
 		return nil, ErrUnionJoinNilNode
@@ -853,6 +866,12 @@ func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
 	} else if n != nil && node == nil {
 		return n, nil
 	}
+	if bn, ok := node.(boostNode); ok {
+		if CompareAny(bn.getBoost(), n.Boost, n.ValueType) != 0 {
+			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), node.ToDSL())
+		}
+	}
+
 	switch node.GetDSLType() {
 	case EXISTS_DSL_TYPE:
 		return node.UnionJoin(n)
@@ -860,19 +879,159 @@ func (n *RangeNode) UnionJoin(node DSLNode) (DSLNode, error) {
 		return nil, nil
 	case TERM_DSL_TYPE:
 		return nil, nil
-
 	case RANGE_DSL_TYPE:
-		// var otherNode = node.(*RangeNode)
-		// if otherNode.LeftCmpSym == LT
+		var t = node.(*RangeNode)
+		// 如果没有交集 返回Group
+		var flag1 = CompareAny(n.RightValue, t.LeftValue, n.ValueType)
+		var flag2 = CompareAny(t.RightValue, n.LeftValue, n.ValueType)
+		if flag1 < 0 || flag2 < 0 ||
+			(flag1 == 0 && n.RightCmpSym == LT && t.LeftCmpSym == GT) ||
+			(flag2 == 0 && t.RightCmpSym == LT && n.LeftCmpSym == GT) {
+			return &OrDSLNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]DSLNode{
+					n.GetId(): {t, n},
+				},
+			}, nil
+		}
+		// 同左取小值, 符号也跟随
+		// 同右取大值，符号也跟随
+		var (
+			newRange = &RangeNode{
+				Field:       n.Field,
+				ValueType:   n.ValueType,
+				LeftValue:   n.LeftValue,
+				RightValue:  n.RightValue,
+				LeftCmpSym:  n.LeftCmpSym,
+				RightCmpSym: n.RightCmpSym,
+				Format:      n.Format,
+				Boost:       n.Boost,
+			}
+			leftFlag  = CompareAny(t.LeftValue, n.LeftValue, n.ValueType)
+			rightFlag = CompareAny(t.RightValue, n.RightValue, n.ValueType)
+		)
+		if leftFlag < 0 {
+			newRange.LeftValue = t.LeftValue
+			newRange.LeftCmpSym = t.LeftCmpSym
+		} else if leftFlag > 0 {
+			newRange.LeftValue = n.LeftValue
+			newRange.LeftCmpSym = n.LeftCmpSym
+		} else {
+			newRange.LeftValue = n.LeftValue
+			if t.LeftCmpSym == GTE {
+				newRange.LeftCmpSym = t.LeftCmpSym
+			} else {
+				newRange.LeftCmpSym = n.LeftCmpSym
+			}
+		}
+		if rightFlag > 0 {
+			newRange.RightValue = t.RightValue
+			newRange.RightCmpSym = t.RightCmpSym
+		} else if rightFlag < 0 {
+			newRange.RightValue = n.RightValue
+			newRange.RightCmpSym = n.RightCmpSym
+		} else {
+			newRange.RightValue = n.RightValue
+			if t.RightCmpSym == LTE {
+				newRange.RightCmpSym = t.RightCmpSym
+			} else {
+				newRange.RightCmpSym = n.RightCmpSym
+			}
+		}
+		return newRange, nil
 
 	}
 	return nil, nil
 }
 
-// TODO: very hard
 func (n *RangeNode) InterSect(node DSLNode) (DSLNode, error) {
 	if n == nil || node == nil {
 		return nil, ErrIntersectNilNode
+	}
+	if bn, ok := node.(boostNode); ok {
+		if CompareAny(bn.getBoost(), n.Boost, n.ValueType) != 0 {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), node.ToDSL())
+		}
+	}
+	switch node.GetDSLType() {
+	case EXISTS_DSL_TYPE:
+		return node.InterSect(n)
+	case TERMS_DSL_TYPE:
+		var t = node.(*TermsNode)
+		var validNodes = []LeafValue{}
+		for _, tn := range t.Values {
+			var leftFlag = CompareAny(tn, n.LeftValue, n.ValueType)
+			var rightFlag = CompareAny(tn, n.RightValue, n.ValueType)
+			if !(leftFlag < 0 || rightFlag > 0 ||
+				(leftFlag == 0 && n.LeftCmpSym == GT) ||
+				(rightFlag == 0 && n.RightCmpSym == LT)) {
+				validNodes = append(validNodes, tn)
+			}
+		}
+		if len(validNodes) == 0 {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: range is conflict", n.ToDSL(), t.ToDSL())
+		}
+		t.Values = validNodes
+		return t, nil
+	case TERM_DSL_TYPE:
+		var t = node.(*TermNode)
+		var leftFlag = CompareAny(t.Value, n.LeftValue, n.ValueType)
+		var rightFlag = CompareAny(t.Value, n.RightValue, n.ValueType)
+		if leftFlag < 0 || (leftFlag == 0 && n.LeftCmpSym == GT) || rightFlag > 0 || (rightFlag == 0 && n.RightCmpSym == LT) {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: range is conflict", n.ToDSL(), t.ToDSL())
+		}
+		return t, nil
+	case RANGE_DSL_TYPE:
+		var t = node.(*RangeNode)
+		// 同左取大值, 符号也跟随
+		// 同右取小值，符号也跟随
+		// 最后通过range 校验去排除不相交情况
+		var (
+			newRange = &RangeNode{
+				Field:       n.Field,
+				ValueType:   n.ValueType,
+				LeftValue:   n.LeftValue,
+				RightValue:  n.RightValue,
+				LeftCmpSym:  n.LeftCmpSym,
+				RightCmpSym: n.RightCmpSym,
+				Format:      n.Format,
+				Boost:       n.Boost,
+			}
+			leftFlag  = CompareAny(t.LeftValue, n.LeftValue, n.ValueType)
+			rightFlag = CompareAny(t.RightValue, n.RightValue, n.ValueType)
+		)
+		if leftFlag > 0 {
+			newRange.LeftValue = t.LeftValue
+			newRange.LeftCmpSym = t.LeftCmpSym
+		} else if leftFlag < 0 {
+			newRange.LeftValue = n.LeftValue
+			newRange.LeftCmpSym = n.LeftCmpSym
+		} else {
+			newRange.LeftValue = n.LeftValue
+			if t.LeftCmpSym == GT {
+				newRange.LeftCmpSym = t.LeftCmpSym
+			} else {
+				newRange.LeftCmpSym = n.LeftCmpSym
+			}
+		}
+		if rightFlag < 0 {
+			newRange.RightValue = t.RightValue
+			newRange.RightCmpSym = t.RightCmpSym
+		} else if rightFlag > 0 {
+			newRange.RightValue = n.RightValue
+			newRange.RightCmpSym = n.RightCmpSym
+		} else {
+			newRange.RightValue = n.RightValue
+			if t.RightCmpSym == LT {
+				newRange.RightCmpSym = t.RightCmpSym
+			} else {
+				newRange.RightCmpSym = n.RightCmpSym
+			}
+		}
+		if err := CheckValidRangeNode(newRange); err != nil {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: %s", n.ToDSL(), t.ToDSL(), err)
+		}
+		return newRange, nil
 	}
 
 	return nil, nil
@@ -904,6 +1063,10 @@ type WildCardNode struct {
 	LeafNode
 	EqNode
 	Boost float64
+}
+
+func (n *WildCardNode) getBoost() float64 {
+	return n.Boost
 }
 
 func (n *WildCardNode) GetDSLType() DSLType {
@@ -958,6 +1121,10 @@ type MatchNode struct {
 	Boost float64
 }
 
+func (n *MatchNode) getBoost() float64 {
+	return n.Boost
+}
+
 func (n *MatchNode) GetDSLType() DSLType {
 	return MATCH_DSL_TYPE
 }
@@ -972,6 +1139,10 @@ func (n *MatchNode) ToDSL() DSL {
 type MatchPhraseNode struct {
 	EqNode
 	Boost float64
+}
+
+func (n *MatchPhraseNode) getBoost() float64 {
+	return n.Boost
 }
 
 func (n *MatchPhraseNode) GetDSLType() DSLType {
@@ -997,6 +1168,10 @@ func (n *MatchPhraseNode) Inverse() (DSLNode, error) {
 type QueryStringNode struct {
 	EqNode
 	Boost float64
+}
+
+func (n *QueryStringNode) getBoost() float64 {
+	return n.Boost
 }
 
 func (n *QueryStringNode) UnionJoin(node DSLNode) (DSLNode, error) {

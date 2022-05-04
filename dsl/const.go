@@ -45,6 +45,7 @@ const (
 )
 
 var (
+	eps        = 1E-8
 	MinUint    = uint64(0)
 	MinFloat16 = float16.Fromfloat32(-65504)
 	MaxFloat16 = float16.Fromfloat32(65504)

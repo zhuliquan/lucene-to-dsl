@@ -1,7 +1,6 @@
 package dsl
 
 import (
-	"math"
 	"net"
 	"reflect"
 	"testing"
@@ -14,59 +13,65 @@ import (
 
 func TestUnionJoinStrLst(t *testing.T) {
 	type args struct {
-		al []string
-		bl []string
+		al  []LeafValue
+		bl  []LeafValue
+		typ mapping.FieldType
 	}
 	tests := []struct {
 		name string
 		args args
-		want []string
+		want []LeafValue
 	}{
 		{
 			name: "TestUnionJoinStrLst01",
 			args: args{
-				al: []string{"1", "2"},
-				bl: []string{"3", "2"},
+				al:  []LeafValue{"1", "2"},
+				bl:  []LeafValue{"3", "2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "2", "3"},
+			want: []LeafValue{"1", "2", "3"},
 		},
 		{
 			name: "TestUnionJoinStrLst02",
 			args: args{
-				al: []string{"2"},
-				bl: []string{"3", "2"},
+				al:  []LeafValue{"2"},
+				bl:  []LeafValue{"3", "2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2", "3"},
+			want: []LeafValue{"2", "3"},
 		},
 		{
 			name: "TestUnionJoinStrLst03",
 			args: args{
-				al: []string{"2", "3"},
-				bl: []string{"2"},
+				al:  []LeafValue{"2", "3"},
+				bl:  []LeafValue{"2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2", "3"},
+			want: []LeafValue{"2", "3"},
 		},
 		{
 			name: "TestUnionJoinStrLst04",
 			args: args{
-				al: []string{"2", "3"},
-				bl: []string{},
+				al:  []LeafValue{"2", "3"},
+				bl:  []LeafValue{},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2", "3"},
+			want: []LeafValue{"2", "3"},
 		},
 		{
 			name: "TestUnionJoinStrLst05",
 			args: args{
-				al: []string{},
-				bl: []string{"2", "3"},
+				al:  []LeafValue{},
+				bl:  []LeafValue{"2", "3"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2", "3"},
+			want: []LeafValue{"2", "3"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UnionJoinStrLst(tt.args.al, tt.args.bl); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UnionJoinStrLst() = %v, want %v", got, tt.want)
+			if got := UnionJoinValueLst(tt.args.al, tt.args.bl, tt.args.typ); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UnionJoinValueLst() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -74,142 +79,158 @@ func TestUnionJoinStrLst(t *testing.T) {
 
 func TestIntersectStrLst(t *testing.T) {
 	type args struct {
-		al []string
-		bl []string
+		al  []LeafValue
+		bl  []LeafValue
+		typ mapping.FieldType
 	}
 	tests := []struct {
 		name string
 		args args
-		want []string
+		want []LeafValue
 	}{
 		{
 			name: "TestIntersectStrLst01",
 			args: args{
-				al: []string{"1", "2"},
-				bl: []string{"1", "3", "2"},
+				al:  []LeafValue{"1", "2"},
+				bl:  []LeafValue{"1", "3", "2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "2"},
+			want: []LeafValue{"1", "2"},
 		},
 		{
 			name: "TestIntersectStrLst02",
 			args: args{
-				al: []string{"2"},
-				bl: []string{"3", "2"},
+				al:  []LeafValue{"2"},
+				bl:  []LeafValue{"3", "2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2"},
+			want: []LeafValue{"2"},
 		},
 		{
 			name: "TestIntersectStrLst03",
 			args: args{
-				al: []string{"2", "2", "3"},
-				bl: []string{"2"},
+				al:  []LeafValue{"2", "2", "3"},
+				bl:  []LeafValue{"2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2"},
+			want: []LeafValue{"2"},
 		},
 		{
 			name: "TestIntersectStrLst04",
 			args: args{
-				al: []string{"2", "2", "3", "1"},
-				bl: []string{"2", "2"},
+				al:  []LeafValue{"2", "2", "3", "1"},
+				bl:  []LeafValue{"2", "2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"2"},
+			want: []LeafValue{"2"},
 		},
 		{
 			name: "TestIntersectStrLst05",
 			args: args{
-				al: []string{"2", "2", "3", "1"},
-				bl: []string{},
+				al:  []LeafValue{"2", "2", "3", "1"},
+				bl:  []LeafValue{},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{},
+			want: []LeafValue{},
 		},
 		{
 			name: "TestIntersectStrLst06",
 			args: args{
-				al: []string{},
-				bl: []string{"2", "2", "3", "1"},
+				al:  []LeafValue{},
+				bl:  []LeafValue{"2", "2", "3", "1"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{},
+			want: []LeafValue{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IntersectStrLst(tt.args.al, tt.args.bl); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("IntersectStrLst() = %v, want %v", got, tt.want)
+			if got := IntersectValueLst(tt.args.al, tt.args.bl, tt.args.typ); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IntersectValueLst() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestUniqStrLst(t *testing.T) {
+func TestUniqValueLst(t *testing.T) {
 	type args struct {
-		a []string
+		a   []LeafValue
+		typ mapping.FieldType
 	}
 	tests := []struct {
 		name string
 		args args
-		want []string
+		want []LeafValue
 	}{
 		{
 			name: "TestUniqStrLst01",
 			args: args{
-				a: []string{"1", "1", "2", "2", "3"},
+				a:   []LeafValue{"1", "1", "2", "2", "3"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "2", "3"},
+			want: []LeafValue{"1", "2", "3"},
 		},
 		{
 			name: "TestUniqStrLst02",
 			args: args{
-				a: []string{"1", "2", "2", "2", "3"},
+				a:   []LeafValue{"1", "2", "2", "2", "3"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "2", "3"},
+			want: []LeafValue{"1", "2", "3"},
 		},
 		{
 			name: "TestUniqStrLst03",
 			args: args{
-				a: []string{"1", "2", "2", "2", "2"},
+				a:   []LeafValue{"1", "2", "2", "2", "2"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "2"},
+			want: []LeafValue{"1", "2"},
 		},
 		{
 			name: "TestUniqStrLst04",
 			args: args{
-				a: []string{"1", "1", "3", "3", "3"},
+				a:   []LeafValue{"1", "1", "3", "3", "3"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "3"},
+			want: []LeafValue{"1", "3"},
 		},
 		{
 			name: "TestUniqStrLst05",
 			args: args{
-				a: []string{"1", "1", "2", "3", "3"},
+				a:   []LeafValue{"1", "1", "2", "3", "3"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1", "2", "3"},
+			want: []LeafValue{"1", "2", "3"},
 		},
 		{
 			name: "TestUniqStrLst06",
 			args: args{
-				a: []string{"1", "1"},
+				a:   []LeafValue{"1", "1"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1"},
+			want: []LeafValue{"1"},
 		},
 		{
 			name: "TestUniqStrLst07",
 			args: args{
-				a: []string{"1"},
+				a:   []LeafValue{"1"},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{"1"},
+			want: []LeafValue{"1"},
 		},
 		{
 			name: "TestUniqStrLst08",
 			args: args{
-				a: []string{},
+				a:   []LeafValue{},
+				typ: mapping.KEYWORD_FIELD_TYPE,
 			},
-			want: []string{},
+			want: []LeafValue{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := UniqStrLst(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UniqStrLst() = %v, want %v", got, tt.want)
+			if got := UniqValueLst(tt.args.a, tt.args.typ); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UniqValueLst() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -353,307 +374,85 @@ func TestCompareAny(t *testing.T) {
 	}
 }
 
-func Test_compareInt64(t *testing.T) {
+func TestCheckValidRangeNode(t *testing.T) {
 	type args struct {
-		a int64
-		b int64
-		c CompareType
+		node *RangeNode
 	}
 	tests := []struct {
-		name string
-		args args
-		want int64
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
-			name: "test_lt",
-			args: args{a: 1, b: 2, c: LT},
-			want: 1,
+			name: "test_error_01",
+			args: args{
+				node: &RangeNode{
+					ValueType:   mapping.KEYWORD_FIELD_TYPE,
+					LeftValue:   "1",
+					RightValue:  "1",
+					LeftCmpSym:  GT,
+					RightCmpSym: LTE,
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name: "test_gt",
-			args: args{a: 1, b: 2, c: GT},
-			want: 2,
+			name: "test_error_02",
+			args: args{
+				node: &RangeNode{
+					ValueType:   mapping.KEYWORD_FIELD_TYPE,
+					LeftValue:   "1",
+					RightValue:  "1",
+					LeftCmpSym:  GTE,
+					RightCmpSym: LT,
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name: "test_lte",
-			args: args{a: 1, b: 2, c: LTE},
-			want: 1,
+			name: "test_error_03",
+			args: args{
+				node: &RangeNode{
+					ValueType:   mapping.KEYWORD_FIELD_TYPE,
+					LeftValue:   "1",
+					RightValue:  "1",
+					LeftCmpSym:  GT,
+					RightCmpSym: LT,
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name: "test_gte",
-			args: args{a: 1, b: 2, c: GTE},
-			want: 2,
+			name: "test_error_04",
+			args: args{
+				node: &RangeNode{
+					ValueType:   mapping.KEYWORD_FIELD_TYPE,
+					LeftValue:   "2",
+					RightValue:  "1",
+					LeftCmpSym:  GT,
+					RightCmpSym: LTE,
+				},
+			},
+			wantErr: true,
 		},
 		{
-			name: "test_eq_1",
-			args: args{a: 3, b: 2, c: EQ},
-			want: 3,
-		},
-		{
-			name: "test_eq_2",
-			args: args{a: 2, b: 3, c: EQ},
-			want: 2,
+			name: "test_ok_01",
+			args: args{
+				node: &RangeNode{
+					ValueType:   mapping.KEYWORD_FIELD_TYPE,
+					LeftValue:   "1",
+					RightValue:  "2",
+					LeftCmpSym:  GT,
+					RightCmpSym: LTE,
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := compareInt64(tt.args.a, tt.args.b, tt.args.c); got != tt.want {
-				t.Errorf("compareInt64() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_compareUInt64(t *testing.T) {
-	type args struct {
-		a uint64
-		b uint64
-		c CompareType
-	}
-	tests := []struct {
-		name string
-		args args
-		want uint64
-	}{
-		{
-			name: "test_lt",
-			args: args{a: 1, b: 2, c: LT},
-			want: 1,
-		},
-		{
-			name: "test_gt",
-			args: args{a: 1, b: 2, c: GT},
-			want: 2,
-		},
-		{
-			name: "test_lte",
-			args: args{a: 1, b: 2, c: LTE},
-			want: 1,
-		},
-		{
-			name: "test_gte",
-			args: args{a: 1, b: 2, c: GTE},
-			want: 2,
-		},
-		{
-			name: "test_eq_1",
-			args: args{a: 3, b: 2, c: EQ},
-			want: 3,
-		},
-		{
-			name: "test_eq_2",
-			args: args{a: 2, b: 3, c: EQ},
-			want: 2,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := compareUInt64(tt.args.a, tt.args.b, tt.args.c); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("compareUInt64() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_compareFloat64(t *testing.T) {
-	type args struct {
-		a float64
-		b float64
-		c CompareType
-	}
-	tests := []struct {
-		name string
-		args args
-		want float64
-	}{
-		{
-			name: "test_lt",
-			args: args{a: 1, b: 2, c: LT},
-			want: 1,
-		},
-		{
-			name: "test_gt",
-			args: args{a: 1, b: 2, c: GT},
-			want: 2,
-		},
-		{
-			name: "test_lte",
-			args: args{a: 1, b: 2, c: LTE},
-			want: 1,
-		},
-		{
-			name: "test_gte",
-			args: args{a: 1, b: 2, c: GTE},
-			want: 2,
-		},
-		{
-			name: "test_eq_1",
-			args: args{a: 3, b: 2, c: EQ},
-			want: 3,
-		},
-		{
-			name: "test_eq_2",
-			args: args{a: 2, b: 3, c: EQ},
-			want: 2,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := compareFloat64(tt.args.a, tt.args.b, tt.args.c); math.Abs(got-tt.want) > 1E-6 {
-				t.Errorf("compareFloat64() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_compareIp(t *testing.T) {
-	type args struct {
-		a net.IP
-		b net.IP
-		c CompareType
-	}
-	tests := []struct {
-		name string
-		args args
-		want net.IP
-	}{
-		{
-			name: "test_lt",
-			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: LT},
-			want: net.ParseIP("1.2.3.4"),
-		},
-		{
-			name: "test_gt",
-			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: GT},
-			want: net.ParseIP("1.2.4.3"),
-		},
-		{
-			name: "test_lt",
-			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: LTE},
-			want: net.ParseIP("1.2.3.4"),
-		},
-		{
-			name: "test_gt",
-			args: args{a: net.ParseIP("1.2.3.4"), b: net.ParseIP("1.2.4.3"), c: GTE},
-			want: net.ParseIP("1.2.4.3"),
-		},
-		{
-			name: "test_eq_1",
-			args: args{a: net.ParseIP("1.5.3.4"), b: net.ParseIP("1.2.4.3"), c: EQ},
-			want: net.ParseIP("1.5.3.4"),
-		},
-		{
-			name: "test_eq_2",
-			args: args{a: net.ParseIP("1.2.4.3"), b: net.ParseIP("1.5.3.4"), c: EQ},
-			want: net.ParseIP("1.2.4.3"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := compareIp(tt.args.a, tt.args.b, tt.args.c); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("compareIp() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_compareString(t *testing.T) {
-	type args struct {
-		a string
-		b string
-		c CompareType
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "test_lt",
-			args: args{a: "1", b: "2", c: LT},
-			want: "1",
-		},
-		{
-			name: "test_gt",
-			args: args{a: "1", b: "2", c: GT},
-			want: "2",
-		},
-		{
-			name: "test_lte",
-			args: args{a: "1", b: "2", c: LTE},
-			want: "1",
-		},
-		{
-			name: "test_gte",
-			args: args{a: "1", b: "2", c: GTE},
-			want: "2",
-		},
-		{
-			name: "test_eq_1",
-			args: args{a: "3", b: "2", c: EQ},
-			want: "3",
-		},
-		{
-			name: "test_eq_2",
-			args: args{a: "2", b: "3", c: EQ},
-			want: "2",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := compareString(tt.args.a, tt.args.b, tt.args.c); got != tt.want {
-				t.Errorf("compareString() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_compareDate(t *testing.T) {
-	type args struct {
-		a time.Time
-		b time.Time
-		c CompareType
-	}
-	tests := []struct {
-		name string
-		args args
-		want time.Time
-	}{
-		{
-			name: "test_lt",
-			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: LT},
-			want: time.Unix(1, 0),
-		},
-		{
-			name: "test_gt",
-			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: GT},
-			want: time.Unix(2, 0),
-		},
-		{
-			name: "test_lte",
-			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: LTE},
-			want: time.Unix(1, 0),
-		},
-		{
-			name: "test_gte",
-			args: args{a: time.Unix(1, 0), b: time.Unix(2, 0), c: GTE},
-			want: time.Unix(2, 0),
-		},
-		{
-			name: "test_eq_1",
-			args: args{a: time.Unix(3, 0), b: time.Unix(2, 0), c: EQ},
-			want: time.Unix(3, 0),
-		},
-		{
-			name: "test_eq_2",
-			args: args{a: time.Unix(2, 0), b: time.Unix(3, 0), c: EQ},
-			want: time.Unix(2, 0),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := compareDate(tt.args.a, tt.args.b, tt.args.c); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("compareDate() = %v, want %v", got, tt.want)
+			if err := CheckValidRangeNode(tt.args.node); (err != nil) != tt.wantErr {
+				t.Errorf("CheckValidRangeNode() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
