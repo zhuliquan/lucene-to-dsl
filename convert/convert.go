@@ -48,7 +48,6 @@ func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 							nodes[node.GetId()] = []dsl.DSLNode{node}
 						}
 					}
-
 				} else {
 					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
 				}
@@ -386,9 +385,13 @@ func convertLogicTermGroupToLucene(field *term.Field, termGroup *term.LogicTermG
 	} else {
 		var q = &lucene.Lucene{}
 		q.OrQuery = convertOrGroupToOrQuery(field, termGroup.OrTermGroup, boostSymbol)
-		q.OSQuery = []*lucene.OSQuery{}
+		if q.OrQuery == nil {
+			return nil
+		}
 		for _, osGroup := range termGroup.OSTermGroup {
-			q.OSQuery = append(q.OSQuery, convertOsGroupToOsQuery(field, osGroup, boostSymbol))
+			if t := convertOsGroupToOsQuery(field, osGroup, boostSymbol); t != nil {
+				q.OSQuery = append(q.OSQuery, t)
+			}
 		}
 		return q
 	}
@@ -398,9 +401,13 @@ func convertOsGroupToOsQuery(field *term.Field, osGroup *term.OSTermGroup, boost
 	if osGroup == nil {
 		return nil
 	} else {
-		return &lucene.OSQuery{
-			OrSymbol: osGroup.OrSymbol,
-			OrQuery:  convertOrGroupToOrQuery(field, osGroup.OrTermGroup, boostSymbol),
+		if t := convertOrGroupToOrQuery(field, osGroup.OrTermGroup, boostSymbol); t != nil {
+			return &lucene.OSQuery{
+				OrSymbol: osGroup.OrSymbol,
+				OrQuery:  t,
+			}
+		} else {
+			return nil
 		}
 	}
 }
@@ -411,9 +418,14 @@ func convertOrGroupToOrQuery(field *term.Field, orGroup *term.OrTermGroup, boost
 	} else {
 		var q = &lucene.OrQuery{}
 		q.AndQuery = convertAndGroupToAndQuery(field, orGroup.AndTermGroup, boostSymbol)
-		q.AnSQuery = []*lucene.AnSQuery{}
+		if q.AndQuery == nil {
+			return nil
+		}
+
 		for _, ansGroup := range orGroup.AnSTermGroup {
-			q.AnSQuery = append(q.AnSQuery, convertAnsGroupToAnsQuery(field, ansGroup, boostSymbol))
+			if t := convertAnsGroupToAnsQuery(field, ansGroup, boostSymbol); t != nil {
+				q.AnSQuery = append(q.AnSQuery, t)
+			}
 		}
 		return q
 	}
@@ -423,9 +435,13 @@ func convertAnsGroupToAnsQuery(field *term.Field, ansGroup *term.AnSTermGroup, b
 	if ansGroup == nil {
 		return nil
 	} else {
-		return &lucene.AnSQuery{
-			AndSymbol: ansGroup.AndSymbol,
-			AndQuery:  convertAndGroupToAndQuery(field, ansGroup.AndTermGroup, boostSymbol),
+		if t := convertAndGroupToAndQuery(field, ansGroup.AndTermGroup, boostSymbol); t != nil {
+			return &lucene.AnSQuery{
+				AndSymbol: ansGroup.AndSymbol,
+				AndQuery:  t,
+			}
+		} else {
+			return nil
 		}
 	}
 }
@@ -434,14 +450,22 @@ func convertAndGroupToAndQuery(field *term.Field, andGroup *term.AndTermGroup, b
 	if andGroup == nil {
 		return nil
 	} else if andGroup.TermGroupElem != nil {
-		return &lucene.AndQuery{
-			NotSymbol:  andGroup.NotSymbol,
-			FieldQuery: convertGroupElemToFieldTerm(field, andGroup.TermGroupElem, boostSymbol),
+		if t := convertGroupElemToFieldTerm(field, andGroup.TermGroupElem, boostSymbol); t != nil {
+			return &lucene.AndQuery{
+				NotSymbol:  andGroup.NotSymbol,
+				FieldQuery: t,
+			}
+		} else {
+			return nil
 		}
 	} else if andGroup.ParenTermGroup != nil {
-		return &lucene.AndQuery{
-			NotSymbol:  andGroup.NotSymbol,
-			ParenQuery: convertParenTermGroupToParentTerm(field, andGroup.ParenTermGroup, boostSymbol),
+		if t := convertParenTermGroupToParentTerm(field, andGroup.ParenTermGroup, boostSymbol); t != nil {
+			return &lucene.AndQuery{
+				NotSymbol:  andGroup.NotSymbol,
+				ParenQuery: t,
+			}
+		} else {
+			return nil
 		}
 	} else {
 		return nil
@@ -449,15 +473,16 @@ func convertAndGroupToAndQuery(field *term.Field, andGroup *term.AndTermGroup, b
 }
 
 func convertParenTermGroupToParentTerm(field *term.Field, parentTermGroup *term.ParenTermGroup, boostSymbol string) *lucene.ParenQuery {
-	return &lucene.ParenQuery{
-		SubQuery: convertLogicTermGroupToLucene(field, parentTermGroup.SubTermGroup, boostSymbol),
+	if t := convertLogicTermGroupToLucene(field, parentTermGroup.SubTermGroup, boostSymbol); t != nil {
+		return &lucene.ParenQuery{SubQuery: t}
+	} else {
+		return nil
 	}
 }
 
 func convertGroupElemToFieldTerm(field *term.Field, groupElem *term.TermGroupElem, boostSymbol string) *lucene.FieldQuery {
-	if groupElem == nil {
-		return nil
-	} else if groupElem.SingleTerm != nil {
+	// it's impossible for groupElem is nil
+	if groupElem.SingleTerm != nil {
 		return &lucene.FieldQuery{
 			Field: field,
 			Term: &term.Term{
