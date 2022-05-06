@@ -15,7 +15,7 @@ import (
 )
 
 func valueLstToStrLst(vl []LeafValue) []string {
-	var rl = make([]string, len(vl), len(vl))
+	var rl = make([]string, len(vl))
 	for i, v := range vl {
 		rl[i] = v.(string)
 	}
@@ -23,7 +23,7 @@ func valueLstToStrLst(vl []LeafValue) []string {
 }
 
 func strLstToValueLst(vl []string) []LeafValue {
-	var rl = make([]LeafValue, len(vl), len(vl))
+	var rl = make([]LeafValue, len(vl))
 	for i, v := range vl {
 		rl[i] = v
 	}
