@@ -3,6 +3,7 @@ package mapping
 type FieldType string
 
 var luceneSupportFieldType = map[FieldType]byte{
+	ALIAS_FIELD_TYPE:            1,
 	BINARY_FIELD_TYPE:           1,
 	KEYWORD_FIELD_TYPE:          1,
 	CONSTANT_KEYWORD_FIELD_TYPE: 1,
@@ -36,6 +37,7 @@ var luceneSupportFieldType = map[FieldType]byte{
 
 const (
 	UNKNOWN_FIELD_TYPE          FieldType = ""
+	ALIAS_FIELD_TYPE            FieldType = "alias"            // alias
 	BINARY_FIELD_TYPE           FieldType = "binary"           // base64 string
 	KEYWORD_FIELD_TYPE          FieldType = "keyword"          // keyword
 	CONSTANT_KEYWORD_FIELD_TYPE FieldType = "constant_keyword" // constant keyword

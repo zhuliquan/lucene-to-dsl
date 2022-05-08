@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strings"
 )
 
 type Meta struct {
@@ -57,6 +56,16 @@ type Property struct {
 	// NOTE: A multi-field mapping is completely separate from the parent field’s mapping.
 	// NOTE: A multi-field doesn’t inherit any mapping options from its parent field. Multi-fields don’t change the original _source field.
 	Fields map[string]*Property `json:"fields,omitempty"`
+
+	// path is parameter for alias type
+	// The path to the target field. Note that this must be the full path, including any parent objects (e.g. object1.object2.field).
+	// There are a few restrictions on the target of an alias:
+	//   1、The target must be a concrete field, and not an object or another field alias.
+	//   2、The target field must exist at the time the alias is created.
+	//   3、If nested objects are defined, a field alias must have the same nested scope as its target.
+	// Additionally, a field alias can only have one target. This means that it is not possible to use a field alias to query over multiple target fields in a single clause.
+	// An alias can be changed to refer to a new target through a mappings update. A known limitation is that if any stored percolator queries contain the field alias, they will still refer to its original target. More information can be found in the percolator documentation.
+	Path string `json:"path,omitempty"`
 
 	// If enabled, two-term word combinations (shingles) are indexed into a separate field.
 	// This allows exact phrase queries (no slop) to run more efficiently, at the expense of a larger index.
@@ -271,56 +280,47 @@ func (m *Mapping) String() string {
 	return string(b)
 }
 
-var _mapping *Mapping
-var _optFuncs map[string]func(interface{}) (interface{}, error)
+type PropertyMapping struct {
+	_mapping  *Mapping
+	_property map[string]*Property
+	_aliasMap map[string]string
+	_extFuncs map[string]func(interface{}, map[string]interface{}) (interface{}, error)
+}
 
-func LoadMapping(mappingPath string, optfuncs map[string]func(interface{}) (interface{}, error)) (*Mapping, error) {
+func Init(mappingPath string,
+	extFuncs map[string]func(interface{}, map[string]interface{}) (interface{}, error)) (*PropertyMapping, error) {
 	if data, err := ioutil.ReadFile(mappingPath); err != nil {
 		return nil, fmt.Errorf("failed to read mapping file: %s, err: %+v", mappingPath, err)
 	} else {
 		var mappingData = &Mapping{}
 		if err := json.Unmarshal(data, mappingData); err != nil {
-			return nil, fmt.Errorf("failed to parser mapping data: %s, err: %+v", data, err)
+			return nil, fmt.Errorf("failed to parser mapping data: %s, err: %s", data, err)
 		} else {
-			_mapping = mappingData
-			return mappingData, nil
-		}
-	}
-}
-
-func GetProperty(field string) (*Property, error) {
-	var fields = strings.Split(field, ".")
-	for f, p := range _mapping.Properties {
-		var fs = strings.Split(f, ".")
-		if strLstHasPrefix(fields, fs) {
-			switch p.Type {
-			case OBJECT_FIELD_TYPE, NESTED_FIELD_TYPE, FLATTENED_FIELD_TYPE:
-				if len(fields) == len(fs) {
-					return nil, fmt.Errorf("don't found")
-				} else {
-					if p.Properties == nil {
-						return p, nil
-					} else {
-						return GetProperty(strings.Join(fields[len(fs):], "."))
-					}
-				}
-			default:
-				if len(fields) == len(fs) {
-					return p, nil
-				}
-				// if len(p.Fields) != nil {
-				// 	for f, p := range p.Fields {
-
-				// 	}
-
-				// }
-				return nil, fmt.Errorf("don't found")
+			var pm = &PropertyMapping{
+				_mapping:  mappingData,
+				_property: map[string]*Property{},
+				_aliasMap: map[string]string{},
+				_extFuncs: extFuncs,
 			}
+			if err := completePropertyMapping(pm); err != nil {
+				return nil, err
+			}
+			return pm, nil
 		}
 	}
-	return nil, fmt.Errorf("don't found")
 }
 
-func ExtConvertFunc(property string, value interface{}) (interface{}, error) {
-	return _optFuncs[property](value)
+func (m *PropertyMapping) GetProperty(field string) (*Property, error) {
+	if target, have := m._aliasMap[field]; have {
+		field = target
+	}
+	if property, have := m._property[field]; have {
+		return property, nil
+	} else {
+		return nil, fmt.Errorf("not found field: %s in mapping", field)
+	}
+}
+
+func (m *PropertyMapping) GetExtFuncs(field string) func(interface{}, map[string]interface{}) (interface{}, error) {
+	return m._extFuncs[field]
 }
