@@ -13,14 +13,16 @@ import (
 type NodeType uint32
 
 const (
-	OP_NODE_TYPE NodeType = iota
+	EMPTY_NODE_TYPE NodeType = iota
+	OP_NODE_TYPE
 	LEAF_NODE_TYPE
 )
 
 type DSLType uint32
 
 const (
-	AND_DSL_TYPE DSLType = iota
+	EMPTY_DSL_TYPE DSLType = iota
+	AND_DSL_TYPE
 	OR_DSL_TYPE
 	NOT_DSL_TYPE
 	IDS_DSL_TYPE

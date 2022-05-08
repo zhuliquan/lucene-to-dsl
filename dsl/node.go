@@ -24,6 +24,17 @@ type boostNode interface {
 	getBoost() float64
 }
 
+type EmptyNode struct {
+}
+
+func (n *EmptyNode) GetNodeType() NodeType              { return EMPTY_NODE_TYPE }
+func (n *EmptyNode) GetDSLType() DSLType                { return EMPTY_DSL_TYPE }
+func (n *EmptyNode) UnionJoin(DSLNode) (DSLNode, error) { return n, nil }
+func (n *EmptyNode) InterSect(DSLNode) (DSLNode, error) { return n, nil }
+func (n *EmptyNode) Inverse() (DSLNode, error)          { return n, nil }
+func (n *EmptyNode) GetId() string                      { return "" }
+func (n *EmptyNode) ToDSL() DSL                         { return EmptyDSL }
+
 type OpNode struct{}
 
 func (n *OpNode) GetNodeType() NodeType {
