@@ -1,23 +1,27 @@
 package convert
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
-	lucene "github.com/zhuliquan/lucene_parser"
+	"github.com/zhuliquan/lucene-to-dsl/dsl"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 	op "github.com/zhuliquan/lucene_parser/operator"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
 
-func Test_convertTermGroupToLucene(t *testing.T) {
+func Test_convertToGroup(t *testing.T) {
 	type args struct {
 		field     *term.Field
 		termGroup *term.TermGroup
+		property  *mapping.Property
 	}
 	tests := []struct {
-		name string
-		args args
-		want *lucene.Lucene
+		name    string
+		args    args
+		want    dsl.DSLNode
+		wantErr bool
 	}{
 		{
 			name: "test_empty_01",
@@ -25,7 +29,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 				field:     nil,
 				termGroup: nil,
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_02",
@@ -38,7 +43,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol:    "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_03",
@@ -49,7 +55,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol:    "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_04",
@@ -62,7 +69,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol: "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_05",
@@ -77,7 +85,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol: "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_06",
@@ -94,7 +103,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol: "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_07",
@@ -111,7 +121,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol: "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_08",
@@ -130,7 +141,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol: "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_empty_09",
@@ -149,7 +161,8 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					BoostSymbol: "^0.8",
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "test_half_empty_00",
@@ -177,22 +190,18 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								FuzzyTerm: &term.FuzzyTerm{
-									PhraseTerm:  &term.PhraseTerm{Chars: []string{"78"}},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
+			want: &dsl.MatchPhraseNode{
+				EqNode: dsl.EqNode{
+					Field: "x",
+					Type:  mapping.TEXT_FIELD_TYPE,
+					Value: "78",
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "test_half_empty_01",
@@ -218,22 +227,19 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								FuzzyTerm: &term.FuzzyTerm{
-									SingleTerm:  &term.SingleTerm{Begin: "78"},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
+			want: &dsl.QueryStringNode{
+				EqNode: dsl.EqNode{
+					Field: "x",
+					Type:  mapping.TEXT_FIELD_TYPE,
+					Value: "78",
+				},
+				Boost: 0.8,
+			},
+			wantErr: false,
 		},
 		{
 			name: "test_half_empty_02",
@@ -259,22 +265,19 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								FuzzyTerm: &term.FuzzyTerm{
-									PhraseTerm:  &term.PhraseTerm{Chars: []string{"78"}},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
+			want: &dsl.MatchPhraseNode{
+				EqNode: dsl.EqNode{
+					Field: "x",
+					Type:  mapping.TEXT_FIELD_TYPE,
+					Value: "78",
+				},
+				Boost: 0.8,
+			},
+			wantErr: true,
 		},
 		{
 			name: "test_half_empty_03",
@@ -305,27 +308,20 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								RangeTerm: &term.RangeTerm{
-									SRangeTerm: &term.SRangeTerm{
-										Symbol: ">",
-										Value: &term.RangeValue{
-											SingleValue: []string{"78"},
-										},
-									},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.INTEGER_FIELD_TYPE,
 				},
 			},
+			want: &dsl.RangeNode{
+				Field:       "x",
+				ValueType:   mapping.INTEGER_FIELD_TYPE,
+				LeftValue:   int32(78),
+				RightValue:  math.MaxInt32,
+				LeftCmpSym:  dsl.GT,
+				RightCmpSym: dsl.LT,
+				Boost:       0.8,
+			},
+			wantErr: false,
 		},
 		{
 			name: "test_half_empty_04",
@@ -356,27 +352,20 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								RangeTerm: &term.RangeTerm{
-									DRangeTerm: &term.DRangeTerm{
-										LBRACKET: "{",
-										LValue:   &term.RangeValue{InfinityVal: "*"},
-										RValue:   &term.RangeValue{PhraseValue: []string{"2006", "-", "01", "-", "01"}},
-										RBRACKET: "]",
-									},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
+			want: &dsl.RangeNode{
+				Field:       "x",
+				ValueType:   mapping.TEXT_FIELD_TYPE,
+				LeftValue:   "",
+				RightValue:  "2006-01-01",
+				LeftCmpSym:  dsl.GT,
+				RightCmpSym: dsl.LTE,
+				Boost:       0.8,
+			},
+			wantErr: false,
 		},
 		{
 			name: "test_half_empty_05",
@@ -422,48 +411,20 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								RangeTerm: &term.RangeTerm{
-									SRangeTerm: &term.SRangeTerm{
-										Symbol: ">",
-										Value: &term.RangeValue{
-											SingleValue: []string{"78"},
-										},
-									},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
-					AnSQuery: []*lucene.AnSQuery{
-						{
-							AndSymbol: &op.AndSymbol{Symbol: "&&"},
-							AndQuery: &lucene.AndQuery{
-								FieldQuery: &lucene.FieldQuery{
-									Field: &term.Field{Value: []string{"x"}},
-									Term: &term.Term{
-										RangeTerm: &term.RangeTerm{
-											SRangeTerm: &term.SRangeTerm{
-												Symbol: "<",
-												Value: &term.RangeValue{
-													SingleValue: []string{"100"},
-												},
-											},
-											BoostSymbol: "^0.8",
-										},
-									},
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.INTEGER_FIELD_TYPE,
 				},
 			},
+			want: &dsl.RangeNode{
+				Field:       "x",
+				ValueType:   mapping.INTEGER_FIELD_TYPE,
+				LeftValue:   int32(78),
+				RightValue:  int32(100),
+				LeftCmpSym:  dsl.GT,
+				RightCmpSym: dsl.LT,
+				Boost:       0.8,
+			},
+			wantErr: true,
 		},
 		{
 			name: "test_ok",
@@ -561,131 +522,54 @@ func Test_convertTermGroupToLucene(t *testing.T) {
 					},
 					BoostSymbol: "^0.8",
 				},
-			},
-			want: &lucene.Lucene{
-				OrQuery: &lucene.OrQuery{
-					AndQuery: &lucene.AndQuery{
-						FieldQuery: &lucene.FieldQuery{
-							Field: &term.Field{Value: []string{"x"}},
-							Term: &term.Term{
-								RangeTerm: &term.RangeTerm{
-									SRangeTerm: &term.SRangeTerm{
-										Symbol: ">",
-										Value: &term.RangeValue{
-											SingleValue: []string{"78"},
-										},
-									},
-									BoostSymbol: "^0.8",
-								},
-							},
-						},
-					},
-					AnSQuery: []*lucene.AnSQuery{
-						{
-							AndSymbol: &op.AndSymbol{Symbol: "&&"},
-							AndQuery: &lucene.AndQuery{
-								FieldQuery: &lucene.FieldQuery{
-									Field: &term.Field{Value: []string{"x"}},
-									Term: &term.Term{
-										RangeTerm: &term.RangeTerm{
-											SRangeTerm: &term.SRangeTerm{
-												Symbol: "<",
-												Value: &term.RangeValue{
-													SingleValue: []string{"100"},
-												},
-											},
-											BoostSymbol: "^0.8",
-										},
-									},
-								},
-							},
-						},
-					},
+				property: &mapping.Property{
+					Type: mapping.INTEGER_FIELD_TYPE,
 				},
-				OSQuery: []*lucene.OSQuery{
-					{
-						OrSymbol: &op.OrSymbol{
-							Symbol: "||",
+			},
+			// {*, 50} {78, 100} {178,*}
+			want: &dsl.OrDSLNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]dsl.DSLNode{
+					"x": {
+						&dsl.RangeNode{
+							Field:       "x",
+							ValueType:   mapping.INTEGER_FIELD_TYPE,
+							LeftValue:   dsl.MinInt[32],
+							RightValue:  int32(50),
+							LeftCmpSym:  dsl.GT,
+							RightCmpSym: dsl.LT,
+							Boost:       0.8,
 						},
-						OrQuery: &lucene.OrQuery{
-							AndQuery: &lucene.AndQuery{
-								FieldQuery: &lucene.FieldQuery{
-									Field: &term.Field{Value: []string{"x"}},
-									Term: &term.Term{
-										RangeTerm: &term.RangeTerm{
-											SRangeTerm: &term.SRangeTerm{
-												Symbol: ">",
-												Value: &term.RangeValue{
-													SingleValue: []string{"178"},
-												},
-											},
-											BoostSymbol: "^0.8",
-										},
-									},
-								},
-							},
+						&dsl.RangeNode{
+							Field:       "x",
+							ValueType:   mapping.INTEGER_FIELD_TYPE,
+							LeftValue:   int32(78),
+							RightValue:  int32(100),
+							LeftCmpSym:  dsl.GT,
+							RightCmpSym: dsl.LT,
+							Boost:       0.8,
 						},
-					},
-					{
-						OrSymbol: &op.OrSymbol{
-							Symbol: "||",
-						},
-						OrQuery: &lucene.OrQuery{
-							AndQuery: &lucene.AndQuery{
-								ParenQuery: &lucene.ParenQuery{
-									SubQuery: &lucene.Lucene{
-										OrQuery: &lucene.OrQuery{
-											AndQuery: &lucene.AndQuery{
-												FieldQuery: &lucene.FieldQuery{
-													Field: &term.Field{Value: []string{"x"}},
-													Term: &term.Term{
-														RangeTerm: &term.RangeTerm{
-															SRangeTerm: &term.SRangeTerm{
-																Symbol: ">",
-																Value: &term.RangeValue{
-																	SingleValue: []string{"10"},
-																},
-															},
-															BoostSymbol: "^0.8",
-														},
-													},
-												},
-											},
-											AnSQuery: []*lucene.AnSQuery{
-												{
-													AndSymbol: &op.AndSymbol{Symbol: " AND "},
-													AndQuery: &lucene.AndQuery{
-														FieldQuery: &lucene.FieldQuery{
-															Field: &term.Field{Value: []string{"x"}},
-															Term: &term.Term{
-																RangeTerm: &term.RangeTerm{
-																	SRangeTerm: &term.SRangeTerm{
-																		Symbol: "<",
-																		Value: &term.RangeValue{
-																			SingleValue: []string{"50"},
-																		},
-																	},
-																	BoostSymbol: "^0.8",
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
+						&dsl.RangeNode{
+							Field:       "x",
+							ValueType:   mapping.INTEGER_FIELD_TYPE,
+							LeftValue:   int32(178),
+							RightValue:  dsl.MaxInt[32],
+							LeftCmpSym:  dsl.GT,
+							RightCmpSym: dsl.LT,
+							Boost:       0.8,
 						},
 					},
 				},
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := convertTermGroupToLucene(tt.args.field, tt.args.termGroup); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertTermGroupToLucene() = %v, want %v", got, tt.want)
+			if got, err := convertToGroup(tt.args.field, &term.Term{TermGroup: tt.args.termGroup}, tt.args.property); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertToGroup() = %v, want %v", got, tt.want)
+			} else if (err != nil) != tt.wantErr {
+				t.Errorf("convertToGroup(), err = %v, want err: %v", err, tt.wantErr)
 			}
 		})
 	}
