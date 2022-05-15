@@ -307,6 +307,7 @@ func Init(mappingPath string,
 				_aliasMap: map[string]string{},
 				_extFuncs: extFuncs,
 			}
+			fillDefaultParameter(pm)
 			if aliasMap, err := getAliasMap(pm); err != nil {
 				return nil, err
 			} else {
@@ -329,7 +330,7 @@ func (m *PropertyMapping) GetProperty(field string) (*Property, error) {
 		}
 	} else {
 		// 从 mapping 中去获取
-		if property, err := fetchProperty(m, field); err != nil {
+		if property, err := getProperty(m, field); err != nil {
 			return nil, err
 		} else {
 			m._cacheMap[field] = property
