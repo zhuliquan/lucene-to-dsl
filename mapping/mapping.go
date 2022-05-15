@@ -67,6 +67,11 @@ type Property struct {
 	// An alias can be changed to refer to a new target through a mappings update. A known limitation is that if any stored percolator queries contain the field alias, they will still refer to its original target. More information can be found in the percolator documentation.
 	Path string `json:"path,omitempty"`
 
+	// relations is parameter for join type
+	// The join data type is a special field that creates parent/child relation within documents of the same index. The relations section defines a set of possible relations within the documents, each relation being a parent name and a child name.
+	// relations map you can define map[string]string / map[string][]string
+	Relations map[string]interface{} `json:"relations,omitempty"`
+
 	// If enabled, two-term word combinations (shingles) are indexed into a separate field.
 	// This allows exact phrase queries (no slop) to run more efficiently, at the expense of a larger index.
 	// Note that this works best when stopwords are not removed, as phrases containing stopwords will not use the subsidiary field and will fall back to a standard phrase query. Accepts true or false (default).
@@ -282,7 +287,7 @@ func (m *Mapping) String() string {
 
 type PropertyMapping struct {
 	_mapping  *Mapping
-	_property map[string]*Property
+	_cacheMap map[string]*Property
 	_aliasMap map[string]string
 	_extFuncs map[string]func(interface{}, map[string]interface{}) (interface{}, error)
 }
@@ -298,12 +303,14 @@ func Init(mappingPath string,
 		} else {
 			var pm = &PropertyMapping{
 				_mapping:  mappingData,
-				_property: map[string]*Property{},
+				_cacheMap: map[string]*Property{},
 				_aliasMap: map[string]string{},
 				_extFuncs: extFuncs,
 			}
-			if err := completePropertyMapping(pm); err != nil {
+			if aliasMap, err := getAliasMap(pm); err != nil {
 				return nil, err
+			} else {
+				pm._aliasMap = aliasMap
 			}
 			return pm, nil
 		}
@@ -314,10 +321,20 @@ func (m *PropertyMapping) GetProperty(field string) (*Property, error) {
 	if target, have := m._aliasMap[field]; have {
 		field = target
 	}
-	if property, have := m._property[field]; have {
-		return property, nil
+	if property, have := m._cacheMap[field]; have {
+		if checkTypeSupportLucene(property.Type) {
+			return property, nil
+		} else {
+			return nil, fmt.Errorf("filed: %s type: %s don't support lucene query", field, property.Type)
+		}
 	} else {
-		return nil, fmt.Errorf("not found field: %s in mapping", field)
+		// 从 mapping 中去获取
+		if property, err := fetchProperty(m, field); err != nil {
+			return nil, err
+		} else {
+			m._cacheMap[field] = property
+			return property, nil
+		}
 	}
 }
 
