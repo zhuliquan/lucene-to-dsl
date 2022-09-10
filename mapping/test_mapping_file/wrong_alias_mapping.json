@@ -1,0 +1,12 @@
+{
+    "_source": {
+      "enabled": true
+    },
+    "properties": {
+      "host_name_alias": {
+        "type": "alias",
+        "path": "host_name"
+      }
+    }
+  }
+  

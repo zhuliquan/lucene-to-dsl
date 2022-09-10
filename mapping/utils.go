@@ -54,7 +54,7 @@ func _getProperty(mpp map[string]*Property, index int, paths []string) (*Propert
 }
 
 func getProperty(m *PropertyMapping, target string) (*Property, error) {
-	return _getProperty(m._mapping.Properties, 0, strings.Split(target, "."))
+	return _getProperty(m.fieldMapping.Properties, 0, strings.Split(target, "."))
 }
 
 func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *PropertyMapping) error {
@@ -75,7 +75,7 @@ func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *
 			if property, err := getProperty(pp, cp.Path); err != nil {
 				return fmt.Errorf("filed: %s is alias, but can't find property for path: %s", fd, cp.Path)
 			} else {
-				pp._cacheMap[cp.Path] = property
+				pp.propertyCache[cp.Path] = property
 			}
 			am[fd] = cp.Path
 		default:
@@ -89,10 +89,10 @@ func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *
 	return nil
 }
 
-func getAliasMap(pm *PropertyMapping) (map[string]string, error) {
+func extractFieldAliasMap(pm *PropertyMapping) (map[string]string, error) {
 	var (
 		amm = map[string]string{}
-		ppt = pm._mapping.Properties
+		ppt = pm.fieldMapping.Properties
 	)
 	if err := flattenAlias(ppt, "", amm, pm); err != nil {
 		return nil, err
@@ -110,15 +110,21 @@ func _fillDefaultParameter(pt map[string]*Property, pmt MappingType) {
 			if pt[cf].Type == "" {
 				pt[cf].Type = OBJECT_FIELD_TYPE
 			}
-			_fillDefaultParameter(pt[cf].Properties, pt[cf].MappingType)
+			_fillDefaultParameter(
+				pt[cf].Properties,
+				pt[cf].MappingType,
+			)
 		}
 	}
 }
 
-// 递归更新mapping type
+// updating mapping type recursively
 func fillDefaultParameter(pm *PropertyMapping) {
-	if pm._mapping.MappingType == "" {
-		pm._mapping.MappingType = DYNAMIC_MAPPING
+	if pm.fieldMapping.MappingType == "" {
+		pm.fieldMapping.MappingType = DYNAMIC_MAPPING
 	}
-	_fillDefaultParameter(pm._mapping.Properties, pm._mapping.MappingType)
+	_fillDefaultParameter(
+		pm.fieldMapping.Properties,
+		pm.fieldMapping.MappingType,
+	)
 }

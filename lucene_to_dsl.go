@@ -27,7 +27,7 @@ func LoadCustomFuncs(funcs map[string]func(interface{}, map[string]interface{}) 
 func LuceneToDSL(luceneQuery string) (dsl.DSL, error) {
 	onceInit.Do(
 		func() {
-			if pm, err := mapping.Init(mappingPath, customFuncs); err != nil {
+			if pm, err := mapping.LoadMappingFile(mappingPath, customFuncs); err != nil {
 				panic(err)
 			} else {
 				convert.Init(pm)

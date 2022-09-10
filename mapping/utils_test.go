@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_checkTypeSupportLucene(t *testing.T) {
+func TestCheckTypeSupportLucene(t *testing.T) {
 	type args struct {
 		typ FieldType
 	}
@@ -34,7 +34,7 @@ func Test_checkTypeSupportLucene(t *testing.T) {
 	}
 }
 
-func Test_getAliasMap(t *testing.T) {
+func TestExtractFieldAliasMap(t *testing.T) {
 	type args struct {
 		m *Mapping
 	}
@@ -188,11 +188,11 @@ func Test_getAliasMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var pm = &PropertyMapping{
-				_mapping:  tt.args.m,
-				_cacheMap: map[string]*Property{},
-				_aliasMap: map[string]string{},
+				fieldMapping:  tt.args.m,
+				propertyCache: map[string]*Property{},
+				fieldAliasMap: map[string]string{},
 			}
-			got, err := getAliasMap(pm)
+			got, err := extractFieldAliasMap(pm)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getAliasMap() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -204,7 +204,7 @@ func Test_getAliasMap(t *testing.T) {
 	}
 }
 
-func Test_fetchProperty(t *testing.T) {
+func TestFetchProperty(t *testing.T) {
 	type args struct {
 		m      *Mapping
 		target string
@@ -295,6 +295,35 @@ func Test_fetchProperty(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "test_err_05",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: OBJECT_FIELD_TYPE,
+							Mapping: Mapping{
+								Properties: map[string]*Property{
+									"y": {
+										Type: OBJECT_FIELD_TYPE,
+										Mapping: Mapping{
+											Properties: map[string]*Property{
+												"z.a": {
+													Type: TEXT_FIELD_TYPE,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				target: "x.y.z",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name: "test_ok_01",
 			args: args{
 				m: &Mapping{
@@ -312,7 +341,7 @@ func Test_fetchProperty(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test_ok_01",
+			name: "test_ok_02",
 			args: args{
 				m: &Mapping{
 					Properties: map[string]*Property{
@@ -339,7 +368,7 @@ func Test_fetchProperty(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var m = &PropertyMapping{
-				_mapping: tt.args.m,
+				fieldMapping: tt.args.m,
 			}
 			got, err := getProperty(m, tt.args.target)
 			if (err != nil) != tt.wantErr {

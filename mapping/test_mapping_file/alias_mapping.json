@@ -6,9 +6,9 @@
     "host_name": {
       "type": "keyword"
     },
-    "created_at": {
-      "type": "date",
-      "format": "EEE MMM dd HH:mm:ss Z yyyy"
+    "host_name_alias": {
+      "type": "alias",
+      "path": "host_name"
     }
   }
 }

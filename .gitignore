@@ -1,5 +1,6 @@
 go.sum
 main
+.vscode
 lucene-to-dsl
 **/cover.txt
 **/coverage.txt

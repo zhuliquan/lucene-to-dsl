@@ -102,6 +102,10 @@ type Property struct {
 	Normalizer interface{} `json:"normalizer,omitempty"`
 
 	// customized properties
+	// example:
+	// {"only_lower": true}, convert term to lower case
+	// {"only_upper": false}, convert term to upper case
+	// you can define convert function in PropertyMapping._extFuncs
 	ExtProperties map[string]interface{} `json:"ext_properties,omitempty"`
 
 	// IMPORTANT: below parameters not used
@@ -285,60 +289,79 @@ func (m *Mapping) String() string {
 	return string(b)
 }
 
-type PropertyMapping struct {
-	_mapping  *Mapping
-	_cacheMap map[string]*Property
-	_aliasMap map[string]string
-	_extFuncs map[string]func(interface{}, map[string]interface{}) (interface{}, error)
-}
+// first parameter: the term value, e.g. lucene query "foo:bar", bar is term value
+// second parameter: is ExtProperties defined in Mapping struct
+// example:
+//   using func("bar", map[string]interface{}{"only_upper": true}), you can convert "bar" to "BAR"
+type ConvertFunc = func(interface{}, map[string]interface{}) (interface{}, error)
 
-func Init(mappingPath string,
-	extFuncs map[string]func(interface{}, map[string]interface{}) (interface{}, error)) (*PropertyMapping, error) {
-	if data, err := ioutil.ReadFile(mappingPath); err != nil {
-		return nil, fmt.Errorf("failed to read mapping file: %s, err: %+v", mappingPath, err)
-	} else {
-		var mappingData = &Mapping{}
-		if err := json.Unmarshal(data, mappingData); err != nil {
-			return nil, fmt.Errorf("failed to parser mapping data: %s, err: %s", data, err)
-		} else {
-			var pm = &PropertyMapping{
-				_mapping:  mappingData,
-				_cacheMap: map[string]*Property{},
-				_aliasMap: map[string]string{},
-				_extFuncs: extFuncs,
-			}
-			fillDefaultParameter(pm)
-			if aliasMap, err := getAliasMap(pm); err != nil {
-				return nil, err
-			} else {
-				pm._aliasMap = aliasMap
-			}
-			return pm, nil
-		}
-	}
+type PropertyMapping struct {
+	// es mapping struct
+	fieldMapping *Mapping
+
+	// cache for get property
+	propertyCache map[string]*Property
+
+	// field name alias map
+	fieldAliasMap map[string]string
+
+	// you can define specific convert func for mapping.extProperties
+	fieldExtFuncs map[string]ConvertFunc
 }
 
 func (m *PropertyMapping) GetProperty(field string) (*Property, error) {
-	if target, have := m._aliasMap[field]; have {
+	if target, have := m.fieldAliasMap[field]; have {
 		field = target
 	}
-	if property, have := m._cacheMap[field]; have {
-		if checkTypeSupportLucene(property.Type) {
-			return property, nil
-		} else {
-			return nil, fmt.Errorf("filed: %s type: %s don't support lucene query", field, property.Type)
-		}
+	var res *Property
+	// get property from cache
+	if prop, have := m.propertyCache[field]; have {
+		res = prop
+		// get property from mapping property
+	} else if prop, err := getProperty(m, field); err != nil {
+		return nil, err
 	} else {
-		// 从 mapping 中去获取
-		if property, err := getProperty(m, field); err != nil {
-			return nil, err
-		} else {
-			m._cacheMap[field] = property
-			return property, nil
-		}
+		m.propertyCache[field] = prop
+		res = prop
+	}
+	if !checkTypeSupportLucene(res.Type) {
+		return nil, fmt.Errorf("filed: %s type: %s don't support lucene query", field, res.Type)
+	} else {
+		return res, nil
 	}
 }
 
-func (m *PropertyMapping) GetExtFuncs(field string) func(interface{}, map[string]interface{}) (interface{}, error) {
-	return m._extFuncs[field]
+func (m *PropertyMapping) GetExtFuncs(field string) ConvertFunc {
+	if m.fieldExtFuncs == nil {
+		return nil
+	}
+	return m.fieldExtFuncs[field]
+}
+
+func LoadMappingData(mappingData []byte, fieldExtFuncs map[string]ConvertFunc) (*PropertyMapping, error) {
+	var fieldMapping = &Mapping{}
+	if err := json.Unmarshal(mappingData, fieldMapping); err != nil {
+		return nil, fmt.Errorf("failed to parser mapping data: %s, err: %s", mappingData, err)
+	}
+	var pm = &PropertyMapping{
+		fieldMapping:  fieldMapping,
+		fieldAliasMap: map[string]string{},
+		propertyCache: map[string]*Property{},
+		fieldExtFuncs: fieldExtFuncs,
+	}
+	fillDefaultParameter(pm)
+	if fieldAliasMap, err := extractFieldAliasMap(pm); err != nil {
+		return nil, err
+	} else {
+		pm.fieldAliasMap = fieldAliasMap
+	}
+	return pm, nil
+}
+
+func LoadMappingFile(mappingPath string, fieldExtFuncs map[string]ConvertFunc) (*PropertyMapping, error) {
+	if mappingData, err := ioutil.ReadFile(mappingPath); err != nil {
+		return nil, fmt.Errorf("failed to read mapping file: %s, err: %+v", mappingPath, err)
+	} else {
+		return LoadMappingData(mappingData, fieldExtFuncs)
+	}
 }
