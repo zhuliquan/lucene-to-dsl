@@ -1,8 +1,9 @@
 package mapping
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCheckTypeSupportLucene(t *testing.T) {
@@ -27,9 +28,8 @@ func TestCheckTypeSupportLucene(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := checkTypeSupportLucene(tt.args.typ); got != tt.want {
-				t.Errorf("checkTypeSupportLucene() = %v, want %v", got, tt.want)
-			}
+			got := checkTypeSupportLucene(tt.args.typ)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -193,13 +193,8 @@ func TestExtractFieldAliasMap(t *testing.T) {
 				fieldAliasMap: map[string]string{},
 			}
 			got, err := extractFieldAliasMap(pm)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getAliasMap() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getAliasMap() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -371,13 +366,8 @@ func TestFetchProperty(t *testing.T) {
 				fieldMapping: tt.args.m,
 			}
 			got, err := getProperty(m, tt.args.target)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("fetchProperty() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fetchProperty() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

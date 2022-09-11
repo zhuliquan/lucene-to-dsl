@@ -1,8 +1,9 @@
 package mapping
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadMappingFile(t *testing.T) {
@@ -17,7 +18,7 @@ func TestLoadMappingFile(t *testing.T) {
 	}{
 		{
 			name:        "test_load_file_error",
-			args:        args{mappingPath: "./test_mapping_file/dont_exists_mapping.json"},
+			args:        args{mappingPath: "./test_mapping_file/not_exists_mapping.json"},
 			wantMapping: nil,
 			wantErr:     true,
 		},
@@ -127,12 +128,9 @@ func TestLoadMappingFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := LoadMappingFile(tt.args.mappingPath, nil)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadMapping() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != nil && !reflect.DeepEqual(got.fieldMapping, tt.wantMapping) {
-				t.Errorf("LoadMapping() = %v, want %v", got.fieldMapping, tt.wantMapping)
+			assert.Equal(t, tt.wantErr, (err != nil))
+			if got != nil {
+				assert.Equal(t, tt.wantMapping, got.fieldMapping)
 			}
 		})
 	}
@@ -140,9 +138,7 @@ func TestLoadMappingFile(t *testing.T) {
 
 func TestMappingString(t *testing.T) {
 	m, err := LoadMappingFile("./test_mapping_file/keyword_mapping.json", nil)
-	if err != nil {
-		t.Errorf("expect don't got error")
-	}
+	assert.Nil(t, err)
 	t.Logf("got mapping file: %s", m.fieldMapping.String())
 }
 
@@ -186,13 +182,13 @@ func TestGetProperty(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "test_dont_find_error",
-			field:   "dont_find_field",
+			name:    "test_not_find_error",
+			field:   "not_find_field",
 			prop:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "test_dont_support_lucene",
+			name:    "test_not_support_lucene",
 			field:   "shape_field",
 			prop:    nil,
 			wantErr: true,
@@ -200,30 +196,19 @@ func TestGetProperty(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			prop, err := pm.GetProperty(tt.field)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetProperty() == err: expect get err: %v", tt.wantErr)
-			}
-			if !reflect.DeepEqual(prop, tt.prop) {
-				t.Errorf("expect got property: %+v, but got property: %+v", tt.prop, prop)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.prop, prop)
 		})
 	}
 }
 
 func TestGetExtFuncs(t *testing.T) {
 	pm, err := LoadMappingFile("./test_mapping_file/property_mapping.json", nil)
-	if err != nil {
-		t.Errorf("expect don't got error")
-	}
-	if f := pm.GetExtFuncs("field"); f != nil {
-		t.Errorf("expect got nil")
-	}
+	assert.Nil(t, err)
+	f := pm.GetExtFuncs("field")
+	assert.Nil(t, f)
 	pm, err = LoadMappingFile("./test_mapping_file/property_mapping.json", map[string]ConvertFunc{})
-	if err != nil {
-		t.Errorf("expect don't got error")
-	}
-	if f := pm.GetExtFuncs("field"); f != nil {
-		t.Errorf("expect got nil")
-	}
-
+	assert.Nil(t, err)
+	f = pm.GetExtFuncs("field")
+	assert.Nil(t, f)
 }
