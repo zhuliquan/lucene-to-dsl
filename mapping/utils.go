@@ -128,3 +128,36 @@ func fillDefaultParameter(pm *PropertyMapping) {
 		pm.fieldMapping.MappingType,
 	)
 }
+
+func CheckNumberType(t FieldType) bool {
+	return CheckIntType(t) || CheckUIntType(t) || CheckFloatType(t)
+
+}
+
+func CheckIntType(t FieldType) bool {
+	return t == BYTE_FIELD_TYPE || t == SHORT_FIELD_TYPE ||
+		t == INTEGER_FIELD_TYPE || t == INTEGER_RANGE_FIELD_TYPE ||
+		t == LONG_FIELD_TYPE || t == LONG_RANGE_FIELD_TYPE
+}
+
+func CheckUIntType(t FieldType) bool {
+	return t == UNSIGNED_LONG_FIELD_TYPE
+}
+
+func CheckFloatType(t FieldType) bool {
+	return t == FLOAT_FIELD_TYPE || t == FLOAT_RANGE_FIELD_TYPE ||
+		t == DOUBLE_FIELD_TYPE || t == DOUBLE_RANGE_FIELD_TYPE ||
+		t == HALF_FLOAT_FIELD_TYPE || t == SCALED_FLOAT_FIELD_TYPE
+}
+
+func CheckDateType(t FieldType) bool {
+	return t == DATE_FIELD_TYPE || t == DATE_NANOS_FIELD_TYPE || t == DATE_RANGE_FIELD_TYPE
+}
+
+func CheckVersionType(t FieldType) bool {
+	return t == VERSION_FIELD_TYPE
+}
+
+func CheckIPType(t FieldType) bool {
+	return t == IP_FIELD_TYPE || t == IP_RANGE_FIELD_TYPE
+}

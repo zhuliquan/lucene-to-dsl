@@ -371,3 +371,242 @@ func TestFetchProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckIntType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_check_int_01",
+			args: args{t: INTEGER_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_int_02",
+			args: args{t: INTEGER_RANGE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_byte",
+			args: args{t: BYTE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_short",
+			args: args{t: SHORT_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_long_01",
+			args: args{t: LONG_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_long_02",
+			args: args{t: LONG_RANGE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_other",
+			args: args{t: DOUBLE_RANGE_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckIntType(tt.args.t); got != tt.want {
+				t.Errorf("CheckIntType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckUIntType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_uint64",
+			args: args{t: UNSIGNED_LONG_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_other",
+			args: args{t: UNKNOWN_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckUIntType(tt.args.t); got != tt.want {
+				t.Errorf("CheckUIntType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckFloatType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_float16",
+			args: args{t: HALF_FLOAT_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_float32_01",
+			args: args{t: FLOAT_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_float32_02",
+			args: args{t: FLOAT_RANGE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_float64_01",
+			args: args{t: DOUBLE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_float64_02",
+			args: args{t: DOUBLE_RANGE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_float128",
+			args: args{t: SCALED_FLOAT_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_other",
+			args: args{t: UNKNOWN_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckFloatType(tt.args.t); got != tt.want {
+				t.Errorf("CheckFloatType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckDateType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_check_date_01",
+			args: args{t: DATE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_date_02",
+			args: args{t: DATE_RANGE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_date_03",
+			args: args{t: DATE_NANOS_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_check_other",
+			args: args{t: UNKNOWN_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckDateType(tt.args.t); got != tt.want {
+				t.Errorf("CheckDateType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckIPType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_ip_01",
+			args: args{t: IP_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_ip_02",
+			args: args{t: IP_RANGE_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_other",
+			args: args{t: UNKNOWN_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckIPType(tt.args.t); got != tt.want {
+				t.Errorf("CheckIPType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckVersionType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_version",
+			args: args{t: VERSION_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_other_version",
+			args: args{t: UNKNOWN_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckVersionType(tt.args.t); got != tt.want {
+				t.Errorf("CheckVersionType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
