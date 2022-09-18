@@ -29,6 +29,9 @@ type Property struct {
 	// Fields that are not indexed are not queryable.
 	Index bool `json:"index,omitempty"`
 
+	// Scaling factor only for scaled_type.
+	ScalingFactor float64 `json:"scaling_factor"`
+
 	// A null value cannot be indexed or searched. When a field is set to null, (or an empty array or an array of null values) it is treated as though that field has no values.
 	// The null_value parameter allows you to replace explicit null values with the specified value so that it can be indexed and searched. For instance:
 	// IMPORTANT: The null_value needs to be the same data type as the field. For instance, a long field cannot have a string null_value.

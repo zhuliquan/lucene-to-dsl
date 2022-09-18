@@ -25,7 +25,7 @@ var luceneSupportFieldType = map[FieldType]bool{
 	IP_RANGE_FIELD_TYPE:         true,
 	DATE_RANGE_FIELD_TYPE:       true,
 	DATE_NANOS_FIELD_TYPE:       true,
-	INTERGER_RANGE_FIELD_TYPE:   true,
+	INTEGER_RANGE_FIELD_TYPE:    true,
 	LONG_RANGE_FIELD_TYPE:       true,
 	FLOAT_RANGE_FIELD_TYPE:      true,
 	DOUBLE_RANGE_FIELD_TYPE:     true,
@@ -60,7 +60,7 @@ const (
 	DATE_NANOS_FIELD_TYPE       FieldType = "date_nanos"       // date_nanos
 	IP_RANGE_FIELD_TYPE         FieldType = "ip_range"         // ip range
 	DATE_RANGE_FIELD_TYPE       FieldType = "date_range"       // date range
-	INTERGER_RANGE_FIELD_TYPE   FieldType = "integer_range"    // int32 range
+	INTEGER_RANGE_FIELD_TYPE    FieldType = "integer_range"    // int32 range
 	LONG_RANGE_FIELD_TYPE       FieldType = "long_range"       // int64 range
 	FLOAT_RANGE_FIELD_TYPE      FieldType = "float_range"      // float32 range
 	DOUBLE_RANGE_FIELD_TYPE     FieldType = "double_range"     // float64 range
