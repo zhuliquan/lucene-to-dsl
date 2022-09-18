@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -103,6 +104,16 @@ func extractFieldAliasMap(pm *PropertyMapping) (map[string]string, error) {
 
 func _fillDefaultParameter(pt map[string]*Property, pmt MappingType) {
 	for cf := range pt {
+		if (pt[cf].Type == DATE_FIELD_TYPE || pt[cf].Type == DATE_RANGE_FIELD_TYPE) &&
+			pt[cf].Format == "" {
+			pt[cf].Format = "strict_date_optional_time||epoch_millis"
+		}
+		if pt[cf].Type == DATE_NANOS_FIELD_TYPE && pt[cf].Format == "" {
+			pt[cf].Format = "strict_date_optional_time_nanos||epoch_millis"
+		}
+		if pt[cf].Type == SCALED_FLOAT_FIELD_TYPE && math.Abs(pt[cf].ScalingFactor-0.0) <= 1e-8 {
+			pt[cf].ScalingFactor = 1.0
+		}
 		if len(pt[cf].Properties) != 0 {
 			if pt[cf].MappingType == "" {
 				pt[cf].MappingType = pmt

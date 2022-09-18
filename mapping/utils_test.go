@@ -610,3 +610,107 @@ func TestCheckVersionType(t *testing.T) {
 		})
 	}
 }
+
+func TestFillDefaultParameter(t *testing.T) {
+	type args struct {
+		pm *PropertyMapping
+	}
+	tests := []struct {
+		name string
+		args args
+		want *PropertyMapping
+	}{
+		{
+			name: "fill_date_scaling_type",
+			args: args{pm: &PropertyMapping{
+				fieldMapping: &Mapping{
+					Properties: map[string]*Property{
+						"date1": {
+							Type: DATE_FIELD_TYPE,
+						},
+						"date2": {
+							Type: DATE_RANGE_FIELD_TYPE,
+						},
+						"date3": {
+							Type: DATE_NANOS_FIELD_TYPE,
+						},
+						"scaling": {
+							Type: SCALED_FLOAT_FIELD_TYPE,
+						},
+						"nest1": {
+							Mapping: Mapping{
+								Properties: map[string]*Property{
+									"date1": {
+										Type: DATE_FIELD_TYPE,
+									},
+									"date2": {
+										Type: DATE_RANGE_FIELD_TYPE,
+									},
+									"date3": {
+										Type: DATE_NANOS_FIELD_TYPE,
+									},
+									"scaling": {
+										Type: SCALED_FLOAT_FIELD_TYPE,
+									},
+								},
+							},
+						},
+					},
+				},
+			}},
+			want: &PropertyMapping{
+				fieldMapping: &Mapping{
+					MappingType: DYNAMIC_MAPPING,
+					Properties: map[string]*Property{
+						"date1": {
+							Type:   DATE_FIELD_TYPE,
+							Format: "strict_date_optional_time||epoch_millis",
+						},
+						"date2": {
+							Type:   DATE_RANGE_FIELD_TYPE,
+							Format: "strict_date_optional_time||epoch_millis",
+						},
+						"date3": {
+							Type:   DATE_NANOS_FIELD_TYPE,
+							Format: "strict_date_optional_time_nanos||epoch_millis",
+						},
+						"scaling": {
+							Type:          SCALED_FLOAT_FIELD_TYPE,
+							ScalingFactor: 1.0,
+						},
+						"nest1": {
+							Type: OBJECT_FIELD_TYPE,
+							Mapping: Mapping{
+								MappingType: DYNAMIC_MAPPING,
+								Properties: map[string]*Property{
+									"date1": {
+										Type:   DATE_FIELD_TYPE,
+										Format: "strict_date_optional_time||epoch_millis",
+									},
+									"date2": {
+										Type:   DATE_RANGE_FIELD_TYPE,
+										Format: "strict_date_optional_time||epoch_millis",
+									},
+									"date3": {
+										Type:   DATE_NANOS_FIELD_TYPE,
+										Format: "strict_date_optional_time_nanos||epoch_millis",
+									},
+									"scaling": {
+										Type:          SCALED_FLOAT_FIELD_TYPE,
+										ScalingFactor: 1.0,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fillDefaultParameter(tt.args.pm)
+			assert.Equal(t, tt.want, tt.args.pm)
+		})
+	}
+}
