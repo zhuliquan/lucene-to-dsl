@@ -3,19 +3,19 @@ package convert
 import (
 	"fmt"
 	"net"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	"github.com/zhuliquan/scaled_float"
 )
 
-func Test_convertToBool(t *testing.T) {
+func TestConvertToBool(t *testing.T) {
 	type args struct {
 		boolValue string
 	}
@@ -39,7 +39,7 @@ func Test_convertToBool(t *testing.T) {
 		},
 		{
 			name:    "Test_convertToBool_03",
-			args:    args{boolValue: "dasdad"},
+			args:    args{boolValue: "Test_convertToBool_03"},
 			want:    false,
 			wantErr: true,
 		},
@@ -71,18 +71,13 @@ func Test_convertToBool(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := convertToBool(tt.args.boolValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToBool() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToBool() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToUInt64(t *testing.T) {
+func TestConvertToUInt64(t *testing.T) {
 	type args struct {
 		intValue string
 	}
@@ -120,23 +115,18 @@ func Test_convertToUInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := convertToUInt(64)(tt.args.intValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToUInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToUInt64() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToFloat(t *testing.T) {
+func TestConvertToFloat(t *testing.T) {
 	type args struct {
 		bits       int
 		floatValue string
 	}
-	d1, _ := decimal.NewFromString("2.797693134862315708145274237317043567981e+308")
+	d1, _ := scaled_float.NewFromString("2.78", 100)
 	tests := []struct {
 		name    string
 		args    args
@@ -192,33 +182,28 @@ func Test_convertToFloat(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "test_decimal_number_err",
+			name:    "test_decimal_number_err_01",
 			args:    args{128, "eer"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "test_ok_decimal",
-			args:    args{128, "2.797693134862315708145274237317043567981e+308"},
+			args:    args{128, "2.78"},
 			want:    d1,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := convertToFloat(tt.args.bits)(tt.args.floatValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToFloat64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToFloat64() = %v, want %v", got, tt.want)
-			}
+			got, err := convertToFloat(tt.args.bits, 100)(tt.args.floatValue)
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToDate(t *testing.T) {
+func TestConvertToDate(t *testing.T) {
 	type args struct {
 		floatValue string
 	}
@@ -251,18 +236,13 @@ func Test_convertToDate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var f = convertToDate(&datemath_parser.DateMathParser{})
 			got, err := f(tt.args.floatValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToDate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToDate() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToIp(t *testing.T) {
+func TestConvertToIp(t *testing.T) {
 	type args struct {
 		ipValue string
 	}
@@ -288,18 +268,13 @@ func Test_convertToIp(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := convertToIp(tt.args.ipValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToIp() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToIp() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToCidr(t *testing.T) {
+func TestConvertToCidr(t *testing.T) {
 	type args struct {
 		ipValue string
 	}
@@ -332,18 +307,13 @@ func Test_convertToCidr(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := convertToCidr(tt.args.ipValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToCidr() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToCidr() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_toUpper(t *testing.T) {
+func TestToUpper(t *testing.T) {
 	type args struct {
 		x string
 	}
@@ -355,26 +325,21 @@ func Test_toUpper(t *testing.T) {
 	}{
 		{
 			name:    "test_ok",
-			args:    args{"okOKiu"},
-			want:    "OKOKIU",
+			args:    args{"who are You"},
+			want:    "WHO ARE YOU",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := toUpper(tt.args.x)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("toUpper() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("toUpper() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_toLower(t *testing.T) {
+func TestToLower(t *testing.T) {
 	type args struct {
 		x string
 	}
@@ -386,26 +351,21 @@ func Test_toLower(t *testing.T) {
 	}{
 		{
 			name:    "test_ok",
-			args:    args{"okOKiu"},
-			want:    "okokiu",
+			args:    args{"How are You"},
+			want:    "how are you",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := toLower(tt.args.x)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("toLower() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("toLower() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToVersion(t *testing.T) {
+func TestConvertToVersion(t *testing.T) {
 	type args struct {
 		versionValue string
 	}
@@ -436,7 +396,7 @@ func Test_convertToVersion(t *testing.T) {
 		{
 			name: "test_wrong_version",
 			args: args{
-				versionValue: "dsadad",
+				versionValue: "wrong_version",
 			},
 			want:    nil,
 			wantErr: true,
@@ -445,18 +405,13 @@ func Test_convertToVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := convertToVersion(tt.args.versionValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToVersion() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToVersion() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_convertToInt(t *testing.T) {
+func TestConvertToInt(t *testing.T) {
 	type args struct {
 		bits     int
 		intValue string
@@ -505,7 +460,7 @@ func Test_convertToInt(t *testing.T) {
 		},
 		{
 			name:    "Test_convertToInt64_05",
-			args:    args{bits: 32, intValue: "xxdasda3.45"},
+			args:    args{bits: 32, intValue: "unknown_prefix3.45"},
 			want:    nil,
 			wantErr: true,
 		},
@@ -519,19 +474,13 @@ func Test_convertToInt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := convertToInt(tt.args.bits)(tt.args.intValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("convertToInt32() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			t.Logf("error: %v", err)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToInt32() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, (err != nil))
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_getMonthDay(t *testing.T) {
+func TestGetMonthDay(t *testing.T) {
 	type args struct {
 		year  int
 		month time.Month
@@ -672,14 +621,13 @@ func Test_getMonthDay(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getMonthDay(tt.args.year, tt.args.month); got != tt.want {
-				t.Errorf("getMonthDay() = %v, want %v", got, tt.want)
-			}
+			got := getMonthDay(tt.args.year, tt.args.month)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_getDateRange(t *testing.T) {
+func TestGetDateRange(t *testing.T) {
 	type args struct {
 		t time.Time
 	}
@@ -733,20 +681,16 @@ func Test_getDateRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := getDateRange(tt.args.t)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getDateRange() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("getDateRange() got1 = %v, want %v", got1, tt.want1)
-			}
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want1, got1)
 		})
 	}
 
 	k, _ := time.Parse("2006", "2009")
-	fmt.Println(k)
+	t.Logf("parse time: %+v", k)
 }
 
-func Test_getDateParserFromMapping(t *testing.T) {
+func TestGetDateParserFromMapping(t *testing.T) {
 	type args struct {
 		property *mapping.Property
 	}
@@ -798,9 +742,8 @@ func Test_getDateParserFromMapping(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getDateParserFromMapping(tt.args.property); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getDateParserFromMapping() = %v, want %v", got, tt.want)
-			}
+			got := getDateParserFromMapping(tt.args.property)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

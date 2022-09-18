@@ -2,16 +2,16 @@ package convert
 
 import (
 	"math"
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 	op "github.com/zhuliquan/lucene_parser/operator"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
 
-func Test_convertToGroup(t *testing.T) {
+func TestConvertToGroup(t *testing.T) {
 	type args struct {
 		field     *term.Field
 		termGroup *term.TermGroup
@@ -20,7 +20,7 @@ func Test_convertToGroup(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    dsl.DSLNode
+		want    dsl.AstNode
 		wantErr bool
 	}{
 		{
@@ -195,7 +195,7 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			want: &dsl.MatchPhraseNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: "x",
 					Type:  mapping.TEXT_FIELD_TYPE,
 					Value: "78",
@@ -232,7 +232,7 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			want: &dsl.QueryStringNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: "x",
 					Type:  mapping.TEXT_FIELD_TYPE,
 					Value: "78",
@@ -270,7 +270,7 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			want: &dsl.MatchPhraseNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: "x",
 					Type:  mapping.TEXT_FIELD_TYPE,
 					Value: "78",
@@ -313,8 +313,10 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			want: &dsl.RangeNode{
-				Field:       "x",
-				ValueType:   mapping.INTEGER_FIELD_TYPE,
+				KvNode: dsl.KvNode{
+					Field: "x",
+					Type:  mapping.INTEGER_FIELD_TYPE,
+				},
 				LeftValue:   int32(78),
 				RightValue:  math.MaxInt32,
 				LeftCmpSym:  dsl.GT,
@@ -357,8 +359,10 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			want: &dsl.RangeNode{
-				Field:       "x",
-				ValueType:   mapping.TEXT_FIELD_TYPE,
+				KvNode: dsl.KvNode{
+					Field: "x",
+					Type:  mapping.TEXT_FIELD_TYPE,
+				},
 				LeftValue:   "",
 				RightValue:  "2006-01-01",
 				LeftCmpSym:  dsl.GT,
@@ -416,8 +420,10 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			want: &dsl.RangeNode{
-				Field:       "x",
-				ValueType:   mapping.INTEGER_FIELD_TYPE,
+				KvNode: dsl.KvNode{
+					Field: "x",
+					Type:  mapping.INTEGER_FIELD_TYPE,
+				},
 				LeftValue:   int32(78),
 				RightValue:  int32(100),
 				LeftCmpSym:  dsl.GT,
@@ -527,13 +533,15 @@ func Test_convertToGroup(t *testing.T) {
 				},
 			},
 			// {*, 50} {78, 100} {178,*}
-			want: &dsl.OrDSLNode{
+			want: &dsl.OrNode{
 				MinimumShouldMatch: 1,
-				Nodes: map[string][]dsl.DSLNode{
+				Nodes: map[string][]dsl.AstNode{
 					"x": {
 						&dsl.RangeNode{
-							Field:       "x",
-							ValueType:   mapping.INTEGER_FIELD_TYPE,
+							KvNode: dsl.KvNode{
+								Field: "x",
+								Type:  mapping.INTEGER_FIELD_TYPE,
+							},
 							LeftValue:   dsl.MinInt[32],
 							RightValue:  int32(50),
 							LeftCmpSym:  dsl.GT,
@@ -541,8 +549,10 @@ func Test_convertToGroup(t *testing.T) {
 							Boost:       0.8,
 						},
 						&dsl.RangeNode{
-							Field:       "x",
-							ValueType:   mapping.INTEGER_FIELD_TYPE,
+							KvNode: dsl.KvNode{
+								Field: "x",
+								Type:  mapping.INTEGER_FIELD_TYPE,
+							},
 							LeftValue:   int32(78),
 							RightValue:  int32(100),
 							LeftCmpSym:  dsl.GT,
@@ -550,8 +560,10 @@ func Test_convertToGroup(t *testing.T) {
 							Boost:       0.8,
 						},
 						&dsl.RangeNode{
-							Field:       "x",
-							ValueType:   mapping.INTEGER_FIELD_TYPE,
+							KvNode: dsl.KvNode{
+								Field: "x",
+								Type:  mapping.INTEGER_FIELD_TYPE,
+							},
 							LeftValue:   int32(178),
 							RightValue:  dsl.MaxInt[32],
 							LeftCmpSym:  dsl.GT,
@@ -566,11 +578,9 @@ func Test_convertToGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, err := convertToGroup(tt.args.field, &term.Term{TermGroup: tt.args.termGroup}, tt.args.property); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("convertToGroup() = %v, want %v", got, tt.want)
-			} else if (err != nil) != tt.wantErr {
-				t.Errorf("convertToGroup(), err = %v, want err: %v", err, tt.wantErr)
-			}
+			got, err := convertToGroup(tt.args.field, &term.Term{TermGroup: tt.args.termGroup}, tt.args.property)
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantErr, (err != nil))
 		})
 	}
 }

@@ -3,6 +3,7 @@ package convert
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
@@ -18,37 +19,37 @@ func Init(pm *mapping.PropertyMapping) {
 	convertMapping = pm
 }
 
-func LuceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
-	return luceneToDSLNode(q)
+func LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
+	return luceneToAstNode(q)
 }
 
-func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
+func luceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
 
-	if node, err := orQueryToDSLNode(q.OrQuery); err != nil {
+	if node, err := orQueryToAstNode(q.OrQuery); err != nil {
 		return nil, err
 	} else {
-		var nodes = map[string][]dsl.DSLNode{node.GetId(): {node}}
+		var nodes = map[string][]dsl.AstNode{node.NodeKey(): {node}}
 		for _, query := range q.OSQuery {
-			if curNode, err := osQueryToDSLNode(query); err != nil {
+			if curNode, err := osQueryToAstNode(query); err != nil {
 				return nil, err
 			} else {
-				if preNode, ok := nodes[curNode.GetId()]; ok {
-					if curNode.GetDSLType() == dsl.AND_DSL_TYPE ||
-						curNode.GetDSLType() == dsl.NOT_DSL_TYPE {
-						nodes[curNode.GetId()] = append(nodes[curNode.GetId()], curNode)
+				if preNode, ok := nodes[curNode.NodeKey()]; ok {
+					if curNode.DslType() == dsl.AND_DSL_TYPE ||
+						curNode.DslType() == dsl.NOT_DSL_TYPE {
+						nodes[curNode.NodeKey()] = append(nodes[curNode.NodeKey()], curNode)
 					} else {
 						if node, err := preNode[0].UnionJoin(curNode); err != nil {
 							return nil, err
 						} else {
-							delete(nodes, curNode.GetId())
-							nodes[node.GetId()] = []dsl.DSLNode{node}
+							delete(nodes, curNode.NodeKey())
+							nodes[node.NodeKey()] = []dsl.AstNode{node}
 						}
 					}
 				} else {
-					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
+					nodes[curNode.NodeKey()] = []dsl.AstNode{curNode}
 				}
 			}
 		}
@@ -59,35 +60,35 @@ func luceneToDSLNode(q *lucene.Lucene) (dsl.DSLNode, error) {
 				}
 			}
 		}
-		return &dsl.OrDSLNode{Nodes: nodes}, nil
+		return &dsl.OrNode{Nodes: nodes}, nil
 	}
 }
 
-func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
+func orQueryToAstNode(q *lucene.OrQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyOrQuery
 	}
-	if node, err := andQueryToDSLNode(q.AndQuery); err != nil {
+	if node, err := andQueryToAstNode(q.AndQuery); err != nil {
 		return nil, err
 	} else {
-		var nodes = map[string][]dsl.DSLNode{node.GetId(): {node}}
+		var nodes = map[string][]dsl.AstNode{node.NodeKey(): {node}}
 		for _, query := range q.AnSQuery {
-			if curNode, err := ansQueryToDSLNode(query); err != nil {
+			if curNode, err := ansQueryToAstNode(query); err != nil {
 				return nil, err
 			} else {
-				if preNode, ok := nodes[curNode.GetId()]; ok {
-					if curNode.GetDSLType() == dsl.OR_DSL_TYPE {
-						nodes[curNode.GetId()] = append(nodes[curNode.GetId()], curNode)
+				if preNode, ok := nodes[curNode.NodeKey()]; ok {
+					if curNode.DslType() == dsl.OR_DSL_TYPE {
+						nodes[curNode.NodeKey()] = append(nodes[curNode.NodeKey()], curNode)
 					} else {
 						if node, err := preNode[0].InterSect(curNode); err != nil {
 							return nil, err
 						} else {
-							delete(nodes, curNode.GetId())
-							nodes[node.GetId()] = []dsl.DSLNode{node}
+							delete(nodes, curNode.NodeKey())
+							nodes[node.NodeKey()] = []dsl.AstNode{node}
 						}
 					}
 				} else {
-					nodes[curNode.GetId()] = []dsl.DSLNode{curNode}
+					nodes[curNode.NodeKey()] = []dsl.AstNode{curNode}
 				}
 			}
 		}
@@ -98,31 +99,31 @@ func orQueryToDSLNode(q *lucene.OrQuery) (dsl.DSLNode, error) {
 				}
 			}
 		}
-		return &dsl.AndDSLNode{MustNodes: nodes}, nil
+		return &dsl.AndNode{MustNodes: nodes}, nil
 	}
 }
 
-func osQueryToDSLNode(q *lucene.OSQuery) (dsl.DSLNode, error) {
+func osQueryToAstNode(q *lucene.OSQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyOrQuery
 	}
-	return orQueryToDSLNode(q.OrQuery)
+	return orQueryToAstNode(q.OrQuery)
 }
 
-func andQueryToDSLNode(q *lucene.AndQuery) (dsl.DSLNode, error) {
+func andQueryToAstNode(q *lucene.AndQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
 	var (
-		node dsl.DSLNode
+		node dsl.AstNode
 		err  error
 	)
 	if q.FieldQuery != nil {
-		if node, err = fieldQueryToDSLNode(q.FieldQuery); err != nil {
+		if node, err = fieldQueryToAstNode(q.FieldQuery); err != nil {
 			return nil, err
 		}
 	} else if q.ParenQuery != nil {
-		if node, err = parenQueryToDSLNode(q.ParenQuery); err != nil {
+		if node, err = parenQueryToAstNode(q.ParenQuery); err != nil {
 			return nil, err
 		}
 	} else {
@@ -136,21 +137,21 @@ func andQueryToDSLNode(q *lucene.AndQuery) (dsl.DSLNode, error) {
 	}
 }
 
-func ansQueryToDSLNode(q *lucene.AnSQuery) (dsl.DSLNode, error) {
+func ansQueryToAstNode(q *lucene.AnSQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
-	return andQueryToDSLNode(q.AndQuery)
+	return andQueryToAstNode(q.AndQuery)
 }
 
-func parenQueryToDSLNode(q *lucene.ParenQuery) (dsl.DSLNode, error) {
+func parenQueryToAstNode(q *lucene.ParenQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyParenQuery
 	}
-	return luceneToDSLNode(q.SubQuery)
+	return luceneToAstNode(q.SubQuery)
 }
 
-func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
+func fieldQueryToAstNode(q *lucene.FieldQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyFieldQuery
 	} else if q.Field == nil || q.Term == nil {
@@ -176,7 +177,7 @@ func fieldQueryToDSLNode(q *lucene.FieldQuery) (dsl.DSLNode, error) {
 	}
 }
 
-func convertToRange(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToRange(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	var (
 		bound      = termV.GetBound()
 		leftValue  dsl.LeafValue
@@ -212,8 +213,10 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 	}
 
 	var node = &dsl.RangeNode{
-		Field:       field.String(),
-		ValueType:   property.Type,
+		KvNode: dsl.KvNode{
+			Field: field.String(),
+			Type:  property.Type,
+		},
 		LeftValue:   leftValue,
 		RightValue:  rightValue,
 		LeftCmpSym:  leftCmp,
@@ -227,31 +230,41 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 	}
 }
 
-func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
 	if strVal.(string) == "*" {
 		return &dsl.ExistsNode{
-			Field: field.String(),
+			KvNode: dsl.KvNode{Field: field.String()},
 		}, nil
 	}
 	if property.NullValue == strVal {
 		return (&dsl.ExistsNode{
-			Field: field.String(),
+			KvNode: dsl.KvNode{Field: field.String()},
 		}).Inverse()
 	}
 	return convertToNormal(field, termV, property, strVal.(string))
 }
 
-func convertToPhrase(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToPhrase(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
 	return convertToNormal(field, termV, property, strVal.(string))
 }
 
-func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Property, strVal string) (dsl.DSLNode, error) {
+func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Property, strVal string) (dsl.AstNode, error) {
+	// trick for id
+	if field.String() == "_id" {
+		if strLst, err := termV.Value(toStrLst); err != nil {
+			return nil, err
+		} else {
+			return &dsl.IdsNode{
+				Values: strLst.([]string),
+			}, nil
+		}
+	}
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE,
 		mapping.BYTE_FIELD_TYPE, mapping.SHORT_FIELD_TYPE,
-		mapping.INTEGER_FIELD_TYPE, mapping.INTERGER_RANGE_FIELD_TYPE,
+		mapping.INTEGER_FIELD_TYPE, mapping.INTEGER_RANGE_FIELD_TYPE,
 		mapping.LONG_FIELD_TYPE, mapping.LONG_RANGE_FIELD_TYPE, mapping.UNSIGNED_LONG_FIELD_TYPE,
 		mapping.HALF_FLOAT_FIELD_TYPE, mapping.SCALED_FLOAT_FIELD_TYPE,
 		mapping.FLOAT_FIELD_TYPE, mapping.FLOAT_RANGE_FIELD_TYPE,
@@ -262,7 +275,7 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 				field, termV.String(), property.Type, err)
 		} else {
 			return &dsl.TermNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: field.String(),
 					Type:  property.Type,
 					Value: val,
@@ -272,45 +285,27 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 		}
 	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
 		var dateParser = getDateParserFromMapping(property)
-		if _, err := termV.Value(convertToDate(dateParser)); err != nil {
+		if d, err := termV.Value(convertToDate(dateParser)); err != nil {
 			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
 		} else {
 			// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
-			// var lowerDate, upperDate = getDateRange(d.(time.Time))
-			// if reflect.DeepEqual(lowerDate, upperDate) {
-			// 	return &dsl.TermNode{
-			// 		EqNode: dsl.EqNode{
-			// 			Field: field.String(),
-			// 			Type:  mapping.KEYWORD_FIELD_TYPE,
-			// 			Value: strVal,
-			// 		},
-			// 		Boost: termV.Boost(),
-			// 	}, nil
-			// } else {
-			// 	return &dsl.RangeNode{
-			// 		Field:       field.String(),
-			// 		ValueType:   property.Type,
-			// 		LeftValue:   lowerDate,
-			// 		RightValue:  upperDate,
-			// 		LeftCmpSym:  dsl.GTE,
-			// 		RightCmpSym: dsl.LTE,
-			// 		Boost:       termV.Boost(),
-			// 	}, nil
-			// }
-			return &dsl.TermNode{
-				EqNode: dsl.EqNode{
+			var lowerDate, upperDate = getDateRange(d.(time.Time))
+			return &dsl.RangeNode{
+				KvNode: dsl.KvNode{
 					Field: field.String(),
-					Type:  mapping.KEYWORD_FIELD_TYPE,
-					Value: strVal,
+					Type:  property.Type,
 				},
-				Boost: termV.Boost(),
+				LeftValue:   lowerDate,
+				RightValue:  upperDate,
+				LeftCmpSym:  dsl.GTE,
+				RightCmpSym: dsl.LTE,
+				Boost:       termV.Boost(),
 			}, nil
-
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {
 			return &dsl.TermNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: field.String(),
 					Type:  property.Type,
 					Value: ip,
@@ -320,8 +315,10 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 		}
 		if ip1, ip2, err := ip_tools.GetRangeIpByIpCidr(termV.String()); err == nil {
 			return &dsl.RangeNode{
-				Field:       field.String(),
-				ValueType:   property.Type,
+				KvNode: dsl.KvNode{
+					Field: field.String(),
+					Type:  property.Type,
+				},
 				LeftValue:   net.IP(ip1),
 				RightValue:  net.IP(ip2),
 				LeftCmpSym:  dsl.GTE,
@@ -336,7 +333,7 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
 		if termV.GetTermType()|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 			return &dsl.QueryStringNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: field.String(),
 					Type:  property.Type,
 					Value: strVal,
@@ -345,7 +342,7 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 			}, nil
 		} else {
 			return &dsl.MatchPhraseNode{
-				EqNode: dsl.EqNode{
+				KvNode: dsl.KvNode{
 					Field: field.String(),
 					Type:  property.Type,
 					Value: strVal,
@@ -358,17 +355,17 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 	}
 }
 
-func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
+func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	var valStr, _ = termV.Value(convertToString)
-	return &dsl.RegexpNode{EqNode: dsl.EqNode{
+	return &dsl.RegexpNode{KvNode: dsl.KvNode{
 		Field: field.String(),
 		Type:  property.Type,
 		Value: valStr,
 	}}, nil
 }
 
-func convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.DSLNode, error) {
-	return luceneToDSLNode(convertTermGroupToLucene(field, termV.TermGroup))
+func convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+	return luceneToAstNode(convertTermGroupToLucene(field, termV.TermGroup))
 }
 
 func convertTermGroupToLucene(field *term.Field, termGroup *term.TermGroup) *lucene.Lucene {
@@ -542,7 +539,7 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 			return termV.Value(convertToBool)
 		}
 	case mapping.BYTE_FIELD_TYPE, mapping.SHORT_FIELD_TYPE,
-		mapping.INTEGER_FIELD_TYPE, mapping.INTERGER_RANGE_FIELD_TYPE,
+		mapping.INTEGER_FIELD_TYPE, mapping.INTEGER_RANGE_FIELD_TYPE,
 		mapping.LONG_FIELD_TYPE, mapping.LONG_RANGE_FIELD_TYPE:
 		var bits = fieldTypeBits[typ]
 		if termR, ok := termV.(rangeValue); ok {
@@ -577,12 +574,12 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 			if termR.IsInf(-1) {
 				return dsl.MinFloat[bits], nil
 			} else if termR.IsInf(0) {
-				return termR.Value(convertToFloat(bits))
+				return termR.Value(convertToFloat(bits, property.ScalingFactor))
 			} else {
 				return dsl.MaxFloat[bits], nil
 			}
 		} else {
-			return termV.Value(convertToFloat(bits))
+			return termV.Value(convertToFloat(bits, property.ScalingFactor))
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if termR, ok := termV.(rangeValue); ok {

@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/shopspring/decimal"
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	"github.com/zhuliquan/scaled_float"
 )
 
 // convert func tools
@@ -46,7 +46,7 @@ func convertToUInt(bits int) convertFunc {
 }
 
 // convert to float value
-func convertToFloat(bits int) convertFunc {
+func convertToFloat(bits int, scalingFactor float64) convertFunc {
 	return func(floatValue string) (interface{}, error) {
 		if bits == 16 {
 			if f, err := strconv.ParseFloat(floatValue, 32); err != nil {
@@ -57,7 +57,7 @@ func convertToFloat(bits int) convertFunc {
 				return float16.Fromfloat32(f32), nil
 			}
 		} else if bits == 128 {
-			if f, err := decimal.NewFromString(floatValue); err != nil {
+			if f, err := scaled_float.NewFromString(floatValue, scalingFactor); err != nil {
 				return nil, err
 			} else {
 				return f, nil
@@ -143,7 +143,6 @@ const maxSecond = 59
 const maxNano = 999999999
 
 // get date range for prefix date, i.g. given 2021-01-01, we can get [2021-01-01 00:00:00 2021-01-01 23:59:59]
-// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
 func getDateRange(t time.Time) (time.Time, time.Time) {
 	var month = t.Month()
 	var dateArr = []int{t.Year(), int(month), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond()}
@@ -160,10 +159,12 @@ func getDateRange(t time.Time) (time.Time, time.Time) {
 	if dateArr[3] != 0 {
 		return t, time.Date(dateArr[0], month, dateArr[2], dateArr[3], maxMinute, maxSecond, maxNano, location)
 	}
-	if dateArr[2] != 0 {
-		return t, time.Date(dateArr[0], month, dateArr[2], maxHour, maxMinute, maxSecond, maxNano, location)
-	}
-
+	// if dateArr[2] != 1 {
+	// 	return t, time.Date(dateArr[0], month, getMonthDay(dateArr[0], month), maxHour, maxMinute, maxSecond, maxNano, location)
+	// }
+	// if dateArr[1] != 1 {
+	// 	return t, time.Date(dateArr[0], time.December, getMonthDay(dateArr[0], time.December), maxHour, maxMinute, maxSecond, maxNano, location)
+	// }
 	return t, t
 }
 
@@ -199,19 +200,19 @@ type rangeValue interface {
 }
 
 var fieldTypeBits = map[mapping.FieldType]int{
-	mapping.BYTE_FIELD_TYPE:           8,
-	mapping.SHORT_FIELD_TYPE:          16,
-	mapping.INTEGER_FIELD_TYPE:        32,
-	mapping.INTERGER_RANGE_FIELD_TYPE: 32,
-	mapping.LONG_FIELD_TYPE:           64,
-	mapping.LONG_RANGE_FIELD_TYPE:     64,
-	mapping.UNSIGNED_LONG_FIELD_TYPE:  64,
-	mapping.HALF_FLOAT_FIELD_TYPE:     16,
-	mapping.FLOAT_FIELD_TYPE:          32,
-	mapping.FLOAT_RANGE_FIELD_TYPE:    32,
-	mapping.DOUBLE_FIELD_TYPE:         64,
-	mapping.DOUBLE_RANGE_FIELD_TYPE:   64,
-	mapping.SCALED_FLOAT_FIELD_TYPE:   128,
+	mapping.BYTE_FIELD_TYPE:          8,
+	mapping.SHORT_FIELD_TYPE:         16,
+	mapping.INTEGER_FIELD_TYPE:       32,
+	mapping.INTEGER_RANGE_FIELD_TYPE: 32,
+	mapping.LONG_FIELD_TYPE:          64,
+	mapping.LONG_RANGE_FIELD_TYPE:    64,
+	mapping.UNSIGNED_LONG_FIELD_TYPE: 64,
+	mapping.HALF_FLOAT_FIELD_TYPE:    16,
+	mapping.FLOAT_FIELD_TYPE:         32,
+	mapping.FLOAT_RANGE_FIELD_TYPE:   32,
+	mapping.DOUBLE_FIELD_TYPE:        64,
+	mapping.DOUBLE_RANGE_FIELD_TYPE:  64,
+	mapping.SCALED_FLOAT_FIELD_TYPE:  128,
 }
 
 func toUpper(x string) (string, error) {
@@ -220,4 +221,8 @@ func toUpper(x string) (string, error) {
 
 func toLower(x string) (string, error) {
 	return strings.ToLower(x), nil
+}
+
+func toStrLst(x string) (interface{}, error) {
+	return strings.Split(x, ","), nil
 }
