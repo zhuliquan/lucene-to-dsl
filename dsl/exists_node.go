@@ -1,0 +1,31 @@
+package dsl
+
+type ExistsNode struct {
+	KvNode
+}
+
+func (n *ExistsNode) DslType() DslType {
+	return EXISTS_DSL_TYPE
+}
+
+// if union same field node, you can return exist node, for example {"exists": {"field" : "x"}} union {"match": {"x": "foo bar"}}
+// "exists": {"field": "x"} > "match": {"x": "foo bar"}
+func (n *ExistsNode) UnionJoin(o AstNode) (AstNode, error) {
+	return n, nil
+}
+
+func (n *ExistsNode) InterSect(o AstNode) (AstNode, error) {
+	return o, nil
+}
+
+func (n *ExistsNode) Inverse() (AstNode, error) {
+	return &NotNode{
+		Nodes: map[string][]AstNode{
+			n.NodeKey(): {n},
+		},
+	}, nil
+}
+
+func (n *ExistsNode) ToDSL() DSL {
+	return DSL{"exists": DSL{"field": n.Field}}
+}

@@ -6,22 +6,22 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/shopspring/decimal"
 	"github.com/x448/float16"
+	"github.com/zhuliquan/scaled_float"
 )
 
-type NodeType uint32
+type AstType uint32
 
 const (
-	EMPTY_NODE_TYPE NodeType = iota
+	EMPTY_NODE_TYPE AstType = iota
 	OP_NODE_TYPE
 	LEAF_NODE_TYPE
 )
 
-type DSLType uint32
+type DslType uint32
 
 const (
-	EMPTY_DSL_TYPE DSLType = iota
+	EMPTY_DSL_TYPE DslType = iota
 	AND_DSL_TYPE
 	OR_DSL_TYPE
 	NOT_DSL_TYPE
@@ -51,8 +51,9 @@ var (
 	MinUint    = uint64(0)
 	MinFloat16 = float16.Fromfloat32(-65504)
 	MaxFloat16 = float16.Fromfloat32(65504)
-	MinDecimal = decimal.New(math.MinInt64, math.MaxInt32)
-	MaxDecimal = decimal.New(math.MinInt64, math.MaxInt32)
+
+	MinScaledFloat = scaled_float.NegativeInf
+	MaxScaledFloat = scaled_float.PositiveInf
 
 	MaxIP = net.IP([]byte{
 		math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8,
@@ -93,14 +94,14 @@ var MinFloat = map[int]interface{}{
 	16:  MinFloat16,
 	32:  -math.MaxFloat32,
 	64:  -math.MaxFloat64,
-	128: MinDecimal,
+	128: MinScaledFloat,
 }
 
 var MaxFloat = map[int]interface{}{
 	16:  MaxFloat16,
 	32:  math.MaxFloat32,
 	64:  math.MaxFloat64,
-	128: MaxDecimal,
+	128: MaxScaledFloat,
 }
 
 type CompareType uint32
@@ -113,7 +114,7 @@ const (
 	GTE
 )
 
-var CompareTypeStrings = map[CompareType]string{
+var compareTypeStrings = map[CompareType]string{
 	EQ:  "eq",
 	LT:  "lt",
 	GT:  "gt",
@@ -122,5 +123,5 @@ var CompareTypeStrings = map[CompareType]string{
 }
 
 func (c CompareType) String() string {
-	return CompareTypeStrings[c]
+	return compareTypeStrings[c]
 }

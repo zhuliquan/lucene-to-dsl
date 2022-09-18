@@ -1,33 +1,17 @@
 package dsl
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestOrDSLNode_UnionJoin(t *testing.T) {
-	type args struct {
-		node DSLNode
-	}
-	tests := []struct {
-		name    string
-		n       *OrDSLNode
-		args    args
-		want    DSLNode
-		wantErr bool
-	}{
-		{},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.n.UnionJoin(tt.args.node)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("OrDSLNode.UnionJoin() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("OrDSLNode.UnionJoin() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func TestNode(t *testing.T) {
+	var opNode = &OpNode{}
+	assert.Equal(t, OP_NODE_TYPE, opNode.AstType())
+	var lfNode = &LfNode{}
+	assert.Equal(t, LEAF_NODE_TYPE, lfNode.AstType())
+	var kvNode = &KvNode{Field: "foo "}
+	assert.Equal(t, LEAF_NODE_TYPE, kvNode.AstType())
+	assert.Equal(t, "LEAF:foo", kvNode.NodeKey())
 }
