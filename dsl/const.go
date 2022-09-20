@@ -68,7 +68,7 @@ var (
 	MinVersion, _ = version.NewVersion("v0-A.0-A.0-A")
 	MaxVersion, _ = version.NewVersion("v9223372036854775807.9223372036854775807.9223372036854775807")
 	MinString     = ""
-	MaxString     = "~"
+	MaxString     = string([]rune{math.MaxInt32})
 )
 
 var MinInt = map[int]int64{
