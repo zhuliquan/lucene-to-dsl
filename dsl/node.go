@@ -19,6 +19,10 @@ type boostNode interface {
 	getBoost() float64
 }
 
+type filterNode interface {
+	NeedFilter() bool
+}
+
 type OpNode struct{}
 
 func (n *OpNode) AstType() AstType {
@@ -26,7 +30,13 @@ func (n *OpNode) AstType() AstType {
 }
 
 // leaf node
-type LfNode struct{}
+type LfNode struct {
+	Filter bool
+}
+
+func (n *LfNode) NeedFilter() bool {
+	return n.Filter
+}
 
 func (n *LfNode) AstType() AstType {
 	return LEAF_NODE_TYPE

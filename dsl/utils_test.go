@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"net"
+	"reflect"
 	"testing"
 	"time"
 
@@ -726,6 +727,227 @@ func TestIsMaxInf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isMaxInf(tt.args.a, tt.args.t); got != tt.want {
 				t.Errorf("isMaxInf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNodeOrMergeNode(t *testing.T) {
+	type args struct {
+		a AstNode
+		b AstNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_or_node",
+			args: args{
+				a: &RangeNode{
+					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
+					LeftValue: MinInt[32], RightValue: 3,
+					LeftCmpSym: GT, RightCmpSym: LTE,
+				},
+				b: &RangeNode{
+					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
+					LeftValue: 4, RightValue: MaxInt[32],
+					LeftCmpSym: GTE, RightCmpSym: LT,
+				},
+			},
+			want: &OrNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&RangeNode{
+							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
+							LeftValue: MinInt[32], RightValue: 3,
+							LeftCmpSym: GT, RightCmpSym: LTE,
+						},
+						&RangeNode{
+							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
+							LeftValue: 4, RightValue: MaxInt[32],
+							LeftCmpSym: GTE, RightCmpSym: LT,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := lfNodeUnionJoinLfNode(tt.args.a, tt.args.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("nodeOrMergeNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("nodeOrMergeNode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNodeAndMergeNode(t *testing.T) {
+	type args struct {
+		a AstNode
+		b AstNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_and_node_01",
+			args: args{
+				a: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: true},
+					},
+				},
+				b: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: true},
+					},
+				},
+			},
+			want: &AndNode{
+				FilterNodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: true},
+							},
+						},
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: true},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_and_node_02",
+			args: args{
+				a: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: false},
+					},
+				},
+				b: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: false},
+					},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: false},
+							},
+						},
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: false},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_and_node_03",
+			args: args{
+				a: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: false},
+					},
+				},
+				b: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: true},
+					},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: false},
+							},
+						},
+					},
+				},
+				FilterNodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: true},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_and_node_04",
+			args: args{
+				a: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: true},
+					},
+				},
+				b: &TermNode{
+					KvNode: KvNode{
+						Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: false},
+					},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar2", LfNode: LfNode{Filter: false},
+							},
+						},
+					},
+				},
+				FilterNodes: map[string][]AstNode{
+					"LEAF:foo": {
+						&TermNode{
+							KvNode: KvNode{
+								Field: "foo", Type: mapping.TEXT_FIELD_TYPE, Value: "bar1", LfNode: LfNode{Filter: true},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := lfNodeIntersectLfNode(tt.args.a, tt.args.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("nodeAndMergeNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("nodeAndMergeNode() = %v, want %v", got.ToDSL(), tt.want.ToDSL())
 			}
 		})
 	}

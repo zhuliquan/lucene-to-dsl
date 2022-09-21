@@ -70,37 +70,47 @@ func (n *AndNode) Inverse() (AstNode, error) {
 }
 
 func (n *AndNode) ToDSL() DSL {
-	if n == nil {
+	var res = DSL{}
+	if nodes := getMustNodes(n); nodes != nil {
+		res["must"] = nodes
+	}
+	if nodes := getFilterNodes(n); nodes != nil {
+		res["filter"] = nodes
+	}
+	if len(res) == 0 {
 		return EmptyDSL
 	}
-	var FRes = []DSL{}
-	var MRes = []DSL{}
+	return DSL{"bool": res}
+}
+
+func getMustNodes(n *AndNode) interface{} {
+	var mustDSLes = []DSL{}
 	for _, nodes := range n.MustNodes {
 		for _, node := range nodes {
-			MRes = append(MRes, node.ToDSL())
+			mustDSLes = append(mustDSLes, node.ToDSL())
 		}
 	}
+	if len(mustDSLes) == 0 {
+		return nil
+	} else if len(mustDSLes) == 1 {
+		return mustDSLes[0]
+	} else {
+		return mustDSLes
+	}
+}
+
+func getFilterNodes(n *AndNode) interface{} {
+	var filterDSLes = []DSL{}
 	for _, nodes := range n.FilterNodes {
 		for _, node := range nodes {
-			FRes = append(FRes, node.ToDSL())
+			filterDSLes = append(filterDSLes, node.ToDSL())
 		}
 	}
-
-	if len(FRes) == 1 && len(n.MustNodes) == 0 {
-		return DSL{"bool": DSL{"filter": FRes[0]}}
-	} else if len(FRes) == 1 && len(n.MustNodes) == 1 {
-		return DSL{"bool": DSL{"must": MRes[0], "filter": FRes[0]}}
-	} else if len(FRes) == 1 && len(n.MustNodes) > 1 {
-		return DSL{"bool": DSL{"must": MRes, "filter": FRes[0]}}
-	} else if len(FRes) == 0 && len(n.MustNodes) == 1 {
-		return MRes[0]
-	} else if len(FRes) == 0 && len(n.MustNodes) > 1 {
-		return DSL{"bool": DSL{"must": MRes}}
-	} else if len(FRes) > 1 && len(n.MustNodes) == 0 {
-		return DSL{"bool": DSL{"filter": FRes}}
-	} else if len(FRes) > 1 && len(n.MustNodes) == 1 {
-		return DSL{"bool": DSL{"must": MRes[0], "filter": FRes}}
+	if len(filterDSLes) == 0 {
+		return nil
+	} else if len(filterDSLes) == 1 {
+		return filterDSLes[0]
 	} else {
-		return DSL{"bool": DSL{"must": MRes, "filter": FRes}}
+		return filterDSLes
 	}
 }

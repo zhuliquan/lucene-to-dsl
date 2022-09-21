@@ -12,4 +12,5 @@ require (
 	github.com/zhuliquan/go_tools v0.0.1
 	github.com/zhuliquan/lucene_parser v0.0.2
 	github.com/zhuliquan/scaled_float v0.0.2
+	golang.org/x/text v0.3.7
 )

@@ -13,12 +13,7 @@ func (n *RegexpNode) UnionJoin(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
-		return &OrNode{
-			Nodes: map[string][]AstNode{
-				n.NodeKey(): {n, o},
-			},
-			MinimumShouldMatch: 1,
-		}, nil
+		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
 

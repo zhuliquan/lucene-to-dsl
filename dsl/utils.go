@@ -318,3 +318,52 @@ func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
 		return x
 	}
 }
+
+// union join two leaf node
+func lfNodeUnionJoinLfNode(a, b AstNode) (AstNode, error) {
+	return &OrNode{
+		MinimumShouldMatch: 1,
+		Nodes: map[string][]AstNode{
+			a.NodeKey(): {a, b},
+		},
+	}, nil
+}
+
+// intersect two leaf node
+func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
+	af := a.(filterNode)
+	bf := b.(filterNode)
+	var mustNodes = map[string][]AstNode{
+		a.NodeKey(): {},
+	}
+	var filterNodes = map[string][]AstNode{
+		a.NodeKey(): {},
+	}
+	if af.NeedFilter() {
+		filterNodes[a.NodeKey()] = append(
+			filterNodes[a.NodeKey()], a,
+		)
+	} else {
+		mustNodes[a.NodeKey()] = append(
+			mustNodes[a.NodeKey()], a,
+		)
+	}
+	if bf.NeedFilter() {
+		filterNodes[a.NodeKey()] = append(
+			filterNodes[a.NodeKey()], b,
+		)
+	} else {
+		mustNodes[a.NodeKey()] = append(
+			mustNodes[a.NodeKey()], b,
+		)
+	}
+
+	var andNode = &AndNode{}
+	if len(mustNodes[a.NodeKey()]) != 0 {
+		andNode.MustNodes = mustNodes
+	}
+	if len(filterNodes[a.NodeKey()]) != 0 {
+		andNode.FilterNodes = filterNodes
+	}
+	return andNode, nil
+}

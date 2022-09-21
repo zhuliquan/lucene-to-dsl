@@ -26,12 +26,7 @@ func (n *QueryStringNode) UnionJoin(o AstNode) (AstNode, error) {
 				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 			}
 		}
-		return &OrNode{
-			MinimumShouldMatch: 1,
-			Nodes: map[string][]AstNode{
-				o.NodeKey(): {n, o},
-			},
-		}, nil
+		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
 

@@ -56,12 +56,7 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 	case RANGE_DSL_TYPE:
 		return rangeNodeUnionJoinRangeNode(n, o.(*RangeNode))
 	default:
-		return &OrNode{
-			MinimumShouldMatch: 1,
-			Nodes: map[string][]AstNode{
-				n.NodeKey(): {n, o},
-			},
-		}, nil
+		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
 
@@ -90,30 +85,34 @@ func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *RangeNode) Inverse() (AstNode, error) {
-	var leftCmpSym = LT
+	var (
+		leftCmpSym  = LT
+		rightCmpSym = GT
+	)
 	if n.LeftCmpSym == GT {
 		leftCmpSym = LTE
 	}
-	var rightCmpSym = GT
 	if n.RightCmpSym == LT {
 		rightCmpSym = GTE
 	}
-	var isLeftInf = isMinInf(n.LeftValue, n.Type)
-	var isRightInf = isMaxInf(n.RightValue, n.Type)
-	var leftNode = &RangeNode{
-		KvNode:      n.KvNode,
-		LeftValue:   minInf[n.Type],
-		LeftCmpSym:  GT,
-		RightValue:  n.LeftValue,
-		RightCmpSym: leftCmpSym,
-	}
-	var rightNode = &RangeNode{
-		KvNode:      n.KvNode,
-		LeftValue:   n.RightValue,
-		RightValue:  maxInf[n.Type],
-		LeftCmpSym:  rightCmpSym,
-		RightCmpSym: LT,
-	}
+	var (
+		isLeftInf  = isMinInf(n.LeftValue, n.Type)
+		isRightInf = isMaxInf(n.RightValue, n.Type)
+		leftNode   = &RangeNode{
+			KvNode:      n.KvNode,
+			LeftValue:   minInf[n.Type],
+			LeftCmpSym:  GT,
+			RightValue:  n.LeftValue,
+			RightCmpSym: leftCmpSym,
+		}
+		rightNode = &RangeNode{
+			KvNode:      n.KvNode,
+			LeftValue:   n.RightValue,
+			RightValue:  maxInf[n.Type],
+			LeftCmpSym:  rightCmpSym,
+			RightCmpSym: LT,
+		}
+	)
 
 	if !isLeftInf && !isRightInf {
 		return &OrNode{
@@ -185,9 +184,12 @@ func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 }
 
 func rangeNodeUnionJoinTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
-	var excludeValues = []LeafValue{}
-	var leftCmpSym = n.LeftCmpSym
-	var rightCmpSym = n.RightCmpSym
+	var (
+		excludeValues = []LeafValue{}
+		leftCmpSym    = n.LeftCmpSym
+		rightCmpSym   = n.RightCmpSym
+	)
+
 	for _, value := range t.Values {
 		if !checkRangeInclude(n, value) {
 			if CompareAny(n.LeftValue, value, n.Type) == 0 && n.LeftCmpSym == GT {
