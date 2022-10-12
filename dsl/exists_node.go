@@ -1,11 +1,17 @@
 package dsl
 
 type ExistsNode struct {
-	KvNode
+	fieldNode
 }
 
 func (n *ExistsNode) DslType() DslType {
 	return EXISTS_DSL_TYPE
+}
+
+func NewExistsNode(fieldNode *fieldNode) *ExistsNode {
+	return &ExistsNode{
+		fieldNode: *fieldNode,
+	}
 }
 
 // if union same field node, you can return exist node, for example {"exists": {"field" : "x"}} union {"match": {"x": "foo bar"}}
@@ -27,5 +33,9 @@ func (n *ExistsNode) Inverse() (AstNode, error) {
 }
 
 func (n *ExistsNode) ToDSL() DSL {
-	return DSL{"exists": DSL{"field": n.Field}}
+	return DSL{
+		"exists": DSL{
+			"field": n.field,
+		},
+	}
 }

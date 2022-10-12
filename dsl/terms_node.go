@@ -2,16 +2,28 @@ package dsl
 
 import (
 	"fmt"
+
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 type TermsNode struct {
-	KvNode
-	Values []LeafValue
-	Boost  float64
+	fieldNode
+	boostNode
+	mType mapping.FieldType
+	terms []LeafValue
 }
 
-func (n *TermsNode) getBoost() float64 {
-	return n.Boost
+func NewTermsNode(fieldNode *fieldNode, mType mapping.FieldType, terms []LeafValue, opts ...func(AstNode)) *TermsNode {
+	var n = &TermsNode{
+		fieldNode: *fieldNode,
+		boostNode: boostNode{boost: 1.0},
+		mType:     mType,
+		terms:     terms,
+	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }
 
 func (n *TermsNode) DslType() DslType {
@@ -19,8 +31,8 @@ func (n *TermsNode) DslType() DslType {
 }
 
 func (n *TermsNode) UnionJoin(o AstNode) (AstNode, error) {
-	if bn, ok := o.(boostNode); ok {
-		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+	if bn, ok := o.(BoostNode); ok {
+		if CompareAny(bn.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -31,7 +43,7 @@ func (n *TermsNode) UnionJoin(o AstNode) (AstNode, error) {
 		return o.UnionJoin(n)
 	case TERMS_DSL_TYPE:
 		var t = o.(*TermsNode)
-		t.Values = UnionJoinValueLst(t.Values, n.Values, n.Type)
+		t.terms = UnionJoinValueLst(t.terms, n.terms, n.mType)
 		return t, nil
 	case RANGE_DSL_TYPE:
 		return o.(*RangeNode).UnionJoin(n)
@@ -57,8 +69,8 @@ func (n *TermsNode) InterSect(o AstNode) (AstNode, error) {
 	if n == nil || o == nil {
 		return nil, ErrIntersectNilNode
 	}
-	if bn, ok := o.(boostNode); ok {
-		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+	if v, ok := o.(BoostNode); ok {
+		if CompareAny(v.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
 			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -84,15 +96,28 @@ func (n *TermsNode) Inverse() (AstNode, error) {
 		return nil, ErrInverseNilNode
 	}
 	var nodes = []AstNode{}
-	for _, val := range n.Values {
-		nodes = append(nodes, &TermNode{KvNode: KvNode{Field: n.Field, Value: val}, Boost: n.Boost})
+	for _, val := range n.terms {
+		nodes = append(
+			nodes, &TermNode{
+				kvNode: kvNode{
+					fieldNode: n.fieldNode,
+					valueNode: valueNode{mType: n.mType, value: val},
+				},
+				boostNode: n.boostNode,
+			},
+		)
 	}
-	return &NotNode{Nodes: map[string][]AstNode{n.Field: nodes}}, nil
+	return &NotNode{Nodes: map[string][]AstNode{n.field: nodes}}, nil
 }
 
 func (n *TermsNode) ToDSL() DSL {
 	if n == nil {
 		return EmptyDSL
 	}
-	return DSL{"terms": DSL{n.Field: n.Values, "boost": n.Boost}}
+	return DSL{
+		"terms": DSL{
+			n.field: n.terms,
+			"boost": n.boost,
+		},
+	}
 }

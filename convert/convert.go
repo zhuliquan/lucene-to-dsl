@@ -3,6 +3,7 @@ package convert
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"time"
 
 	"github.com/zhuliquan/go_tools/ip_tools"
@@ -212,17 +213,12 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 		rightValue = rv
 	}
 
-	var node = &dsl.RangeNode{
-		KvNode: dsl.KvNode{
-			Field: field.String(),
-			Type:  property.Type,
-		},
-		LeftValue:   leftValue,
-		RightValue:  rightValue,
-		LeftCmpSym:  leftCmp,
-		RightCmpSym: rightCmp,
-		Boost:       termV.Boost(),
-	}
+	var node = dsl.NewRangeNode(
+		dsl.NewRgNode(
+			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+			property.Type, leftValue, rightValue, leftCmp, rightCmp,
+		), dsl.WithBoost(termV.Boost()),
+	)
 	if err := dsl.CheckValidRangeNode(node); err != nil {
 		return nil, fmt.Errorf("field: %s value: %s is invalid, err: %s", field, termV.String(), err)
 	} else {
@@ -233,14 +229,14 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
 	if strVal.(string) == "*" {
-		return &dsl.ExistsNode{
-			KvNode: dsl.KvNode{Field: field.String()},
-		}, nil
+		return dsl.NewExistsNode(
+			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+		), nil
 	}
 	if property.NullValue == strVal {
-		return (&dsl.ExistsNode{
-			KvNode: dsl.KvNode{Field: field.String()},
-		}).Inverse()
+		return dsl.NewExistsNode(
+			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+		).Inverse()
 	}
 	return convertToNormal(field, termV, property, strVal.(string))
 }
@@ -256,9 +252,9 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 		if strLst, err := termV.Value(toStrLst); err != nil {
 			return nil, err
 		} else {
-			return &dsl.IdsNode{
-				Values: strLst.([]string),
-			}, nil
+			return dsl.NewIdsNode(
+				dsl.NewLfNode(), strLst.([]string),
+			), nil
 		}
 	}
 	switch property.Type {
@@ -274,14 +270,10 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 			return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s, err: %s",
 				field, termV.String(), property.Type, err)
 		} else {
-			return &dsl.TermNode{
-				KvNode: dsl.KvNode{
-					Field: field.String(),
-					Type:  property.Type,
-					Value: val,
-				},
-				Boost: termV.Boost(),
-			}, nil
+			return dsl.NewTermNode(
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(val, property.Type)),
+				dsl.WithBoost(termV.Boost()),
+			), nil
 		}
 	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
 		var dateParser = getDateParserFromMapping(property)
@@ -290,65 +282,38 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 		} else {
 			// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
 			var lowerDate, upperDate = getDateRange(d.(time.Time))
-			return &dsl.RangeNode{
-				KvNode: dsl.KvNode{
-					Field: field.String(),
-					Type:  property.Type,
-				},
-				LeftValue:   lowerDate,
-				RightValue:  upperDate,
-				LeftCmpSym:  dsl.GTE,
-				RightCmpSym: dsl.LTE,
-				Boost:       termV.Boost(),
-			}, nil
+			return dsl.NewRangeNode(dsl.NewRgNode(
+				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+				property.Type, lowerDate, upperDate, dsl.GTE, dsl.LTE,
+			), dsl.WithBoost(termV.Boost())), nil
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {
-			return &dsl.TermNode{
-				KvNode: dsl.KvNode{
-					Field: field.String(),
-					Type:  property.Type,
-					Value: ip,
-				},
-				Boost: termV.Boost(),
-			}, nil
+			return dsl.NewTermNode(
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(ip, property.Type)),
+				dsl.WithBoost(termV.Boost()),
+			), nil
 		}
 		if ip1, ip2, err := ip_tools.GetRangeIpByIpCidr(termV.String()); err == nil {
-			return &dsl.RangeNode{
-				KvNode: dsl.KvNode{
-					Field: field.String(),
-					Type:  property.Type,
-				},
-				LeftValue:   net.IP(ip1),
-				RightValue:  net.IP(ip2),
-				LeftCmpSym:  dsl.GTE,
-				RightCmpSym: dsl.LTE,
-				Boost:       termV.Boost(),
-			}, nil
-
+			return dsl.NewRangeNode(dsl.NewRgNode(
+				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+				property.Type, net.IP(ip1), net.IP(ip2), dsl.GTE, dsl.LTE,
+			), dsl.WithBoost(termV.Boost())), nil
 		}
 		return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s",
 			field, termV.String(), property.Type)
 
 	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
 		if termV.GetTermType()|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
-			return &dsl.QueryStringNode{
-				KvNode: dsl.KvNode{
-					Field: field.String(),
-					Type:  property.Type,
-					Value: strVal,
-				},
-				Boost: termV.Boost(),
-			}, nil
+			return dsl.NewQueryStringNode(
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, property.Type)),
+				dsl.WithBoost(termV.Boost()),
+			), nil
 		} else {
-			return &dsl.MatchPhraseNode{
-				KvNode: dsl.KvNode{
-					Field: field.String(),
-					Type:  property.Type,
-					Value: strVal,
-				},
-				Boost: termV.Boost(),
-			}, nil
+			return dsl.NewMatchPhraseNode(
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, property.Type)),
+				dsl.WithBoost(termV.Boost()),
+			), nil
 		}
 	default:
 		return nil, fmt.Errorf("field: %s mapping type: %s don't support lucene", field, property.Type)
@@ -356,12 +321,22 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 }
 
 func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+	if !mapping.CheckStringType(property.Type) {
+		return nil, fmt.Errorf("type: %s, don't support regex query, expect text", property.Type)
+	}
 	var valStr, _ = termV.Value(convertToString)
-	return &dsl.RegexpNode{KvNode: dsl.KvNode{
-		Field: field.String(),
-		Type:  property.Type,
-		Value: valStr,
-	}}, nil
+	if pattern, err := regexp.Compile(valStr.(string)); err != nil {
+		return nil, fmt.Errorf("regexp str: %+v is invalid, err: %+v", valStr, err)
+	} else {
+		return dsl.NewRegexNode(
+			dsl.NewKVNode(
+				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+				dsl.NewValueNode(valStr, property.Type),
+			),
+			pattern,
+		), nil
+	}
+
 }
 
 func convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
@@ -632,3 +607,5 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		}
 	}
 }
+
+// func termValueToFuzzyNode(field *term.Field, termV *term.Term, property *mapping.Property)

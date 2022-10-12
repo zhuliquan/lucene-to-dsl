@@ -236,8 +236,8 @@ func compareVersion(a, b LeafValue) int {
 }
 
 func CheckValidRangeNode(node *RangeNode) error {
-	var cmp = CompareAny(node.LeftValue, node.RightValue, node.Type)
-	if cmp > 0 || (cmp == 0 && (node.LeftCmpSym == GT || node.RightCmpSym == LT)) {
+	var cmp = CompareAny(node.lValue, node.rValue, node.mType)
+	if cmp > 0 || (cmp == 0 && (node.lCmpSym == GT || node.rCmpSym == LT)) {
 		return fmt.Errorf("range is conflict")
 	}
 	return nil
@@ -303,22 +303,6 @@ var maxInf = map[mapping.FieldType]LeafValue{
 	mapping.CONSTANT_KEYWORD_FIELD_TYPE: MaxString,
 }
 
-func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
-	if mapping.CheckDateType(t) {
-		return x.(time.Time).UnixNano() / 1e6
-	} else if mapping.CheckIPType(t) {
-		return x.(net.IP).String()
-	} else if mapping.CheckVersionType(t) {
-		return x.(*version.Version).String()
-	} else if t == mapping.HALF_FLOAT_FIELD_TYPE {
-		return x.(float16.Float16).Float32()
-	} else if t == mapping.SCALED_FLOAT_FIELD_TYPE {
-		return x.(*scaled_float.ScaledFloat).RawFloat()
-	} else {
-		return x
-	}
-}
-
 // union join two leaf node
 func lfNodeUnionJoinLfNode(a, b AstNode) (AstNode, error) {
 	return &OrNode{
@@ -331,15 +315,15 @@ func lfNodeUnionJoinLfNode(a, b AstNode) (AstNode, error) {
 
 // intersect two leaf node
 func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
-	af := a.(filterNode)
-	bf := b.(filterNode)
+	af := a.(FilterCtxNode)
+	bf := b.(FilterCtxNode)
 	var mustNodes = map[string][]AstNode{
 		a.NodeKey(): {},
 	}
 	var filterNodes = map[string][]AstNode{
 		a.NodeKey(): {},
 	}
-	if af.NeedFilter() {
+	if af.filterCtx() {
 		filterNodes[a.NodeKey()] = append(
 			filterNodes[a.NodeKey()], a,
 		)
@@ -348,7 +332,7 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 			mustNodes[a.NodeKey()], a,
 		)
 	}
-	if bf.NeedFilter() {
+	if bf.filterCtx() {
 		filterNodes[a.NodeKey()] = append(
 			filterNodes[a.NodeKey()], b,
 		)
@@ -366,4 +350,122 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 		andNode.FilterNodes = filterNodes
 	}
 	return andNode, nil
+}
+
+func flattenNodes(nodesMap map[string][]AstNode) interface{} {
+	var dslRes = []DSL{}
+	for _, nodes := range nodesMap {
+		for _, node := range nodes {
+			dslRes = append(dslRes, node.ToDSL())
+		}
+	}
+	if len(dslRes) == 0 {
+		return nil
+	} else if len(dslRes) == 1 {
+		return dslRes[0]
+	} else {
+		return dslRes
+	}
+}
+
+func minEditDistance(termWord1, termWord2 string) int {
+	var (
+		l1 int16 = int16(len(termWord1))
+		l2 int16 = int16(len(termWord2))
+
+		i int16 = 0
+		j int16 = 0
+	)
+	var dp = make([][]int16, l1+1)
+	for i = 0; i <= l1; i++ {
+		dp[i] = make([]int16, l2+1)
+	}
+
+	for i = 0; i <= l1; i++ {
+		dp[i][0] = i
+	}
+	for j = 0; j <= l2; j++ {
+		dp[0][j] = j
+	}
+
+	for i = 1; i <= l1; i++ {
+		for j = 1; j <= l2; j++ {
+			if termWord1[i-1] == termWord2[j-1] {
+				dp[i][j] = dp[i-1][j-1]
+			} else {
+				dp[i][j] = minInt16(dp[i-1][j-1], minInt16(dp[i-1][j], dp[i][j-1])) + 1
+			}
+		}
+	}
+	return int(dp[l1][l2])
+}
+
+func minInt16(a, b int16) int16 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func astNodeUnionJoinTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (AstNode, error) {
+	if len(excludes) == 0 {
+		return n, nil
+	} else if len(excludes) == 1 {
+		return lfNodeUnionJoinLfNode(n, &TermNode{
+			kvNode: kvNode{
+				fieldNode: o.fieldNode,
+				valueNode: valueNode{mType: o.mType, value: excludes[0]},
+			},
+			boostNode: o.boostNode,
+		})
+	} else {
+		return lfNodeUnionJoinLfNode(n,
+			&TermsNode{
+				fieldNode: o.fieldNode,
+				mType:     o.mType,
+				terms:     excludes,
+				boostNode: o.boostNode,
+			},
+		)
+	}
+}
+
+func astNodeIntersectTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (AstNode, error) {
+	if len(excludes) == 0 {
+		return n, nil
+	} else if len(excludes) == 1 {
+		return lfNodeIntersectLfNode(n, &TermNode{
+			kvNode: kvNode{
+				fieldNode: o.fieldNode,
+				valueNode: valueNode{mType: o.mType, value: excludes[0]},
+			},
+			boostNode: o.boostNode,
+		})
+	} else {
+		return lfNodeIntersectLfNode(n,
+			&TermsNode{
+				fieldNode: o.fieldNode,
+				mType:     o.mType,
+				terms:     excludes,
+				boostNode: o.boostNode,
+			},
+		)
+	}
+}
+
+func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
+	if mapping.CheckDateType(t) {
+		return x.(time.Time).UnixNano() / 1e6
+	} else if mapping.CheckIPType(t) {
+		return x.(net.IP).String()
+	} else if mapping.CheckVersionType(t) {
+		return x.(*version.Version).String()
+	} else if t == mapping.HALF_FLOAT_FIELD_TYPE {
+		return x.(float16.Float16).Float32()
+	} else if t == mapping.SCALED_FLOAT_FIELD_TYPE {
+		return x.(*scaled_float.ScaledFloat).RawFloat()
+	} else {
+		return x
+	}
 }

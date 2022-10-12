@@ -22,6 +22,8 @@ type All struct {
 	Store  bool `json:"store,omitempty"`
 }
 
+type ExtProperties map[string]interface{}
+
 type Property struct {
 	Mapping
 	Type FieldType `json:"type,omitempty"`
@@ -109,7 +111,7 @@ type Property struct {
 	// {"only_lower": true}, convert term to lower case
 	// {"only_upper": false}, convert term to upper case
 	// you can define convert function in PropertyMapping._extFuncs
-	ExtProperties map[string]interface{} `json:"ext_properties,omitempty"`
+	ExtProperties ExtProperties `json:"ext_properties,omitempty"`
 
 	// IMPORTANT: below parameters not used
 	// include in _all
@@ -296,7 +298,7 @@ func (m *Mapping) String() string {
 // second parameter: is ExtProperties defined in Mapping struct
 // example:
 //   using func("bar", map[string]interface{}{"only_upper": true}), you can convert "bar" to "BAR"
-type ConvertFunc = func(interface{}, map[string]interface{}) (interface{}, error)
+type ConvertFunc = func(interface{}, ExtProperties) (interface{}, error)
 
 type PropertyMapping struct {
 	// es mapping struct

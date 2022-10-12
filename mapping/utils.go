@@ -172,3 +172,18 @@ func CheckVersionType(t FieldType) bool {
 func CheckIPType(t FieldType) bool {
 	return t == IP_FIELD_TYPE || t == IP_RANGE_FIELD_TYPE
 }
+
+func CheckStringType(t FieldType) bool {
+	return CheckKeywordType(t) || CheckTextType(t)
+}
+
+func CheckKeywordType(t FieldType) bool {
+	return t == KEYWORD_FIELD_TYPE ||
+		t == CONSTANT_KEYWORD_FIELD_TYPE ||
+		t == WILDCARD_FIELD_TYPE
+}
+
+func CheckTextType(t FieldType) bool {
+	return t == TEXT_FIELD_TYPE ||
+		t == MATCH_ONLY_TEXT_FIELD_TYPE
+}

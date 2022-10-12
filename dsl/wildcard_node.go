@@ -3,13 +3,21 @@ package dsl
 import "fmt"
 
 type WildCardNode struct {
-	LfNode
-	KvNode
-	Boost float64
+	kvNode
+	rewriteNode
+	boostNode
 }
 
-func (n *WildCardNode) getBoost() float64 {
-	return n.Boost
+func NewWildCardNode(kvNode *kvNode, opts ...func(AstNode)) *WildCardNode {
+	var n = &WildCardNode{
+		kvNode:      *kvNode,
+		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
+		boostNode:   boostNode{boost: 1.0},
+	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }
 
 func (n *WildCardNode) DslType() DslType {
@@ -52,9 +60,13 @@ func (n *WildCardNode) Inverse() (AstNode, error) {
 }
 
 func (n *WildCardNode) ToDSL() DSL {
-	if n == nil {
-		return EmptyDSL
+	return DSL{
+		"wildcard": DSL{
+			n.field: DSL{
+				"values": n.toPrintValue(),
+				"boost":  n.getBoost(),
+			},
+		},
 	}
-	return DSL{"wildcard": DSL{n.Field: DSL{"values": n.Value, "boost": n.Boost}}}
 
 }

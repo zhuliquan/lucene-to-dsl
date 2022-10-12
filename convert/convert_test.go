@@ -1,7 +1,6 @@
 package convert
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -194,13 +193,9 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
-			want: &dsl.MatchPhraseNode{
-				KvNode: dsl.KvNode{
-					Field: "x",
-					Type:  mapping.TEXT_FIELD_TYPE,
-					Value: "78",
-				},
-			},
+			want: dsl.NewMatchPhraseNode(
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), "x"), dsl.NewValueNode("78", mapping.TEXT_FIELD_TYPE)),
+			),
 			wantErr: false,
 		},
 		{
@@ -231,14 +226,13 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
-			want: &dsl.QueryStringNode{
-				KvNode: dsl.KvNode{
-					Field: "x",
-					Type:  mapping.TEXT_FIELD_TYPE,
-					Value: "78",
-				},
-				Boost: 0.8,
-			},
+			want: dsl.NewQueryStringNode(
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+					dsl.NewValueNode("78", mapping.TEXT_FIELD_TYPE),
+				),
+				dsl.WithBoost(0.8),
+			),
 			wantErr: false,
 		},
 		{
@@ -269,14 +263,13 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
-			want: &dsl.MatchPhraseNode{
-				KvNode: dsl.KvNode{
-					Field: "x",
-					Type:  mapping.TEXT_FIELD_TYPE,
-					Value: "78",
-				},
-				Boost: 0.8,
-			},
+			want: dsl.NewMatchPhraseNode(
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+					dsl.NewValueNode("78", mapping.TEXT_FIELD_TYPE),
+				),
+				dsl.WithBoost(0.8),
+			),
 			wantErr: true,
 		},
 		{
@@ -312,17 +305,15 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.INTEGER_FIELD_TYPE,
 				},
 			},
-			want: &dsl.RangeNode{
-				KvNode: dsl.KvNode{
-					Field: "x",
-					Type:  mapping.INTEGER_FIELD_TYPE,
-				},
-				LeftValue:   int32(78),
-				RightValue:  math.MaxInt32,
-				LeftCmpSym:  dsl.GT,
-				RightCmpSym: dsl.LT,
-				Boost:       0.8,
-			},
+			want: dsl.NewRangeNode(
+				dsl.NewRgNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+					mapping.INTEGER_FIELD_TYPE,
+					int32(78), dsl.MaxInt[32],
+					dsl.GT, dsl.LT,
+				),
+				dsl.WithBoost(0.8),
+			),
 			wantErr: false,
 		},
 		{
@@ -358,17 +349,15 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
-			want: &dsl.RangeNode{
-				KvNode: dsl.KvNode{
-					Field: "x",
-					Type:  mapping.TEXT_FIELD_TYPE,
-				},
-				LeftValue:   "",
-				RightValue:  "2006-01-01",
-				LeftCmpSym:  dsl.GT,
-				RightCmpSym: dsl.LTE,
-				Boost:       0.8,
-			},
+			want: dsl.NewRangeNode(
+				dsl.NewRgNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+					mapping.TEXT_FIELD_TYPE,
+					"", "2006-01-01",
+					dsl.GT, dsl.LTE,
+				),
+				dsl.WithBoost(0.8),
+			),
 			wantErr: false,
 		},
 		{
@@ -419,17 +408,15 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.INTEGER_FIELD_TYPE,
 				},
 			},
-			want: &dsl.RangeNode{
-				KvNode: dsl.KvNode{
-					Field: "x",
-					Type:  mapping.INTEGER_FIELD_TYPE,
-				},
-				LeftValue:   int32(78),
-				RightValue:  int32(100),
-				LeftCmpSym:  dsl.GT,
-				RightCmpSym: dsl.LT,
-				Boost:       0.8,
-			},
+			want: dsl.NewRangeNode(
+				dsl.NewRgNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+					mapping.INTEGER_FIELD_TYPE,
+					int32(78), int32(100),
+					dsl.GT, dsl.LT,
+				),
+				dsl.WithBoost(0.8),
+			),
 			wantErr: true,
 		},
 		{
@@ -537,39 +524,33 @@ func TestConvertToGroup(t *testing.T) {
 				MinimumShouldMatch: 1,
 				Nodes: map[string][]dsl.AstNode{
 					"x": {
-						&dsl.RangeNode{
-							KvNode: dsl.KvNode{
-								Field: "x",
-								Type:  mapping.INTEGER_FIELD_TYPE,
-							},
-							LeftValue:   dsl.MinInt[32],
-							RightValue:  int32(50),
-							LeftCmpSym:  dsl.GT,
-							RightCmpSym: dsl.LT,
-							Boost:       0.8,
-						},
-						&dsl.RangeNode{
-							KvNode: dsl.KvNode{
-								Field: "x",
-								Type:  mapping.INTEGER_FIELD_TYPE,
-							},
-							LeftValue:   int32(78),
-							RightValue:  int32(100),
-							LeftCmpSym:  dsl.GT,
-							RightCmpSym: dsl.LT,
-							Boost:       0.8,
-						},
-						&dsl.RangeNode{
-							KvNode: dsl.KvNode{
-								Field: "x",
-								Type:  mapping.INTEGER_FIELD_TYPE,
-							},
-							LeftValue:   int32(178),
-							RightValue:  dsl.MaxInt[32],
-							LeftCmpSym:  dsl.GT,
-							RightCmpSym: dsl.LT,
-							Boost:       0.8,
-						},
+						dsl.NewRangeNode(
+							dsl.NewRgNode(
+								dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+								mapping.INTEGER_FIELD_TYPE,
+								dsl.MinInt[32], int32(50),
+								dsl.GT, dsl.LT,
+							),
+							dsl.WithBoost(0.8),
+						),
+						dsl.NewRangeNode(
+							dsl.NewRgNode(
+								dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+								mapping.INTEGER_FIELD_TYPE,
+								int32(78), int32(100),
+								dsl.GT, dsl.LT,
+							),
+							dsl.WithBoost(0.8),
+						),
+						dsl.NewRangeNode(
+							dsl.NewRgNode(
+								dsl.NewFieldNode(dsl.NewLfNode(), "x"),
+								mapping.INTEGER_FIELD_TYPE,
+								int32(178), dsl.MaxInt[32],
+								dsl.GT, dsl.LT,
+							),
+							dsl.WithBoost(0.8),
+						),
 					},
 				},
 			},

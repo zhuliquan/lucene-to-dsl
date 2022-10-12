@@ -1,7 +1,7 @@
 package dsl
 
 type NotNode struct {
-	OpNode
+	opNode
 	Nodes map[string][]AstNode
 }
 
@@ -14,23 +14,18 @@ func (n *NotNode) NodeKey() string {
 }
 
 func (n *NotNode) ToDSL() DSL {
-	if n == nil {
-		return EmptyDSL
-	}
-	var res = []DSL{}
-	for _, nodes := range n.Nodes {
-		for _, node := range nodes {
-			res = append(res, node.ToDSL())
-		}
-	}
-	if len(res) == 1 {
-		return DSL{"bool": DSL{"must_not": res[0]}}
+	if nodes := flattenNodes(n.Nodes); nodes != nil {
+		return DSL{"bool": DSL{"must_node": nodes}}
 	} else {
-		return DSL{"bool": DSL{"must_not": res}}
+		return EmptyDSL
 	}
 }
 
-func (n *NotNode) UnionJoin(AstNode) (AstNode, error) {
+func (n *NotNode) UnionJoin(o AstNode) (AstNode, error) {
+	// var t = o.(*OrNode)
+	// var nNodes = n.Nodes
+	// var tNodes = t.Nodes
+
 	return nil, nil
 }
 

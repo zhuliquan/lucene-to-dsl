@@ -8,41 +8,70 @@ import (
 )
 
 type RangeNode struct {
-	KvNode
-	LeftValue   LeafValue
-	RightValue  LeafValue
-	LeftCmpSym  CompareType
-	RightCmpSym CompareType
-	Boost       float64
+	rgNode
+	boostNode
+	format   string
+	relation string
+	timeZone string
+}
+
+func WithFormat(format string) func(AstNode) {
+	return func(n AstNode) {
+		if f, ok := n.(*RangeNode); ok {
+			f.format = format
+		}
+	}
+}
+
+func WithRelation(relation string) func(AstNode) {
+	return func(n AstNode) {
+		if f, ok := n.(*RangeNode); ok {
+			f.relation = relation
+		}
+	}
+}
+
+func WithTimeZone(timeZone string) func(AstNode) {
+	return func(n AstNode) {
+		if f, ok := n.(*RangeNode); ok {
+			f.timeZone = timeZone
+		}
+	}
+}
+
+func NewRangeNode(RgNode *rgNode, opts ...func(AstNode)) *RangeNode {
+	var n = &RangeNode{
+		rgNode:    *RgNode,
+		boostNode: boostNode{boost: 1.0},
+		relation:  INTERSECTS,
+	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }
 
 func (n *RangeNode) String() string {
-	var lv, _ = json.Marshal(n.LeftValue)
-	var rv, _ = json.Marshal(n.RightValue)
+	var lv, _ = json.Marshal(leafValueToPrintValue(n.lValue, n.mType))
+	var rv, _ = json.Marshal(leafValueToPrintValue(n.rValue, n.mType))
 	var lb = "("
-	if n.LeftCmpSym == GTE {
+	if n.lCmpSym == GTE {
 		lb = "["
 	}
 	var rb = ")"
-	if n.RightCmpSym == LTE {
+	if n.rCmpSym == LTE {
 		rb = "]"
 	}
 	return fmt.Sprintf("%s%s, %s%s", lb, lv, rv, rb)
-}
-
-func (n *RangeNode) getBoost() float64 {
-	return n.Boost
 }
 
 func (n *RangeNode) DslType() DslType {
 	return RANGE_DSL_TYPE
 }
 
-func (n *RangeNode) NodeKey() string { return "LEAF:" + n.Field }
-
 func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
-	if bn, ok := o.(boostNode); ok {
-		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+	if b, ok := o.(BoostNode); ok {
+		if CompareAny(b.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost value isn't equal", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -61,8 +90,8 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
-	if bn, ok := o.(boostNode); ok {
-		if CompareAny(bn.getBoost(), n.Boost, n.Type) != 0 {
+	if b, ok := o.(BoostNode); ok {
+		if CompareAny(b.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
 			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost value isn't equal", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -86,31 +115,37 @@ func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 
 func (n *RangeNode) Inverse() (AstNode, error) {
 	var (
-		leftCmpSym  = LT
-		rightCmpSym = GT
+		lCmpSym = LT
+		rCmpSym = GT
 	)
-	if n.LeftCmpSym == GT {
-		leftCmpSym = LTE
+	if n.lCmpSym == GT {
+		lCmpSym = LTE
 	}
-	if n.RightCmpSym == LT {
-		rightCmpSym = GTE
+	if n.rCmpSym == LT {
+		rCmpSym = GTE
 	}
 	var (
-		isLeftInf  = isMinInf(n.LeftValue, n.Type)
-		isRightInf = isMaxInf(n.RightValue, n.Type)
+		isLeftInf  = isMinInf(n.lValue, n.mType)
+		isRightInf = isMaxInf(n.rValue, n.mType)
 		leftNode   = &RangeNode{
-			KvNode:      n.KvNode,
-			LeftValue:   minInf[n.Type],
-			LeftCmpSym:  GT,
-			RightValue:  n.LeftValue,
-			RightCmpSym: leftCmpSym,
+			rgNode: rgNode{
+				fieldNode: n.fieldNode,
+				lValue:    minInf[n.mType],
+				rValue:    n.lValue,
+				lCmpSym:   GT,
+				rCmpSym:   lCmpSym,
+			},
+			boostNode: boostNode{boost: n.getBoost()},
 		}
 		rightNode = &RangeNode{
-			KvNode:      n.KvNode,
-			LeftValue:   n.RightValue,
-			RightValue:  maxInf[n.Type],
-			LeftCmpSym:  rightCmpSym,
-			RightCmpSym: LT,
+			rgNode: rgNode{
+				fieldNode: n.fieldNode,
+				lValue:    n.rValue,
+				rValue:    maxInf[n.mType],
+				lCmpSym:   rCmpSym,
+				rCmpSym:   LT,
+			},
+			boostNode: boostNode{boost: n.getBoost()},
 		}
 	)
 
@@ -130,7 +165,7 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 			Nodes: map[string][]AstNode{
 				n.NodeKey(): {
 					&ExistsNode{
-						KvNode: n.KvNode,
+						fieldNode: n.fieldNode,
 					},
 				},
 			},
@@ -140,44 +175,44 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 
 func (n *RangeNode) ToDSL() DSL {
 	var res = DSL{}
-	res[n.LeftCmpSym.String()] = leafValueToPrintValue(n.LeftValue, n.Type)
-	res[n.RightCmpSym.String()] = leafValueToPrintValue(n.RightValue, n.Type)
-	res["relation"] = "WITHIN"
-	res["boost"] = n.Boost
-	if mapping.CheckDateType(n.Type) {
+	res[n.lCmpSym.String()] = leafValueToPrintValue(n.lValue, n.mType)
+	res[n.rCmpSym.String()] = leafValueToPrintValue(n.rValue, n.mType)
+	res["boost"] = n.boost
+	addValueForDSL(res, "relation", n.relation)
+	addValueForDSL(res, "time_zone", n.timeZone)
+	if mapping.CheckDateType(n.mType) {
 		res["format"] = "epoch_millis"
 	}
-	return DSL{"range": DSL{n.Field: res}}
+	return DSL{"range": DSL{n.field: res}}
 }
 
 func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
-	if !checkRangeInclude(n, t.Value) {
-		if CompareAny(n.LeftValue, t.Value, n.Type) == 0 && n.LeftCmpSym == GT {
+	if !checkRangeInclude(n, t.value) {
+		if CompareAny(n.lValue, t.value, n.mType) == 0 && n.lCmpSym == GT {
 			return &RangeNode{
-				KvNode:      n.KvNode,
-				LeftValue:   n.LeftValue,
-				RightValue:  n.RightValue,
-				LeftCmpSym:  GTE,
-				RightCmpSym: n.RightCmpSym,
-				Boost:       n.Boost,
+				rgNode: rgNode{
+					fieldNode: n.fieldNode,
+					lValue:    n.lValue,
+					rValue:    n.rValue,
+					lCmpSym:   GTE,
+					rCmpSym:   n.rCmpSym,
+				},
+				boostNode: n.boostNode,
 			}, nil
 		}
-		if CompareAny(n.RightValue, t.Value, n.Type) == 0 && n.RightCmpSym == LT {
+		if CompareAny(n.rValue, t.value, n.mType) == 0 && n.rCmpSym == LT {
 			return &RangeNode{
-				KvNode:      n.KvNode,
-				LeftValue:   n.LeftValue,
-				RightValue:  n.RightValue,
-				LeftCmpSym:  n.LeftCmpSym,
-				RightCmpSym: LTE,
-				Boost:       n.Boost,
+				rgNode: rgNode{
+					fieldNode: n.fieldNode,
+					lValue:    n.lValue,
+					rValue:    n.rValue,
+					lCmpSym:   n.lCmpSym,
+					rCmpSym:   LTE,
+				},
+				boostNode: n.boostNode,
 			}, nil
 		}
-		return &OrNode{
-			MinimumShouldMatch: 1,
-			Nodes: map[string][]AstNode{
-				n.NodeKey(): {n, t},
-			},
-		}, nil
+		return lfNodeUnionJoinLfNode(n, t)
 	} else {
 		return n, nil
 	}
@@ -185,48 +220,33 @@ func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 
 func rangeNodeUnionJoinTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
 	var (
-		excludeValues = []LeafValue{}
-		leftCmpSym    = n.LeftCmpSym
-		rightCmpSym   = n.RightCmpSym
+		excludes = []LeafValue{}
+		lCmpSym  = n.lCmpSym
+		rCmpSym  = n.rCmpSym
 	)
 
-	for _, value := range t.Values {
-		if !checkRangeInclude(n, value) {
-			if CompareAny(n.LeftValue, value, n.Type) == 0 && n.LeftCmpSym == GT {
-				leftCmpSym = GTE
-			} else if CompareAny(n.RightValue, value, n.Type) == 0 && n.RightCmpSym == LT {
-				rightCmpSym = LTE
+	for _, term := range t.terms {
+		if !checkRangeInclude(n, term) {
+			if CompareAny(n.lValue, term, n.mType) == 0 && n.lCmpSym == GT {
+				lCmpSym = GTE
+			} else if CompareAny(n.rValue, term, n.mType) == 0 && n.rCmpSym == LT {
+				rCmpSym = LTE
 			} else {
-				excludeValues = append(excludeValues, value)
+				excludes = append(excludes, term)
 			}
 		}
 	}
 	var rangeNode = &RangeNode{
-		KvNode:      n.KvNode,
-		LeftValue:   n.LeftValue,
-		RightValue:  n.RightValue,
-		LeftCmpSym:  leftCmpSym,
-		RightCmpSym: rightCmpSym,
-		Boost:       n.Boost,
+		rgNode: rgNode{
+			fieldNode: n.fieldNode,
+			lValue:    n.lValue,
+			rValue:    n.rValue,
+			lCmpSym:   lCmpSym,
+			rCmpSym:   rCmpSym,
+		},
+		boostNode: n.boostNode,
 	}
-	if len(excludeValues) == 0 {
-		return rangeNode, nil
-	} else {
-		return &OrNode{
-			MinimumShouldMatch: 1,
-			Nodes: map[string][]AstNode{
-				n.NodeKey(): {
-					rangeNode,
-					&TermsNode{
-						KvNode: t.KvNode,
-						Values: excludeValues,
-						Boost:  t.Boost,
-					},
-				},
-			},
-		}, nil
-
-	}
+	return astNodeUnionJoinTermsNode(rangeNode, t, excludes)
 }
 
 func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
@@ -242,9 +262,10 @@ func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 	// compare left value of n and t, and get lower value, and cmp symbol is associate with lower value
 	// compare left value of n and t, and get higher value, and cmp symbol is associate with higher value
 	var dst = &RangeNode{
-		KvNode:    n.KvNode,
-		LeftValue: n.LeftValue,
-		Boost:     n.Boost,
+		rgNode: rgNode{
+			fieldNode: n.fieldNode,
+		},
+		boostNode: n.boostNode,
 	}
 
 	unionCmpLeft(n, t, dst)
@@ -253,64 +274,57 @@ func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 }
 
 func unionCmpLeft(n, t, dst *RangeNode) {
-	var leftFlag = CompareAny(t.LeftValue, n.LeftValue, n.Type)
+	var leftFlag = CompareAny(t.lValue, n.lValue, n.mType)
 	if leftFlag < 0 {
-		dst.LeftValue = t.LeftValue
-		dst.LeftCmpSym = t.LeftCmpSym
+		dst.lValue = t.lValue
+		dst.lCmpSym = t.lCmpSym
 	} else if leftFlag > 0 {
-		dst.LeftValue = n.LeftValue
-		dst.LeftCmpSym = n.LeftCmpSym
+		dst.lValue = n.lValue
+		dst.lCmpSym = n.lCmpSym
 	} else {
-		dst.LeftValue = n.LeftValue
-		if t.LeftCmpSym == GTE {
-			dst.LeftCmpSym = t.LeftCmpSym
+		dst.lValue = n.lValue
+		if t.lCmpSym == GTE {
+			dst.lCmpSym = t.lCmpSym
 		} else {
-			dst.LeftCmpSym = n.LeftCmpSym
+			dst.lCmpSym = n.lCmpSym
 		}
 	}
 }
 
 func unionCmpRight(n, t, dst *RangeNode) {
-	var rightFlag = CompareAny(t.RightValue, n.RightValue, n.Type)
+	var rightFlag = CompareAny(t.rValue, n.rValue, n.mType)
 	if rightFlag > 0 {
-		dst.RightValue = t.RightValue
-		dst.RightCmpSym = t.RightCmpSym
+		dst.rValue = t.rValue
+		dst.rCmpSym = t.rCmpSym
 	} else if rightFlag < 0 {
-		dst.RightValue = n.RightValue
-		dst.RightCmpSym = n.RightCmpSym
+		dst.rValue = n.rValue
+		dst.rCmpSym = n.rCmpSym
 	} else {
-		dst.RightValue = n.RightValue
-		if t.RightCmpSym == LTE {
-			dst.RightCmpSym = t.RightCmpSym
+		dst.rValue = n.rValue
+		if t.rCmpSym == LTE {
+			dst.rCmpSym = t.rCmpSym
 		} else {
-			dst.RightCmpSym = n.RightCmpSym
+			dst.rCmpSym = n.rCmpSym
 		}
 	}
 }
 
 func rangeNodeIntersectTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
-	if checkRangeInclude(n, t.Value) {
+	if checkRangeInclude(n, t.value) {
 		return t, nil
 	} else {
-		return nil, fmt.Errorf("range node: %s can't intersect with term node: %s, range doesn't include term value", n.ToDSL(), t.ToDSL())
+		return lfNodeIntersectLfNode(n, t)
 	}
 }
 
 func rangeNodeIntersectTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
-	var includeValues = []LeafValue{}
-	for _, value := range t.Values {
-		if checkRangeInclude(n, value) {
-			includeValues = append(includeValues, value)
+	var excludes = []LeafValue{}
+	for _, term := range t.terms {
+		if !checkRangeInclude(n, term) {
+			excludes = append(excludes, term)
 		}
 	}
-	if len(includeValues) == 0 {
-		return nil, fmt.Errorf("failed to intersect %s and %s, err: range doesn't include any term value", n.ToDSL(), t.ToDSL())
-	}
-	return &TermsNode{
-		KvNode: t.KvNode,
-		Values: includeValues,
-		Boost:  t.Boost,
-	}, nil
+	return astNodeIntersectTermsNode(n, t, excludes)
 }
 
 func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {
@@ -321,8 +335,10 @@ func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {
 	// compare left value of n and t, and get higher value, and cmp symbol is associate with higher value
 	// compare left value of n and t, and get lower value, and cmp symbol is associate with lower value
 	var dst = &RangeNode{
-		KvNode: n.KvNode,
-		Boost:  n.Boost,
+		rgNode: rgNode{
+			fieldNode: n.fieldNode,
+		},
+		boostNode: n.boostNode,
 	}
 	intersectCmpLeft(t, n, dst)
 	intersectCmpRight(t, n, dst)
@@ -331,59 +347,59 @@ func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {
 }
 
 func intersectCmpLeft(n, t, dst *RangeNode) {
-	var leftFlag = CompareAny(t.LeftValue, n.LeftValue, n.Type)
+	var leftFlag = CompareAny(t.lValue, n.lValue, n.mType)
 	if leftFlag > 0 {
-		dst.LeftValue = t.LeftValue
-		dst.LeftCmpSym = t.LeftCmpSym
+		dst.lValue = t.lValue
+		dst.lCmpSym = t.lCmpSym
 	} else if leftFlag < 0 {
-		dst.LeftValue = n.LeftValue
-		dst.LeftCmpSym = n.LeftCmpSym
+		dst.lValue = n.lValue
+		dst.lCmpSym = n.lCmpSym
 	} else {
-		dst.LeftValue = n.LeftValue
-		if t.LeftCmpSym == GT {
-			dst.LeftCmpSym = t.LeftCmpSym
+		dst.lValue = n.lValue
+		if t.lCmpSym == GT {
+			dst.lCmpSym = t.lCmpSym
 		} else {
-			dst.LeftCmpSym = n.LeftCmpSym
+			dst.lCmpSym = n.lCmpSym
 		}
 	}
 }
 
 func intersectCmpRight(n, t, dst *RangeNode) {
-	var rightFlag = CompareAny(t.RightValue, n.RightValue, n.Type)
+	var rightFlag = CompareAny(t.rValue, n.rValue, n.mType)
 	if rightFlag < 0 {
-		dst.RightValue = t.RightValue
-		dst.RightCmpSym = t.RightCmpSym
+		dst.rValue = t.rValue
+		dst.rCmpSym = t.rCmpSym
 	} else if rightFlag > 0 {
-		dst.RightValue = n.RightValue
-		dst.RightCmpSym = n.RightCmpSym
+		dst.rValue = n.rValue
+		dst.rCmpSym = n.rCmpSym
 	} else {
-		dst.RightValue = n.RightValue
-		if t.RightCmpSym == LT {
-			dst.RightCmpSym = t.RightCmpSym
+		dst.rValue = n.rValue
+		if t.rCmpSym == LT {
+			dst.rCmpSym = t.rCmpSym
 		} else {
-			dst.RightCmpSym = n.RightCmpSym
+			dst.rCmpSym = n.rCmpSym
 		}
 	}
 }
 
 // check range node include a value
 func checkRangeInclude(n *RangeNode, v LeafValue) bool {
-	var leftCmpRes = CompareAny(v, n.LeftValue, n.Type)
-	var rightCmpRes = CompareAny(v, n.RightValue, n.Type)
+	var leftCmpRes = CompareAny(v, n.lValue, n.mType)
+	var rightCmpRes = CompareAny(v, n.rValue, n.mType)
 	return (leftCmpRes > 0 && rightCmpRes < 0) ||
-		(leftCmpRes == 0 && n.LeftCmpSym == GTE) ||
-		(rightCmpRes == 0 && n.RightCmpSym == LTE)
+		(leftCmpRes == 0 && n.lCmpSym == GTE) ||
+		(rightCmpRes == 0 && n.rCmpSym == LTE)
 }
 
 // check two range overlap
 func checkRangeOverlap(a, b *RangeNode) bool {
-	var cmpRes1 = CompareAny(a.RightValue, b.LeftValue, a.Type)
-	var cmpRes2 = CompareAny(b.RightValue, a.LeftValue, a.Type)
+	var cmpRes1 = CompareAny(a.rValue, b.lValue, a.mType)
+	var cmpRes2 = CompareAny(b.rValue, a.lValue, a.mType)
 	// two range don't have overlap zone is easy, there are two case:
 	// 1. max value of left range is lower than min value of right range
 	// 2. two range is exclude type range and max value of left range is equal with min value of right range
 	// inverse two case you can check overlap sense.
 	return !(cmpRes1 < 0 || cmpRes2 < 0 ||
-		(cmpRes1 == 0 && (a.RightCmpSym == LT || b.LeftCmpSym == GT)) ||
-		(cmpRes2 == 0 && (b.RightCmpSym == LT || a.LeftCmpSym == GT)))
+		(cmpRes1 == 0 && (a.rCmpSym == LT || b.lCmpSym == GT)) ||
+		(cmpRes2 == 0 && (b.rCmpSym == LT || a.lCmpSym == GT)))
 }

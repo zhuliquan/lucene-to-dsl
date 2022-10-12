@@ -1,7 +1,7 @@
 package dsl
 
 type OrNode struct {
-	OpNode
+	opNode
 	Nodes map[string][]AstNode
 	// minimum node should match
 	MinimumShouldMatch int

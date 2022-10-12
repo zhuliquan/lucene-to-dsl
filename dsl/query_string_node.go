@@ -8,12 +8,19 @@ import (
 
 // query_string node
 type QueryStringNode struct {
-	KvNode
-	Boost float64
+	kvNode
+	boostNode
 }
 
-func (n *QueryStringNode) getBoost() float64 {
-	return n.Boost
+func NewQueryStringNode(kvNode *kvNode, opts ...func(AstNode)) *QueryStringNode {
+	var n = &QueryStringNode{
+		kvNode:    *kvNode,
+		boostNode: boostNode{boost: 1.0},
+	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }
 
 func (n *QueryStringNode) UnionJoin(o AstNode) (AstNode, error) {
@@ -21,7 +28,7 @@ func (n *QueryStringNode) UnionJoin(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
-		if b, ok := o.(boostNode); ok {
+		if b, ok := o.(BoostNode); ok {
 			if CompareAny(n.getBoost(), b.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
 				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 			}
@@ -35,16 +42,12 @@ func (n *QueryStringNode) InterSect(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.InterSect(n)
 	default:
-		if b, ok := o.(boostNode); ok {
+		if b, ok := o.(BoostNode); ok {
 			if CompareAny(n.getBoost(), b.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
 				return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 			}
 		}
-		return &AndNode{
-			MustNodes: map[string][]AstNode{
-				o.NodeKey(): {n, o},
-			},
-		}, nil
+		return lfNodeIntersectLfNode(n, o)
 	}
 }
 
@@ -61,5 +64,11 @@ func (n *QueryStringNode) DslType() DslType {
 }
 
 func (n *QueryStringNode) ToDSL() DSL {
-	return DSL{"query_string": DSL{"query": n.Value, "default_field": n.Field, "boost": n.Boost}}
+	return DSL{
+		"query_string": DSL{
+			"query":         n.toPrintValue(),
+			"default_field": n.field,
+			"boost":         n.getBoost(),
+		},
+	}
 }

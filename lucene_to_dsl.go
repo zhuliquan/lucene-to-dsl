@@ -12,7 +12,7 @@ import (
 
 var (
 	mappingPath string
-	customFuncs map[string]func(interface{}, map[string]interface{}) (interface{}, error)
+	customFuncs map[string]mapping.ConvertFunc
 	onceInit    sync.Once
 )
 
@@ -20,7 +20,7 @@ func LoadMappingPath(path string) {
 	mappingPath = path
 }
 
-func LoadCustomFuncs(funcs map[string]func(interface{}, map[string]interface{}) (interface{}, error)) {
+func LoadCustomFuncs(funcs map[string]mapping.ConvertFunc) {
 	customFuncs = funcs
 }
 
@@ -37,7 +37,7 @@ func LuceneToDSL(luceneQuery string) (dsl.DSL, error) {
 
 	var err error
 	var qry *lucene.Lucene
-	var nod dsl.DSLNode
+	var nod dsl.AstNode
 	defer func() {
 		if r := recover(); r != nil {
 			nod = &dsl.EmptyNode{}
@@ -49,7 +49,7 @@ func LuceneToDSL(luceneQuery string) (dsl.DSL, error) {
 		return nil, err
 	}
 
-	if nod, err = convert.LuceneToDSLNode(qry); err != nil {
+	if nod, err = convert.LuceneToAstNode(qry); err != nil {
 		return nil, err
 	}
 

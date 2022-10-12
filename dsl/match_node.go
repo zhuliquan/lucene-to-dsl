@@ -2,12 +2,20 @@ package dsl
 
 // match node
 type MatchNode struct {
-	KvNode
-	Boost float64
+	kvNode
+	boostNode
+	analyzerNode
 }
 
-func (n *MatchNode) getBoost() float64 {
-	return n.Boost
+func NewMatchNode(kvNode *kvNode, opts ...func(AstNode)) *MatchNode {
+	var n = &MatchNode{
+		kvNode:    *kvNode,
+		boostNode: boostNode{boost: 1.0},
+	}
+	for _, opt := range opts {
+		opt(n)
+	}
+	return n
 }
 
 func (n *MatchNode) DslType() DslType {
@@ -27,8 +35,12 @@ func (n *MatchNode) Inverse() (AstNode, error) {
 }
 
 func (n *MatchNode) ToDSL() DSL {
-	if n == nil {
-		return EmptyDSL
+	return DSL{
+		"match": DSL{
+			n.field: DSL{
+				"query": n.toPrintValue(),
+				"boost": n.getBoost(),
+			},
+		},
 	}
-	return DSL{"match": DSL{n.Field: DSL{"value": n.Value, "boost": n.Boost}}}
 }

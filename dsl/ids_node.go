@@ -7,8 +7,12 @@ import (
 )
 
 type IdsNode struct {
-	LfNode
-	Values []string
+	lfNode
+	ids []string
+}
+
+func NewIdsNode(lfNode *lfNode, ids []string) *IdsNode {
+	return &IdsNode{lfNode: *lfNode, ids: ids}
 }
 
 func (n *IdsNode) DslType() DslType {
@@ -19,10 +23,10 @@ func (n *IdsNode) UnionJoin(o AstNode) (AstNode, error) {
 	if o.DslType() == IDS_DSL_TYPE {
 		var t = o.(*IdsNode)
 		return &IdsNode{
-			Values: ValueLstToStrLst(
+			ids: ValueLstToStrLst(
 				UnionJoinValueLst(
-					StrLstToValueLst(n.Values),
-					StrLstToValueLst(t.Values),
+					StrLstToValueLst(n.ids),
+					StrLstToValueLst(t.ids),
 					mapping.KEYWORD_FIELD_TYPE,
 				),
 			),
@@ -36,10 +40,10 @@ func (n *IdsNode) InterSect(o AstNode) (AstNode, error) {
 	if o.DslType() == IDS_DSL_TYPE {
 		var t = o.(*IdsNode)
 		return &IdsNode{
-			Values: ValueLstToStrLst(
+			ids: ValueLstToStrLst(
 				IntersectValueLst(
-					StrLstToValueLst(n.Values),
-					StrLstToValueLst(t.Values),
+					StrLstToValueLst(n.ids),
+					StrLstToValueLst(t.ids),
 					mapping.KEYWORD_FIELD_TYPE,
 				),
 			),
@@ -58,9 +62,13 @@ func (n *IdsNode) Inverse() (AstNode, error) {
 }
 
 func (n *IdsNode) NodeKey() string {
-	return "LEAF:_id"
+	return "_id"
 }
 
 func (n *IdsNode) ToDSL() DSL {
-	return DSL{"ids": DSL{"values": n.Values}}
+	return DSL{
+		"ids": DSL{
+			"values": n.ids,
+		},
+	}
 }

@@ -611,6 +611,55 @@ func TestCheckVersionType(t *testing.T) {
 	}
 }
 
+func TestCheckStringType(t *testing.T) {
+	type args struct {
+		t FieldType
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_keyword",
+			args: args{t: KEYWORD_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_text",
+			args: args{t: TEXT_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_wildcard",
+			args: args{t: WILDCARD_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_constant_keyword",
+			args: args{t: CONSTANT_KEYWORD_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_match_only_text",
+			args: args{t: MATCH_ONLY_TEXT_FIELD_TYPE},
+			want: true,
+		},
+		{
+			name: "test_int",
+			args: args{t: INTEGER_FIELD_TYPE},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckStringType(tt.args.t); got != tt.want {
+				t.Errorf("CheckVersionType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFillDefaultParameter(t *testing.T) {
 	type args struct {
 		pm *PropertyMapping

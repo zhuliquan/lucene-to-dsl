@@ -1,7 +1,7 @@
 package dsl
 
 type AndNode struct {
-	OpNode
+	opNode
 	MustNodes   map[string][]AstNode
 	FilterNodes map[string][]AstNode
 }
@@ -71,46 +71,14 @@ func (n *AndNode) Inverse() (AstNode, error) {
 
 func (n *AndNode) ToDSL() DSL {
 	var res = DSL{}
-	if nodes := getMustNodes(n); nodes != nil {
+	if nodes := flattenNodes(n.MustNodes); nodes != nil {
 		res["must"] = nodes
 	}
-	if nodes := getFilterNodes(n); nodes != nil {
+	if nodes := flattenNodes(n.FilterNodes); nodes != nil {
 		res["filter"] = nodes
 	}
 	if len(res) == 0 {
 		return EmptyDSL
 	}
 	return DSL{"bool": res}
-}
-
-func getMustNodes(n *AndNode) interface{} {
-	var mustDSLes = []DSL{}
-	for _, nodes := range n.MustNodes {
-		for _, node := range nodes {
-			mustDSLes = append(mustDSLes, node.ToDSL())
-		}
-	}
-	if len(mustDSLes) == 0 {
-		return nil
-	} else if len(mustDSLes) == 1 {
-		return mustDSLes[0]
-	} else {
-		return mustDSLes
-	}
-}
-
-func getFilterNodes(n *AndNode) interface{} {
-	var filterDSLes = []DSL{}
-	for _, nodes := range n.FilterNodes {
-		for _, node := range nodes {
-			filterDSLes = append(filterDSLes, node.ToDSL())
-		}
-	}
-	if len(filterDSLes) == 0 {
-		return nil
-	} else if len(filterDSLes) == 1 {
-		return filterDSLes[0]
-	} else {
-		return filterDSLes
-	}
 }
