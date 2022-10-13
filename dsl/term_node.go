@@ -114,10 +114,10 @@ func (n *TermNode) ToDSL() DSL {
 		return EmptyDSL
 	}
 	return DSL{
-		"term": DSL{
+		TERM_KEY: DSL{
 			n.field: DSL{
-				"value": n.toPrintValue(),
-				"boost": n.getBoost(),
+				VALUE_KEY: n.toPrintValue(),
+				BOOST_KEY: n.getBoost(),
 			},
 		},
 	}

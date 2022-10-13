@@ -42,6 +42,32 @@ func (b *boostNode) setBoost(boost float64) {
 	b.boost = boost
 }
 
+// expand node interface
+type ExpandsNode interface {
+	setMaxExpands(maxExpand int)
+	getMaxExpands() int
+}
+
+func WithMaxExpands(maxExpand int) func(AstNode) {
+	return func(n AstNode) {
+		if e, ok := n.(ExpandsNode); ok {
+			e.setMaxExpands(maxExpand)
+		}
+	}
+}
+
+type expandsNode struct {
+	maxExpands int
+}
+
+func (n *expandsNode) setMaxExpand(maxExpands int) {
+	n.maxExpands = maxExpands
+}
+
+func (n *expandsNode) getMaxExpands() int {
+	return n.maxExpands
+}
+
 // analyzer node interface
 type AnalyzerNode interface {
 	setAnalyzer(analyzer string)
@@ -72,6 +98,7 @@ func (a *analyzerNode) setAnalyzer(analyzer string) {
 // rewrite node interface
 type RewriteNode interface {
 	setRewrite(string)
+	getRewrite() string
 }
 
 func WithRewrite(rewrite string) func(AstNode) {
@@ -89,6 +116,36 @@ type rewriteNode struct {
 
 func (r *rewriteNode) setRewrite(rewrite string) {
 	r.rewrite = rewrite
+}
+
+func (r *rewriteNode) getRewrite() string {
+	return r.rewrite
+}
+
+// slop node interface
+type SlopNode interface {
+	setSlop(slop int)
+	getSlop() int
+}
+
+func WithSlop(slop int) func(AstNode) {
+	return func(n AstNode) {
+		if s, ok := n.(SlopNode); ok {
+			s.setSlop(slop)
+		}
+	}
+}
+
+type slopNode struct {
+	slop int
+}
+
+func (n *slopNode) getSlop() int {
+	return n.slop
+}
+
+func (n *slopNode) setSlop(slop int) {
+	n.slop = slop
 }
 
 // indicate whether does dsl query use filter context

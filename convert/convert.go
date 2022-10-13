@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
@@ -282,10 +283,16 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 		} else {
 			// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
 			var lowerDate, upperDate = getDateRange(d.(time.Time))
-			return dsl.NewRangeNode(dsl.NewRgNode(
-				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
-				property.Type, lowerDate, upperDate, dsl.GTE, dsl.LTE,
-			), dsl.WithBoost(termV.Boost())), nil
+			return dsl.NewRangeNode(
+				dsl.NewRgNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+					property.Type,
+					lowerDate, upperDate,
+					dsl.GTE, dsl.LTE,
+				),
+				dsl.WithBoost(termV.Boost()),
+				dsl.WithFormat(datemath_parser.EPOCH_MILLIS),
+			), nil
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {

@@ -6,6 +6,7 @@ import (
 
 type RegexpNode struct {
 	kvNode
+	boostNode
 	rewriteNode
 	pattern *regexp.Regexp
 }
@@ -13,6 +14,7 @@ type RegexpNode struct {
 func NewRegexNode(kvNode *kvNode, pattern *regexp.Regexp, opts ...func(AstNode)) *RegexpNode {
 	var n = &RegexpNode{
 		kvNode:      *kvNode,
+		boostNode:   boostNode{boost: 1.0},
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
 		pattern:     pattern,
 	}
@@ -98,11 +100,13 @@ func regexNodeIntersectTermsNode(n *RegexpNode, o *TermsNode) (AstNode, error) {
 }
 
 func (n *RegexpNode) ToDSL() DSL {
-	return DSL{"regexp": DSL{
-		n.field: DSL{
-			"value":   n.toPrintValue(),
-			"rewrite": n.rewrite,
+	return DSL{
+		REGEXP_KEY: DSL{
+			n.field: DSL{
+				VALUE_KEY:   n.toPrintValue(),
+				BOOST_KEY:   n.getBoost(),
+				REWRITE_KEY: n.getRewrite(),
+			},
 		},
-	},
 	}
 }

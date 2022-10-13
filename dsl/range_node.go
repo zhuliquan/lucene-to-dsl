@@ -174,16 +174,15 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 }
 
 func (n *RangeNode) ToDSL() DSL {
-	var res = DSL{}
-	res[n.lCmpSym.String()] = leafValueToPrintValue(n.lValue, n.mType)
-	res[n.rCmpSym.String()] = leafValueToPrintValue(n.rValue, n.mType)
-	res["boost"] = n.boost
-	addValueForDSL(res, "relation", n.relation)
-	addValueForDSL(res, "time_zone", n.timeZone)
-	if mapping.CheckDateType(n.mType) {
-		res["format"] = "epoch_millis"
+	var res = DSL{
+		BOOST_KEY:          n.getBoost(),
+		RELATION_KEY:       n.relation,
+		n.lCmpSym.String(): leafValueToPrintValue(n.lValue, n.mType),
+		n.rCmpSym.String(): leafValueToPrintValue(n.rValue, n.mType),
 	}
-	return DSL{"range": DSL{n.field: res}}
+	addValueForDSL(res, TIME_ZONE_KEY, n.timeZone)
+	addValueForDSL(res, FORMAT_KEY, n.format)
+	return DSL{RANGE_KEY: DSL{n.field: res}}
 }
 
 func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {

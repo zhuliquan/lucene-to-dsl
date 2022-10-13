@@ -62,10 +62,10 @@ func (n *PrefixNode) Inverse() (AstNode, error) {
 
 func (n *PrefixNode) ToDSL() DSL {
 	return DSL{
-		"prefix": DSL{
+		PREFIX_KEY: DSL{
 			n.field: DSL{
-				"value":   n.toPrintValue(),
-				"rewrite": n.rewrite,
+				VALUE_KEY:   n.toPrintValue(),
+				REWRITE_KEY: n.getRewrite(),
 			},
 		},
 	}

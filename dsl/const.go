@@ -38,6 +38,7 @@ const (
 	MATCH_DSL_TYPE
 	MATCH_PHRASE_DSL_TYPE
 	QUERY_STRING_DSL_TYPE
+	MATCH_PHRASE_PREFIX_DSL_TYPE
 )
 
 const (
@@ -175,4 +176,52 @@ const (
 	CONTAINS = "CONTAINS"
 	// Matches documents with a range field value entirely within the query’s range.
 	WITHIN = "WITHIN"
+)
+
+// regex flags reference: https://www.elastic.co/guide/en/elasticsearch/reference/7.13/regexp-syntax.html#regexp-optional-operators
+const (
+	ALL_FLAG          = "ALL"
+	COMPLEMENT_FLAG   = "COMPLEMENT"
+	INTERVAL_FLAG     = "INTERVAL"
+	INTERSECTION_FLAG = "INTERSECTION"
+	ANYSTRING_FLAG    = "ANYSTRING"
+)
+
+// dsl key
+const (
+	SLOP_KEY   = "slop"
+	QUERY_KEY  = "query"
+	BOOST_KEY  = "boost"
+	FIELD_KEY  = "field"
+	VALUE_KEY  = "value"
+	FLAGS_KEY  = "flags"
+	VALUES_KEY = "values"
+	FORMAT_KEY = "format"
+
+	REWRITE_KEY                 = "rewrite"
+	RELATION_KEY                = "relation"
+	FUZZINESS_KEY               = "fuzziness"
+	TIME_ZONE_KEY               = "time_zone"
+	PREFIX_LENGTH_KEY           = "prefix_length"
+	DEFAULT_FIELD_KEY           = "default_field"
+	MAX_EXPANSIONS_KEY          = "max_expansions"
+	TRANSPOSITIONS_KEY          = "transpositions"
+	MAX_DETERMINIZED_STATES_KEY = "max_determinized_states"
+)
+
+const (
+	IDS_KEY    = "ids"
+	TERM_KEY   = "term"
+	TERMS_KEY  = "terms"
+	MATCH_KEY  = "match"
+	FUZZY_KEY  = "fuzzy"
+	RANGE_KEY  = "range"
+	EXISTS_KEY = "exists"
+	PREFIX_KEY = "prefix"
+	REGEXP_KEY = "regexp"
+
+	WILDCARD_KEY            = "wildcard"
+	QUERY_STRING_KEY        = "query_string"
+	MATCH_PHRASE_KEY        = "match_phrase"
+	MATCH_PHRASE_PREFIX_KEY = "match_phrase_prefix"
 )

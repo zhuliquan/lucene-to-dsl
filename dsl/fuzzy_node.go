@@ -4,9 +4,9 @@ package dsl
 type FuzzyNode struct {
 	kvNode
 	rewriteNode
+	expandsNode
 	fuzziness      string
 	prefixLength   int
-	maxExpansions  int
 	transpositions bool
 }
 
@@ -14,14 +14,6 @@ func WithPrefixLength(prefixLength int) func(AstNode) {
 	return func(n AstNode) {
 		if v, ok := n.(*FuzzyNode); ok {
 			v.prefixLength = prefixLength
-		}
-	}
-}
-
-func WithMaxExpansions(maxExpansions int) func(AstNode) {
-	return func(n AstNode) {
-		if v, ok := n.(*FuzzyNode); ok {
-			v.maxExpansions = maxExpansions
 		}
 	}
 }
@@ -46,9 +38,9 @@ func NewFuzzyNode(kvNode *kvNode, opts ...func(AstNode)) *FuzzyNode {
 	var n = &FuzzyNode{
 		kvNode:         *kvNode,
 		rewriteNode:    rewriteNode{rewrite: CONSTANT_SCORE},
+		expandsNode:    expandsNode{maxExpands: 50},
 		fuzziness:      "AUTO",
 		prefixLength:   0,
-		maxExpansions:  50,
 		transpositions: true,
 	}
 	for _, opt := range opts {
@@ -89,14 +81,14 @@ func (n *FuzzyNode) Inverse() (AstNode, error) {
 
 func (n *FuzzyNode) ToDSL() DSL {
 	return DSL{
-		"fuzzy": DSL{
+		FUZZY_KEY: DSL{
 			n.field: DSL{
-				"value":          n.toPrintValue(),
-				"rewrite":        n.rewrite,
-				"fuzziness":      n.fuzziness,
-				"prefix_length":  n.prefixLength,
-				"max_expansions": n.maxExpansions,
-				"transpositions": n.transpositions,
+				VALUE_KEY:          n.toPrintValue(),
+				REWRITE_KEY:        n.rewrite,
+				FUZZINESS_KEY:      n.fuzziness,
+				PREFIX_LENGTH_KEY:  n.prefixLength,
+				MAX_EXPANSIONS_KEY: n.getMaxExpands(),
+				TRANSPOSITIONS_KEY: n.transpositions,
 			},
 		},
 	}

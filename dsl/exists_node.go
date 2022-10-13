@@ -1,5 +1,7 @@
 package dsl
 
+const _EXISTS_ = "_exists_"
+
 type ExistsNode struct {
 	fieldNode
 }
@@ -34,8 +36,8 @@ func (n *ExistsNode) Inverse() (AstNode, error) {
 
 func (n *ExistsNode) ToDSL() DSL {
 	return DSL{
-		"exists": DSL{
-			"field": n.field,
+		EXISTS_KEY: DSL{
+			FIELD_KEY: n.field,
 		},
 	}
 }

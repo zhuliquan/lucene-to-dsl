@@ -115,9 +115,9 @@ func (n *TermsNode) ToDSL() DSL {
 		return EmptyDSL
 	}
 	return DSL{
-		"terms": DSL{
-			n.field: n.terms,
-			"boost": n.boost,
+		TERMS_KEY: DSL{
+			n.field:   n.terms,
+			BOOST_KEY: n.getBoost(),
 		},
 	}
 }

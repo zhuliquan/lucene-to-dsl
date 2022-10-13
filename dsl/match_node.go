@@ -4,13 +4,15 @@ package dsl
 type MatchNode struct {
 	kvNode
 	boostNode
+	expandsNode
 	analyzerNode
 }
 
 func NewMatchNode(kvNode *kvNode, opts ...func(AstNode)) *MatchNode {
 	var n = &MatchNode{
-		kvNode:    *kvNode,
-		boostNode: boostNode{boost: 1.0},
+		kvNode:      *kvNode,
+		boostNode:   boostNode{boost: 1.0},
+		expandsNode: expandsNode{maxExpands: 50},
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -36,10 +38,11 @@ func (n *MatchNode) Inverse() (AstNode, error) {
 
 func (n *MatchNode) ToDSL() DSL {
 	return DSL{
-		"match": DSL{
+		MATCH_KEY: DSL{
 			n.field: DSL{
-				"query": n.toPrintValue(),
-				"boost": n.getBoost(),
+				QUERY_KEY:          n.toPrintValue(),
+				BOOST_KEY:          n.getBoost(),
+				MAX_EXPANSIONS_KEY: n.getMaxExpands(),
 			},
 		},
 	}

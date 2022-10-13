@@ -65,10 +65,10 @@ func (n *QueryStringNode) DslType() DslType {
 
 func (n *QueryStringNode) ToDSL() DSL {
 	return DSL{
-		"query_string": DSL{
-			"query":         n.toPrintValue(),
-			"default_field": n.field,
-			"boost":         n.getBoost(),
+		QUERY_STRING_KEY: DSL{
+			QUERY_KEY:         n.toPrintValue(),
+			BOOST_KEY:         n.getBoost(),
+			DEFAULT_FIELD_KEY: n.field,
 		},
 	}
 }

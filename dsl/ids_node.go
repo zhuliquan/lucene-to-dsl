@@ -6,6 +6,8 @@ import (
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
+const _ID = "_id"
+
 type IdsNode struct {
 	lfNode
 	ids []string
@@ -62,13 +64,13 @@ func (n *IdsNode) Inverse() (AstNode, error) {
 }
 
 func (n *IdsNode) NodeKey() string {
-	return "_id"
+	return _ID
 }
 
 func (n *IdsNode) ToDSL() DSL {
 	return DSL{
-		"ids": DSL{
-			"values": n.ids,
+		IDS_KEY: DSL{
+			VALUES_KEY: n.ids,
 		},
 	}
 }

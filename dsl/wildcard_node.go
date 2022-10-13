@@ -4,15 +4,21 @@ import "fmt"
 
 type WildCardNode struct {
 	kvNode
-	rewriteNode
 	boostNode
+	rewriteNode
+	flags string
+
+	maxDeterminizedStates int
 }
 
 func NewWildCardNode(kvNode *kvNode, opts ...func(AstNode)) *WildCardNode {
 	var n = &WildCardNode{
 		kvNode:      *kvNode,
-		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
 		boostNode:   boostNode{boost: 1.0},
+		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
+		flags:       ALL_FLAG,
+
+		maxDeterminizedStates: 1000,
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -61,10 +67,14 @@ func (n *WildCardNode) Inverse() (AstNode, error) {
 
 func (n *WildCardNode) ToDSL() DSL {
 	return DSL{
-		"wildcard": DSL{
+		WILDCARD_KEY: DSL{
 			n.field: DSL{
-				"values": n.toPrintValue(),
-				"boost":  n.getBoost(),
+				VALUE_KEY:   n.toPrintValue(),
+				BOOST_KEY:   n.getBoost(),
+				FLAGS_KEY:   n.flags,
+				REWRITE_KEY: n.getRewrite(),
+
+				MAX_DETERMINIZED_STATES_KEY: 1000,
 			},
 		},
 	}
