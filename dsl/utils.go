@@ -14,6 +14,17 @@ import (
 	"github.com/zhuliquan/scaled_float"
 )
 
+func FindAny(vl []LeafValue, v LeafValue, typ mapping.FieldType) int {
+	idx := -1
+	for i, x := range vl {
+		if CompareAny(x, v, typ) == 0 {
+			idx = i
+			break
+		}
+	}
+	return idx
+}
+
 func ValueLstToStrLst(vl []LeafValue) []string {
 	var rl = make([]string, len(vl))
 	for i, v := range vl {
@@ -323,7 +334,7 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 	var filterNodes = map[string][]AstNode{
 		a.NodeKey(): {},
 	}
-	if af.filterCtx() {
+	if af.isFilterCtx() {
 		filterNodes[a.NodeKey()] = append(
 			filterNodes[a.NodeKey()], a,
 		)
@@ -332,7 +343,7 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 			mustNodes[a.NodeKey()], a,
 		)
 	}
-	if bf.filterCtx() {
+	if bf.isFilterCtx() {
 		filterNodes[a.NodeKey()] = append(
 			filterNodes[a.NodeKey()], b,
 		)
@@ -415,7 +426,7 @@ func astNodeUnionJoinTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (A
 		return lfNodeUnionJoinLfNode(n, &TermNode{
 			kvNode: kvNode{
 				fieldNode: o.fieldNode,
-				valueNode: valueNode{mType: o.mType, value: excludes[0]},
+				valueNode: valueNode{valueType: o.valueType, value: excludes[0]},
 			},
 			boostNode: o.boostNode,
 		})
@@ -423,7 +434,7 @@ func astNodeUnionJoinTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (A
 		return lfNodeUnionJoinLfNode(n,
 			&TermsNode{
 				fieldNode: o.fieldNode,
-				mType:     o.mType,
+				valueType: o.valueType,
 				terms:     excludes,
 				boostNode: o.boostNode,
 			},
@@ -438,7 +449,7 @@ func astNodeIntersectTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (A
 		return lfNodeIntersectLfNode(n, &TermNode{
 			kvNode: kvNode{
 				fieldNode: o.fieldNode,
-				valueNode: valueNode{mType: o.mType, value: excludes[0]},
+				valueNode: valueNode{valueType: o.valueType, value: excludes[0]},
 			},
 			boostNode: o.boostNode,
 		})
@@ -446,7 +457,7 @@ func astNodeIntersectTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (A
 		return lfNodeIntersectLfNode(n,
 			&TermsNode{
 				fieldNode: o.fieldNode,
-				mType:     o.mType,
+				valueType: o.valueType,
 				terms:     excludes,
 				boostNode: o.boostNode,
 			},
@@ -468,4 +479,8 @@ func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
 	} else {
 		return x
 	}
+}
+
+func compareBoost(a, b BoostNode) int {
+	return CompareAny(a.getBoost(), b.getBoost(), mapping.DOUBLE_FIELD_TYPE)
 }

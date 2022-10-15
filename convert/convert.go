@@ -272,7 +272,7 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 				field, termV.String(), property.Type, err)
 		} else {
 			return dsl.NewTermNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(val, property.Type)),
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(val, dsl.NewValueType(property.Type, true))),
 				dsl.WithBoost(termV.Boost()),
 			), nil
 		}
@@ -297,7 +297,7 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {
 			return dsl.NewTermNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(ip, property.Type)),
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(ip, dsl.NewValueType(property.Type, true))),
 				dsl.WithBoost(termV.Boost()),
 			), nil
 		}
@@ -313,12 +313,12 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
 		if termV.GetTermType()|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 			return dsl.NewQueryStringNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, property.Type)),
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
 				dsl.WithBoost(termV.Boost()),
 			), nil
 		} else {
 			return dsl.NewMatchPhraseNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, property.Type)),
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
 				dsl.WithBoost(termV.Boost()),
 			), nil
 		}
@@ -338,7 +338,7 @@ func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Prop
 		return dsl.NewRegexNode(
 			dsl.NewKVNode(
 				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
-				dsl.NewValueNode(valStr, property.Type),
+				dsl.NewValueNode(valStr, dsl.NewValueType(property.Type, true)),
 			),
 			pattern,
 		), nil

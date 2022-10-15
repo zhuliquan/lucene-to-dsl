@@ -150,24 +150,30 @@ func (n *slopNode) setSlop(slop int) {
 
 // indicate whether does dsl query use filter context
 type FilterCtxNode interface {
-	filterCtx() bool
+	isFilterCtx() bool
+	setFilterCtx(filterCtx bool)
 }
 
 // indicate whether is node array data type
-type ArrayTypNode interface {
-	isArray() bool
+type ArrayTypeNode interface {
+	isArrayType() bool
+	setArrayType()
 }
 
 type opNode struct {
-	filter bool
+	filterCtx bool
 }
 
-func NewOpNode(filter bool) *opNode {
-	return &opNode{filter: filter}
+func NewOpNode(filterCtx bool) *opNode {
+	return &opNode{filterCtx: filterCtx}
 }
 
-func (n *opNode) filterCtx() bool {
-	return n.filter
+func (n *opNode) isFilterCtx() bool {
+	return n.filterCtx
+}
+
+func (n *opNode) setFilterCtx(filterCtx bool) {
+	n.filterCtx = filterCtx
 }
 
 func (n *opNode) AstType() AstType {
@@ -176,14 +182,12 @@ func (n *opNode) AstType() AstType {
 
 // leaf node
 type lfNode struct {
-	filter bool // whether node is filter
-	isList bool // whether node is list type
+	filterCtx bool // whether node is filter ctx
 }
 
 func NewLfNode(opts ...func(*lfNode)) *lfNode {
 	var n = &lfNode{
-		filter: false,
-		isList: true,
+		filterCtx: false,
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -191,24 +195,18 @@ func NewLfNode(opts ...func(*lfNode)) *lfNode {
 	return n
 }
 
-func UseFilterCtx(filter bool) func(*lfNode) {
+func WithFilterCtx(filterCtx bool) func(*lfNode) {
 	return func(lf *lfNode) {
-		lf.filter = filter
+		lf.filterCtx = filterCtx
 	}
 }
 
-func IsArrayTyp(isList bool) func(*lfNode) {
-	return func(lf *lfNode) {
-		lf.isList = isList
-	}
+func (n *lfNode) isFilterCtx() bool {
+	return n.filterCtx
 }
 
-func (n *lfNode) filterCtx() bool {
-	return n.filter
-}
-
-func (n *lfNode) isArray() bool {
-	return n.isList
+func (n *lfNode) setFilterCtx(filterCtx bool) {
+	n.filterCtx = filterCtx
 }
 
 func (n *lfNode) AstType() AstType {
@@ -221,12 +219,12 @@ type fieldNode struct {
 }
 
 type valueNode struct {
+	valueType
 	value LeafValue
-	mType mapping.FieldType
 }
 
-func NewValueNode(value LeafValue, mType mapping.FieldType) *valueNode {
-	return &valueNode{value: value, mType: mType}
+func NewValueNode(value LeafValue, valueType *valueType) *valueNode {
+	return &valueNode{value: value, valueType: *valueType}
 }
 
 func (v *valueNode) toPrintValue() interface{} {

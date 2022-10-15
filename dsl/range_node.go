@@ -3,8 +3,6 @@ package dsl
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 type RangeNode struct {
@@ -71,7 +69,7 @@ func (n *RangeNode) DslType() DslType {
 
 func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 	if b, ok := o.(BoostNode); ok {
-		if CompareAny(b.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
+		if compareBoost(n, b) != 0 {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost value isn't equal", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -91,7 +89,7 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 
 func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 	if b, ok := o.(BoostNode); ok {
-		if CompareAny(b.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
+		if compareBoost(n, b) != 0 {
 			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost value isn't equal", n.ToDSL(), o.ToDSL())
 		}
 	}

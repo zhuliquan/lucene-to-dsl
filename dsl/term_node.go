@@ -23,8 +23,8 @@ func (n *TermNode) DslType() DslType {
 }
 
 func (n *TermNode) UnionJoin(o AstNode) (AstNode, error) {
-	if bn, ok := o.(BoostNode); ok {
-		if CompareAny(bn.getBoost(), n.getBoost(), n.mType) != 0 {
+	if b, ok := o.(BoostNode); ok {
+		if compareBoost(n, b) != 0 {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -44,8 +44,8 @@ func (n *TermNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
-	if bn, ok := o.(BoostNode); ok {
-		if CompareAny(bn.getBoost(), n.getBoost(), n.mType) != 0 {
+	if b, ok := o.(BoostNode); ok {
+		if compareBoost(n, b) != 0 {
 			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 		}
 	}
@@ -78,7 +78,7 @@ func termNodeUnionJoinTermNode(n, o *TermNode) (AstNode, error) {
 		return &TermsNode{
 			fieldNode: n.fieldNode,
 			boostNode: n.boostNode,
-			mType:     n.mType,
+			valueType: n.valueType,
 			terms:     []LeafValue{n.value, o.value},
 		}, nil
 	}
@@ -88,7 +88,7 @@ func termNodeUnionJoinTermsNode(n *TermNode, o *TermsNode) (AstNode, error) {
 	return &TermsNode{
 		fieldNode: n.fieldNode,
 		boostNode: n.boostNode,
-		mType:     n.mType,
+		valueType: n.valueType,
 		terms:     UnionJoinValueLst([]LeafValue{n.value}, o.terms, n.mType),
 	}, nil
 }
@@ -96,23 +96,52 @@ func termNodeUnionJoinTermsNode(n *TermNode, o *TermsNode) (AstNode, error) {
 func termNodeIntersectTermNode(n, o *TermNode) (AstNode, error) {
 	if CompareAny(o.value, n.value, n.mType) == 0 {
 		return o, nil
-	} else {
+	} else if n.isArrayType() {
 		return lfNodeIntersectLfNode(n, o)
+	} else {
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
 	}
 }
 
 func termNodeIntersectTermsNode(n *TermNode, o *TermsNode) (AstNode, error) {
-	// var values = IntersectValueLst([]LeafValue{n.Value}, o.Values, n.Type)
-	// if len(o.Values) == len(values) {
-	// 	n.
-	// }
-	return nil, nil
+	if idx := FindAny(o.terms, n.value, n.mType); idx != -1 {
+		if n.isArrayType() {
+			terms := append(o.terms[:idx], o.terms[idx+1:]...)
+			if len(terms) == 0 {
+				return n, nil
+			} else if len(terms) == 1 {
+				return lfNodeIntersectLfNode(
+					n, &TermNode{
+						kvNode: kvNode{
+							fieldNode: o.fieldNode,
+							valueNode: valueNode{value: terms[0], valueType: o.valueType},
+						},
+						boostNode: o.boostNode,
+					},
+				)
+			} else {
+				return lfNodeIntersectLfNode(
+					n, &TermsNode{
+						fieldNode: o.fieldNode,
+						boostNode: o.boostNode,
+						valueType: o.valueType,
+						terms:     terms,
+					},
+				)
+			}
+		} else {
+			return n, nil
+		}
+	} else {
+		if n.isArrayType() {
+			return lfNodeIntersectLfNode(n, o)
+		} else {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
+		}
+	}
 }
 
 func (n *TermNode) ToDSL() DSL {
-	if n == nil {
-		return EmptyDSL
-	}
 	return DSL{
 		TERM_KEY: DSL{
 			n.field: DSL{

@@ -194,7 +194,7 @@ func TestConvertToGroup(t *testing.T) {
 				},
 			},
 			want: dsl.NewMatchPhraseNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), "x"), dsl.NewValueNode("78", mapping.TEXT_FIELD_TYPE)),
+				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), "x"), dsl.NewValueNode("78", dsl.NewValueType(mapping.TEXT_FIELD_TYPE, true))),
 			),
 			wantErr: false,
 		},
@@ -229,7 +229,7 @@ func TestConvertToGroup(t *testing.T) {
 			want: dsl.NewQueryStringNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-					dsl.NewValueNode("78", mapping.TEXT_FIELD_TYPE),
+					dsl.NewValueNode("78", dsl.NewValueType(mapping.TEXT_FIELD_TYPE, true)),
 				),
 				dsl.WithBoost(0.8),
 			),
@@ -266,7 +266,7 @@ func TestConvertToGroup(t *testing.T) {
 			want: dsl.NewMatchPhraseNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-					dsl.NewValueNode("78", mapping.TEXT_FIELD_TYPE),
+					dsl.NewValueNode("78", dsl.NewValueType(mapping.TEXT_FIELD_TYPE, true)),
 				),
 				dsl.WithBoost(0.8),
 			),

@@ -9,15 +9,15 @@ import (
 type TermsNode struct {
 	fieldNode
 	boostNode
-	mType mapping.FieldType
+	valueType
 	terms []LeafValue
 }
 
-func NewTermsNode(fieldNode *fieldNode, mType mapping.FieldType, terms []LeafValue, opts ...func(AstNode)) *TermsNode {
+func NewTermsNode(fieldNode *fieldNode, valueType *valueType, terms []LeafValue, opts ...func(AstNode)) *TermsNode {
 	var n = &TermsNode{
 		fieldNode: *fieldNode,
+		valueType: *valueType,
 		boostNode: boostNode{boost: 1.0},
-		mType:     mType,
 		terms:     terms,
 	}
 	for _, opt := range opts {
@@ -92,16 +92,13 @@ func (n *TermsNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *TermsNode) Inverse() (AstNode, error) {
-	if n == nil {
-		return nil, ErrInverseNilNode
-	}
 	var nodes = []AstNode{}
 	for _, val := range n.terms {
 		nodes = append(
 			nodes, &TermNode{
 				kvNode: kvNode{
 					fieldNode: n.fieldNode,
-					valueNode: valueNode{mType: n.mType, value: val},
+					valueNode: valueNode{valueType: n.valueType, value: val},
 				},
 				boostNode: n.boostNode,
 			},
@@ -111,9 +108,6 @@ func (n *TermsNode) Inverse() (AstNode, error) {
 }
 
 func (n *TermsNode) ToDSL() DSL {
-	if n == nil {
-		return EmptyDSL
-	}
 	return DSL{
 		TERMS_KEY: DSL{
 			n.field:   n.terms,
