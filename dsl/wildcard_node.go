@@ -6,9 +6,8 @@ type WildCardNode struct {
 	kvNode
 	boostNode
 	rewriteNode
+	statesNode
 	flags string
-
-	maxDeterminizedStates int
 }
 
 func NewWildCardNode(kvNode *kvNode, opts ...func(AstNode)) *WildCardNode {
@@ -16,9 +15,8 @@ func NewWildCardNode(kvNode *kvNode, opts ...func(AstNode)) *WildCardNode {
 		kvNode:      *kvNode,
 		boostNode:   boostNode{boost: 1.0},
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
+		statesNode:  statesNode{maxDeterminizedStates: 10000},
 		flags:       ALL_FLAG,
-
-		maxDeterminizedStates: 1000,
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -74,7 +72,7 @@ func (n *WildCardNode) ToDSL() DSL {
 				FLAGS_KEY:   n.flags,
 				REWRITE_KEY: n.getRewrite(),
 
-				MAX_DETERMINIZED_STATES_KEY: 1000,
+				MAX_DETERMINIZED_STATES_KEY: n.getMaxDeterminizedStates(),
 			},
 		},
 	}

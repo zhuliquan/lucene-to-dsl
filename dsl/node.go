@@ -120,6 +120,32 @@ func (r *rewriteNode) getRewrite() string {
 	return r.rewrite
 }
 
+// interface node which has parameter of max determinized states
+type StatesNode interface {
+	getMaxDeterminizedStates() int
+	setMaxDeterminizedStates(int)
+}
+
+func WithMaxDeterminizedStates(states int) func(AstNode) {
+	return func(n AstNode) {
+		if r, ok := n.(StatesNode); ok {
+			r.setMaxDeterminizedStates(states)
+		}
+	}
+}
+
+type statesNode struct {
+	maxDeterminizedStates int
+}
+
+func (s *statesNode) getMaxDeterminizedStates() int {
+	return s.maxDeterminizedStates
+}
+
+func (s *statesNode) setMaxDeterminizedStates(states int) {
+	s.maxDeterminizedStates = states
+}
+
 // slop node interface
 type SlopNode interface {
 	setSlop(slop int)

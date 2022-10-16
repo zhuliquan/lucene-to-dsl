@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"fmt"
 	"regexp"
 )
 
@@ -8,6 +9,8 @@ type RegexpNode struct {
 	kvNode
 	boostNode
 	rewriteNode
+	statesNode
+
 	pattern *regexp.Regexp
 }
 
@@ -16,6 +19,7 @@ func NewRegexNode(kvNode *kvNode, pattern *regexp.Regexp, opts ...func(AstNode))
 		kvNode:      *kvNode,
 		boostNode:   boostNode{boost: 1.0},
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
+		statesNode:  statesNode{maxDeterminizedStates: 10000},
 		pattern:     pattern,
 	}
 	for _, opt := range opts {
@@ -82,21 +86,53 @@ func regexNodeUnionJoinTermsNode(n *RegexpNode, t *TermsNode) (AstNode, error) {
 }
 
 func regexNodeIntersectTermNode(n *RegexpNode, o *TermNode) (AstNode, error) {
-	if n.pattern.Match([]byte(o.value.(string))) {
+	if n.isArrayType() {
+		return lfNodeIntersectLfNode(n, o)
+	} else if n.pattern.Match([]byte(o.value.(string))) {
 		return o, nil
 	} else {
-		return lfNodeIntersectLfNode(n, o)
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
 	}
 }
 
 func regexNodeIntersectTermsNode(n *RegexpNode, o *TermsNode) (AstNode, error) {
-	var excludes = []LeafValue{}
-	for _, term := range o.terms {
-		if !n.pattern.Match([]byte(term.(string))) {
-			excludes = append(excludes, term)
+	if n.isArrayType() {
+		var excludes = []LeafValue{}
+		for _, term := range o.terms {
+			if !n.pattern.Match([]byte(term.(string))) {
+				excludes = append(excludes, term)
+			}
+		}
+		return astNodeIntersectTermsNode(n, o, excludes)
+	} else {
+		var includes = []LeafValue{}
+		for _, term := range o.terms {
+			if n.pattern.Match([]byte(term.(string))) {
+				includes = append(includes, term)
+			}
+		}
+		if len(includes) == 0 {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
+		} else if len(includes) == 1 {
+			return &TermNode{
+				kvNode: kvNode{
+					fieldNode: n.fieldNode,
+					valueNode: valueNode{
+						valueType: n.valueType,
+						value:     includes[0],
+					},
+				},
+				boostNode: n.boostNode,
+			}, nil
+		} else {
+			return &TermsNode{
+				fieldNode: n.fieldNode,
+				boostNode: n.boostNode,
+				valueType: n.valueType,
+				terms:     includes,
+			}, nil
 		}
 	}
-	return astNodeIntersectTermsNode(n, o, excludes)
 }
 
 func (n *RegexpNode) ToDSL() DSL {
@@ -106,6 +142,8 @@ func (n *RegexpNode) ToDSL() DSL {
 				VALUE_KEY:   n.toPrintValue(),
 				BOOST_KEY:   n.getBoost(),
 				REWRITE_KEY: n.getRewrite(),
+
+				MAX_DETERMINIZED_STATES_KEY: n.getMaxDeterminizedStates(),
 			},
 		},
 	}

@@ -1,6 +1,9 @@
 package dsl
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type PrefixNode struct {
 	kvNode
@@ -105,34 +108,72 @@ func prefixNodeUnionJoinPrefixNode(n, o *PrefixNode) (AstNode, error) {
 }
 
 func prefixNodeIntersectTermNode(n *PrefixNode, o *TermNode) (AstNode, error) {
-	var prefixN = n.value.(string)
-	var valueO = n.value.(string)
-	if strings.HasPrefix(valueO, prefixN) {
-		return o, nil
-	} else {
+	if n.isArrayType() {
 		return lfNodeIntersectLfNode(n, o)
+	} else {
+		var prefixN = n.value.(string)
+		var term = o.value.(string)
+		if strings.HasPrefix(term, prefixN) {
+			return o, nil
+		} else {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
+		}
 	}
 }
 
 func prefixNodeIntersectTermsNode(n *PrefixNode, o *TermsNode) (AstNode, error) {
-	var prefixN = n.value.(string)
-	var excludes = []LeafValue{}
-	for _, term := range o.terms {
-		if !strings.HasPrefix(term.(string), prefixN) {
-			excludes = append(excludes, term)
+	if n.isArrayType() {
+		var prefixN = n.value.(string)
+		var excludes = []LeafValue{}
+		for _, term := range o.terms {
+			if !strings.HasPrefix(term.(string), prefixN) {
+				excludes = append(excludes, term)
+			}
+		}
+		return astNodeIntersectTermsNode(n, o, excludes)
+	} else {
+		var includes = []LeafValue{}
+		for _, term := range o.terms {
+			if strings.HasPrefix(term.(string), n.value.(string)) {
+				includes = append(includes, term)
+			}
+		}
+		if len(includes) == 0 {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
+		} else if len(includes) == 1 {
+			return &TermNode{
+				kvNode: kvNode{
+					fieldNode: o.fieldNode,
+					valueNode: valueNode{
+						valueType: o.valueType,
+						value:     includes[0],
+					},
+				},
+				boostNode: o.boostNode,
+			}, nil
+		} else {
+			return &TermsNode{
+				fieldNode: o.fieldNode,
+				boostNode: o.boostNode,
+				valueType: o.valueType,
+				terms:     includes,
+			}, nil
 		}
 	}
-	return astNodeIntersectTermsNode(n, o, excludes)
 }
 
 func prefixNodeIntersectPrefixNode(n, o *PrefixNode) (AstNode, error) {
-	var prefixN = n.value.(string)
-	var prefixO = o.value.(string)
-	if strings.HasPrefix(prefixN, prefixO) {
-		return n, nil
-	} else if strings.HasPrefix(prefixO, prefixN) {
-		return o, nil
-	} else {
+	if n.isArrayType() {
 		return lfNodeIntersectLfNode(n, o)
+	} else {
+		var prefixN = n.value.(string)
+		var prefixO = o.value.(string)
+		if strings.HasPrefix(prefixN, prefixO) {
+			return n, nil
+		} else if strings.HasPrefix(prefixO, prefixN) {
+			return o, nil
+		} else {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: prefix value is conflict", n.ToDSL(), o.ToDSL())
+		}
 	}
 }

@@ -45,7 +45,6 @@ func (n *TermsNode) UnionJoin(o AstNode) (AstNode, error) {
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
 	default:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
-
 	}
 }
 
