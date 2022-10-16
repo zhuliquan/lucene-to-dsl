@@ -172,7 +172,7 @@ func compareIp(a, b LeafValue) int {
 }
 
 func castUInt(x LeafValue) uint64 {
-	switch x.(type) {
+	switch x.(interface{}).(type) {
 	case int:
 		return uint64(x.(int))
 	case uint:
@@ -183,7 +183,7 @@ func castUInt(x LeafValue) uint64 {
 }
 
 func castInt(x LeafValue) int64 {
-	switch x.(type) {
+	switch x.(interface{}).(type) {
 	case int:
 		return int64(x.(int))
 	case uint:
