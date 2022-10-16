@@ -65,6 +65,9 @@ func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
 
 func (n *TermNode) Inverse() (AstNode, error) {
 	return &NotNode{
+		opNode: opNode{
+			filterCtxNode: n.filterCtxNode,
+		},
 		Nodes: map[string][]AstNode{
 			n.field: {n},
 		},
@@ -85,12 +88,17 @@ func termNodeUnionJoinTermNode(n, o *TermNode) (AstNode, error) {
 }
 
 func termNodeUnionJoinTermsNode(n *TermNode, o *TermsNode) (AstNode, error) {
-	return &TermsNode{
-		fieldNode: n.fieldNode,
-		boostNode: n.boostNode,
-		valueType: n.valueType,
-		terms:     UnionJoinValueLst([]LeafValue{n.value}, o.terms, n.mType),
-	}, nil
+	var terms = UnionJoinValueLst([]LeafValue{n.value}, o.terms, n.mType)
+	if len(terms) == 1 {
+		return n, nil
+	} else {
+		return &TermsNode{
+			fieldNode: n.fieldNode,
+			boostNode: n.boostNode,
+			valueType: n.valueType,
+			terms:     terms,
+		}, nil
+	}
 }
 
 func termNodeIntersectTermNode(n, o *TermNode) (AstNode, error) {

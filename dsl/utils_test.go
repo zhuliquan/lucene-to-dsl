@@ -17,6 +17,12 @@ func TestFindAny(t *testing.T) {
 	assert.Equal(t, FindAny([]LeafValue{int64(1), int64(2)}, int64(3), mapping.INTEGER_FIELD_TYPE), -1)
 }
 
+func TestBinaryFindAny(t *testing.T) {
+	assert.Equal(t, BinaryFindAny([]LeafValue{int64(1), int64(2), int64(2), int64(3)}, int64(2), mapping.INTEGER_FIELD_TYPE), 1)
+	assert.Equal(t, BinaryFindAny([]LeafValue{int64(1), int64(2)}, int64(3), mapping.INTEGER_FIELD_TYPE), -1)
+	assert.Equal(t, BinaryFindAny([]LeafValue{int64(1), int64(2), int64(4)}, int64(3), mapping.INTEGER_FIELD_TYPE), -1)
+}
+
 func TestUnionJoinStrLst(t *testing.T) {
 	type args struct {
 		al  []LeafValue

@@ -2,8 +2,6 @@ package dsl
 
 import (
 	"fmt"
-
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 type TermsNode struct {
@@ -31,34 +29,20 @@ func (n *TermsNode) DslType() DslType {
 }
 
 func (n *TermsNode) UnionJoin(o AstNode) (AstNode, error) {
-	if bn, ok := o.(BoostNode); ok {
-		if CompareAny(bn.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
+	if b, ok := o.(BoostNode); ok {
+		if compareBoost(n, b) != 0 {
 			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 		}
 	}
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
-	case TERM_DSL_TYPE:
-		return o.UnionJoin(n)
 	case TERMS_DSL_TYPE:
-		var t = o.(*TermsNode)
-		t.terms = UnionJoinValueLst(t.terms, n.terms, n.mType)
-		return t, nil
-	case RANGE_DSL_TYPE:
-		return o.(*RangeNode).UnionJoin(n)
-	case QUERY_STRING_DSL_TYPE:
-		var t = o.(*QueryStringNode)
-		// var s = ""
-		// for _, val := range n.Values {
-		// TODO: 需要 %s 修改
-		// s += fmt.Sprintf(" OR %s", val)
-		// }
-		// t.Value = fmt.Sprintf("%s%s", t.Value, s)
-		return t, nil
-	case IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE:
+		return termsNodeUnionJoinTermsNode(n, o.(*TermsNode))
+	case EXISTS_DSL_TYPE, TERM_DSL_TYPE,
+		WILDCARD_DSL_TYPE, PREFIX_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE,
+		MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
+		return o.UnionJoin(n)
+	case IDS_DSL_TYPE:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
-
 	default:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
 
@@ -66,25 +50,19 @@ func (n *TermsNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *TermsNode) InterSect(o AstNode) (AstNode, error) {
-	if n == nil || o == nil {
-		return nil, ErrIntersectNilNode
-	}
-	if v, ok := o.(BoostNode); ok {
-		if CompareAny(v.getBoost(), n.getBoost(), mapping.DOUBLE_FIELD_TYPE) != 0 {
+	if b, ok := o.(BoostNode); ok {
+		if compareBoost(n, b) != 0 {
 			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 		}
 	}
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
-	case RANGE_DSL_TYPE:
-		return o.(*RangeNode).UnionJoin(n)
-	case TERM_DSL_TYPE:
-		// TODO: 如果 values 存在还行/ 不存在就要怎么办？
-		return nil, nil
 	case TERMS_DSL_TYPE:
-		return nil, nil
-	case IDS_DSL_TYPE, PREFIX_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
+		return termsNodeIntersectTermsNode(n, o.(*TermsNode))
+	case EXISTS_DSL_TYPE, TERM_DSL_TYPE,
+		WILDCARD_DSL_TYPE, PREFIX_DSL_TYPE, FUZZY_DSL_TYPE, REGEXP_DSL_TYPE,
+		MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
+		return o.InterSect(n)
+	case IDS_DSL_TYPE:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
 	default:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
@@ -104,14 +82,94 @@ func (n *TermsNode) Inverse() (AstNode, error) {
 			},
 		)
 	}
-	return &NotNode{Nodes: map[string][]AstNode{n.field: nodes}}, nil
+	return &NotNode{
+		opNode: opNode{filterCtxNode: n.filterCtxNode},
+		Nodes:  map[string][]AstNode{n.field: nodes},
+	}, nil
 }
 
 func (n *TermsNode) ToDSL() DSL {
 	return DSL{
 		TERMS_KEY: DSL{
-			n.field:   n.terms,
+			n.field:   termsToPrintValue(n.terms, n.mType),
 			BOOST_KEY: n.getBoost(),
 		},
+	}
+}
+
+func termsNodeUnionJoinTermsNode(a, b *TermsNode) (AstNode, error) {
+	terms := UnionJoinValueLst(a.terms, b.terms, a.mType)
+	if len(terms) == 1 {
+		return &TermNode{
+			kvNode: kvNode{
+				fieldNode: a.fieldNode,
+				valueNode: valueNode{
+					valueType: a.valueType,
+					value:     terms[0],
+				},
+			},
+			boostNode: a.boostNode,
+		}, nil
+	} else {
+		return &TermsNode{
+			fieldNode: a.fieldNode,
+			boostNode: a.boostNode,
+			valueType: a.valueType,
+			terms:     terms,
+		}, nil
+	}
+}
+
+func termsNodeIntersectTermsNode(a, b *TermsNode) (AstNode, error) {
+	terms := IntersectValueLst(a.terms, b.terms, a.mType)
+	if a.isArrayType() {
+		diff := DifferenceValueList(a.terms, b.terms, a.mType)
+		if len(diff) == 0 {
+			return b, nil
+		} else if len(diff) == 1 {
+			return lfNodeIntersectLfNode(
+				&TermNode{
+					kvNode: kvNode{
+						fieldNode: a.fieldNode,
+						valueNode: valueNode{
+							valueType: a.valueType,
+							value:     diff[0],
+						},
+					},
+					boostNode: a.boostNode,
+				}, b,
+			)
+		} else {
+			return lfNodeIntersectLfNode(
+				&TermsNode{
+					fieldNode: a.fieldNode,
+					valueType: a.valueType,
+					boostNode: a.boostNode,
+					terms:     diff,
+				}, b,
+			)
+		}
+	} else {
+		if len(terms) == 0 {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", a.ToDSL(), b.ToDSL())
+		} else if len(terms) == 1 {
+			return &TermNode{
+				kvNode: kvNode{
+					fieldNode: a.fieldNode,
+					valueNode: valueNode{
+						valueType: a.valueType,
+						value:     terms[0],
+					},
+				},
+				boostNode: a.boostNode,
+			}, nil
+		} else {
+			return &TermsNode{
+				fieldNode: a.fieldNode,
+				valueType: a.valueType,
+				boostNode: a.boostNode,
+				terms:     terms,
+			}, nil
+		}
 	}
 }

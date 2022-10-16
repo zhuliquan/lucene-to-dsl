@@ -25,6 +25,23 @@ func FindAny(vl []LeafValue, v LeafValue, typ mapping.FieldType) int {
 	return idx
 }
 
+func BinaryFindAny(vl []LeafValue, v LeafValue, typ mapping.FieldType) int {
+	l, r := -1, len(vl)
+	for r != l+1 {
+		m := (l + r) >> 1
+		f := CompareAny(vl[m], v, typ)
+		if f < 0 {
+			l = m
+		} else {
+			r = m
+		}
+	}
+	if r >= len(vl) || CompareAny(vl[r], v, typ) != 0 {
+		return -1
+	}
+	return r
+}
+
 func ValueLstToStrLst(vl []LeafValue) []string {
 	var rl = make([]string, len(vl))
 	for i, v := range vl {
@@ -41,7 +58,7 @@ func StrLstToValueLst(vl []string) []LeafValue {
 	return rl
 }
 
-// union join two string slice
+// union join two leaf value slice
 func UnionJoinValueLst(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
 	sort.Slice(al, func(i, j int) bool { return CompareAny(al[i], al[j], typ) < 0 })
 	sort.Slice(bl, func(i, j int) bool { return CompareAny(bl[i], bl[j], typ) < 0 })
@@ -60,6 +77,7 @@ func UnionJoinValueLst(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
 	return UniqValueLst(cl, typ)
 }
 
+// intersect two leaf value slice
 func IntersectValueLst(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
 	sort.Slice(al, func(i, j int) bool { return CompareAny(al[i], al[j], typ) < 0 })
 	sort.Slice(bl, func(i, j int) bool { return CompareAny(bl[i], bl[j], typ) < 0 })
@@ -75,6 +93,19 @@ func IntersectValueLst(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
 			j += 1
 		} else {
 			i += 1
+		}
+	}
+	return UniqValueLst(cl, typ)
+}
+
+// difference two leaf value slice
+func DifferenceValueList(al, bl []LeafValue, typ mapping.FieldType) []LeafValue {
+	sort.Slice(al, func(i, j int) bool { return CompareAny(al[i], al[j], typ) < 0 })
+	sort.Slice(bl, func(i, j int) bool { return CompareAny(bl[i], bl[j], typ) < 0 })
+	var cl = make([]LeafValue, 0, len(al)+len(bl))
+	for i, na := 0, len(al); i < na; i++ {
+		if BinaryFindAny(bl, al[i], typ) == -1 {
+			cl = append(cl, al[i])
 		}
 	}
 	return UniqValueLst(cl, typ)
@@ -435,8 +466,8 @@ func astNodeUnionJoinTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (A
 			&TermsNode{
 				fieldNode: o.fieldNode,
 				valueType: o.valueType,
-				terms:     excludes,
 				boostNode: o.boostNode,
+				terms:     excludes,
 			},
 		)
 	}
@@ -458,8 +489,8 @@ func astNodeIntersectTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (A
 			&TermsNode{
 				fieldNode: o.fieldNode,
 				valueType: o.valueType,
-				terms:     excludes,
 				boostNode: o.boostNode,
+				terms:     excludes,
 			},
 		)
 	}
@@ -479,6 +510,14 @@ func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
 	} else {
 		return x
 	}
+}
+
+func termsToPrintValue(terms []LeafValue, t mapping.FieldType) interface{} {
+	x := []interface{}{}
+	for _, term := range terms {
+		x = append(x, leafValueToPrintValue(term, t))
+	}
+	return x
 }
 
 func compareBoost(a, b BoostNode) int {
