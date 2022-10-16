@@ -1,7 +1,5 @@
 package dsl
 
-import "github.com/zhuliquan/lucene-to-dsl/mapping"
-
 // define ast node of dsl
 type AstNode interface {
 	AstType() AstType
@@ -60,7 +58,7 @@ type expandsNode struct {
 	maxExpands int
 }
 
-func (n *expandsNode) setMaxExpand(maxExpands int) {
+func (n *expandsNode) setMaxExpands(maxExpands int) {
 	n.maxExpands = maxExpands
 }
 
@@ -150,30 +148,38 @@ func (n *slopNode) setSlop(slop int) {
 
 // indicate whether does dsl query use filter context
 type FilterCtxNode interface {
-	isFilterCtx() bool
 	setFilterCtx(filterCtx bool)
+	getFilterCtx() bool
 }
 
-// indicate whether is node array data type
-type ArrayTypeNode interface {
-	isArrayType() bool
-	setArrayType()
+func WithFilterCtx(filterCtx bool) func(FilterCtxNode) {
+	return func(n FilterCtxNode) {
+		n.setFilterCtx(filterCtx)
+	}
 }
 
-type opNode struct {
-	filterCtx bool
+type filterCtxNode struct {
+	filterCtx bool // whether node is filter ctx
 }
 
-func NewOpNode(filterCtx bool) *opNode {
-	return &opNode{filterCtx: filterCtx}
-}
-
-func (n *opNode) isFilterCtx() bool {
+func (n *filterCtxNode) getFilterCtx() bool {
 	return n.filterCtx
 }
 
-func (n *opNode) setFilterCtx(filterCtx bool) {
+func (n *filterCtxNode) setFilterCtx(filterCtx bool) {
 	n.filterCtx = filterCtx
+}
+
+type opNode struct {
+	filterCtxNode
+}
+
+func NewOpNode() *opNode {
+	return &opNode{
+		filterCtxNode: filterCtxNode{
+			filterCtx: false,
+		},
+	}
 }
 
 func (n *opNode) AstType() AstType {
@@ -182,31 +188,16 @@ func (n *opNode) AstType() AstType {
 
 // leaf node
 type lfNode struct {
-	filterCtx bool // whether node is filter ctx
+	filterCtxNode
 }
 
-func NewLfNode(opts ...func(*lfNode)) *lfNode {
+func NewLfNode() *lfNode {
 	var n = &lfNode{
-		filterCtx: false,
-	}
-	for _, opt := range opts {
-		opt(n)
+		filterCtxNode: filterCtxNode{
+			filterCtx: false,
+		},
 	}
 	return n
-}
-
-func WithFilterCtx(filterCtx bool) func(*lfNode) {
-	return func(lf *lfNode) {
-		lf.filterCtx = filterCtx
-	}
-}
-
-func (n *lfNode) isFilterCtx() bool {
-	return n.filterCtx
-}
-
-func (n *lfNode) setFilterCtx(filterCtx bool) {
-	n.filterCtx = filterCtx
 }
 
 func (n *lfNode) AstType() AstType {
@@ -218,19 +209,6 @@ type fieldNode struct {
 	field string
 }
 
-type valueNode struct {
-	valueType
-	value LeafValue
-}
-
-func NewValueNode(value LeafValue, valueType *valueType) *valueNode {
-	return &valueNode{value: value, valueType: *valueType}
-}
-
-func (v *valueNode) toPrintValue() interface{} {
-	return leafValueToPrintValue(v.value, v.mType)
-}
-
 func NewFieldNode(lfNode *lfNode, field string) *fieldNode {
 	return &fieldNode{
 		lfNode: *lfNode,
@@ -240,6 +218,22 @@ func NewFieldNode(lfNode *lfNode, field string) *fieldNode {
 
 func (n *fieldNode) NodeKey() string {
 	return n.field
+}
+
+type valueNode struct {
+	valueType
+	value LeafValue
+}
+
+func NewValueNode(value LeafValue, valueType *valueType) *valueNode {
+	return &valueNode{
+		valueType: *valueType,
+		value:     value,
+	}
+}
+
+func (v *valueNode) toPrintValue() interface{} {
+	return leafValueToPrintValue(v.value, v.mType)
 }
 
 // Key value node
@@ -257,24 +251,20 @@ func NewKVNode(fieldNode *fieldNode, value *valueNode) *kvNode {
 
 type rgNode struct {
 	fieldNode
-	mType   mapping.FieldType
+	valueType
 	rValue  LeafValue
 	lValue  LeafValue
 	rCmpSym CompareType
 	lCmpSym CompareType
 }
 
-func NewRgNode(fieldNode *fieldNode, mType mapping.FieldType, lValue, rValue LeafValue, lCmpSym, rCmpSym CompareType) *rgNode {
+func NewRgNode(fieldNode *fieldNode, valueType *valueType, lValue, rValue LeafValue, lCmpSym, rCmpSym CompareType) *rgNode {
 	return &rgNode{
 		fieldNode: *fieldNode,
-		mType:     mType,
+		valueType: *valueType,
 		lValue:    lValue,
 		rValue:    rValue,
 		lCmpSym:   lCmpSym,
 		rCmpSym:   rCmpSym,
 	}
-}
-
-func (n *rgNode) NodeKey() string {
-	return n.field
 }

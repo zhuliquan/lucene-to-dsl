@@ -23,6 +23,12 @@ func addValueForDSL(d DSL, field string, value interface{}) {
 
 type LeafValue interface{}
 
+// indicate whether is node array data type
+type ArrayTypeNode interface {
+	isArrayType() bool
+	setArrayType(arrayType bool)
+}
+
 type valueType struct {
 	mType mapping.FieldType
 	aType bool // is array type
@@ -30,8 +36,7 @@ type valueType struct {
 
 func WithArrayType(isArrayType bool) func(ArrayTypeNode) {
 	return func(n ArrayTypeNode) {
-		n.isArrayType()
-
+		n.setArrayType(isArrayType)
 	}
 }
 

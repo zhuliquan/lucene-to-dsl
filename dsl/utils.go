@@ -334,7 +334,7 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 	var filterNodes = map[string][]AstNode{
 		a.NodeKey(): {},
 	}
-	if af.isFilterCtx() {
+	if af.getFilterCtx() {
 		filterNodes[a.NodeKey()] = append(
 			filterNodes[a.NodeKey()], a,
 		)
@@ -343,7 +343,7 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 			mustNodes[a.NodeKey()], a,
 		)
 	}
-	if bf.isFilterCtx() {
+	if bf.getFilterCtx() {
 		filterNodes[a.NodeKey()] = append(
 			filterNodes[a.NodeKey()], b,
 		)

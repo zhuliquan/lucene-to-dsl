@@ -390,11 +390,11 @@ func TestCheckValidRangeNode(t *testing.T) {
 			args: args{
 				node: &RangeNode{
 					rgNode: rgNode{
-						mType:   mapping.KEYWORD_FIELD_TYPE,
-						rValue:  "1",
-						lValue:  "1",
-						rCmpSym: LTE,
-						lCmpSym: GT,
+						valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true},
+						rValue:    "1",
+						lValue:    "1",
+						rCmpSym:   LTE,
+						lCmpSym:   GT,
 					},
 				},
 			},
@@ -405,11 +405,11 @@ func TestCheckValidRangeNode(t *testing.T) {
 			args: args{
 				node: &RangeNode{
 					rgNode: rgNode{
-						mType:   mapping.KEYWORD_FIELD_TYPE,
-						rValue:  "1",
-						lValue:  "1",
-						rCmpSym: LT,
-						lCmpSym: GTE,
+						valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true},
+						rValue:    "1",
+						lValue:    "1",
+						rCmpSym:   LT,
+						lCmpSym:   GTE,
 					},
 				},
 			},
@@ -420,11 +420,11 @@ func TestCheckValidRangeNode(t *testing.T) {
 			args: args{
 				node: &RangeNode{
 					rgNode: rgNode{
-						mType:   mapping.KEYWORD_FIELD_TYPE,
-						rValue:  "1",
-						lValue:  "1",
-						rCmpSym: LT,
-						lCmpSym: GT,
+						valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true},
+						rValue:    "1",
+						lValue:    "1",
+						rCmpSym:   LT,
+						lCmpSym:   GT,
 					},
 				},
 			},
@@ -435,11 +435,11 @@ func TestCheckValidRangeNode(t *testing.T) {
 			args: args{
 				node: &RangeNode{
 					rgNode: rgNode{
-						mType:   mapping.KEYWORD_FIELD_TYPE,
-						rValue:  "1",
-						lValue:  "2",
-						rCmpSym: LTE,
-						lCmpSym: GT,
+						valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true},
+						rValue:    "1",
+						lValue:    "2",
+						rCmpSym:   LTE,
+						lCmpSym:   GT,
 					},
 				},
 			},
@@ -450,11 +450,11 @@ func TestCheckValidRangeNode(t *testing.T) {
 			args: args{
 				node: &RangeNode{
 					rgNode: rgNode{
-						mType:   mapping.KEYWORD_FIELD_TYPE,
-						rValue:  "2",
-						lValue:  "1",
-						rCmpSym: LTE,
-						lCmpSym: GT,
+						valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true},
+						rValue:    "2",
+						lValue:    "1",
+						rCmpSym:   LTE,
+						lCmpSym:   GT,
 					},
 				},
 			},
@@ -764,7 +764,7 @@ func TestNodeOrMergeNode(t *testing.T) {
 				a: &RangeNode{
 					rgNode: rgNode{
 						fieldNode: fieldNode{field: "foo"},
-						mType:     mapping.INTEGER_FIELD_TYPE,
+						valueType: valueType{mapping.INTEGER_FIELD_TYPE, true},
 						lValue:    MinInt[32],
 						rValue:    3,
 						lCmpSym:   GT,
@@ -774,7 +774,7 @@ func TestNodeOrMergeNode(t *testing.T) {
 				b: &RangeNode{
 					rgNode: rgNode{
 						fieldNode: fieldNode{field: "foo"},
-						mType:     mapping.INTEGER_FIELD_TYPE,
+						valueType: valueType{mapping.INTEGER_FIELD_TYPE, true},
 						lValue:    4,
 						rValue:    MaxInt[32],
 						lCmpSym:   GTE,
@@ -789,7 +789,7 @@ func TestNodeOrMergeNode(t *testing.T) {
 						&RangeNode{
 							rgNode: rgNode{
 								fieldNode: fieldNode{field: "foo"},
-								mType:     mapping.INTEGER_FIELD_TYPE,
+								valueType: valueType{mapping.INTEGER_FIELD_TYPE, true},
 								lValue:    MinInt[32],
 								rValue:    3,
 								lCmpSym:   GT,
@@ -799,7 +799,7 @@ func TestNodeOrMergeNode(t *testing.T) {
 						&RangeNode{
 							rgNode: rgNode{
 								fieldNode: fieldNode{field: "foo"},
-								mType:     mapping.INTEGER_FIELD_TYPE,
+								valueType: valueType{mapping.INTEGER_FIELD_TYPE, true},
 								lValue:    4,
 								rValue:    MaxInt[32],
 								lCmpSym:   GTE,
@@ -842,13 +842,13 @@ func TestNodeAndMergeNode(t *testing.T) {
 			args: args{
 				a: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 						valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
 				b: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 						valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
@@ -858,13 +858,13 @@ func TestNodeAndMergeNode(t *testing.T) {
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 								valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 								valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
@@ -878,13 +878,13 @@ func TestNodeAndMergeNode(t *testing.T) {
 			args: args{
 				a: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 						valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
 				b: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 						valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
@@ -894,13 +894,13 @@ func TestNodeAndMergeNode(t *testing.T) {
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 								valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 								valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
@@ -914,13 +914,13 @@ func TestNodeAndMergeNode(t *testing.T) {
 			args: args{
 				a: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 						valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
 				b: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 						valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
@@ -930,7 +930,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 								valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
@@ -940,7 +940,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 								valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
@@ -954,13 +954,13 @@ func TestNodeAndMergeNode(t *testing.T) {
 			args: args{
 				a: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 						valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
 				b: &TermNode{
 					kvNode: kvNode{
-						fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+						fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 						valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 					},
 				},
@@ -970,7 +970,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: false}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{false}}, field: "foo"},
 								valueNode: valueNode{value: "bar2", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},
@@ -980,7 +980,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
-								fieldNode: fieldNode{lfNode: lfNode{filterCtx: true}, field: "foo"},
+								fieldNode: fieldNode{lfNode: lfNode{filterCtxNode: filterCtxNode{true}}, field: "foo"},
 								valueNode: valueNode{value: "bar1", valueType: valueType{mapping.TEXT_FIELD_TYPE, false}},
 							},
 						},

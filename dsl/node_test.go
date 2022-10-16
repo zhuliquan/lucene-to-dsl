@@ -1,22 +1,67 @@
 package dsl
 
-// import (
-// 	"testing"
+import (
+	"net"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/zhuliquan/lucene-to-dsl/mapping"
-// )
+	"github.com/hashicorp/go-version"
+	"github.com/stretchr/testify/assert"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
+)
 
-// func TestNode(t *testing.T) {
-// 	var opNode = NewOpNode(true)
-// 	assert.Equal(t, OP_NODE_TYPE, opNode.AstType())
-// 	assert.Equal(t, true, opNode.Is())
-// 	var lfNode = lfNode{true, false}
-// 	assert.Equal(t, LEAF_NODE_TYPE, lfNode.AstType())
-// 	assert.Equal(t, true, lfNode.NeedFilter())
-// 	assert.Equal(t, false, lfNode.IsArray())
-// 	var value = NewValue("bar", mapping.KEYWORD_FIELD_TYPE)
-// 	var kvNode = NewKVNode("foo", WithValue(value), WithFilter(false), WithIsList(false))
-// 	assert.Equal(t, LEAF_NODE_TYPE, kvNode.AstType())
-// 	assert.Equal(t, "foo", kvNode.NodeKey())
-// }
+func TestOpNode(t *testing.T) {
+	var n = NewOpNode()
+	assert.Equal(t, OP_NODE_TYPE, n.AstType())
+	WithFilterCtx(true)(n)
+	assert.Equal(t, true, n.getFilterCtx())
+	WithFilterCtx(false)(n)
+	assert.Equal(t, false, n.getFilterCtx())
+}
+
+func TestLeafNode(t *testing.T) {
+	var n = NewLfNode()
+	assert.Equal(t, LEAF_NODE_TYPE, n.AstType())
+	WithFilterCtx(true)(n)
+	assert.Equal(t, true, n.getFilterCtx())
+	WithFilterCtx(false)(n)
+	assert.Equal(t, false, n.getFilterCtx())
+}
+
+func TestFieldNode(t *testing.T) {
+	var n = NewFieldNode(NewLfNode(), "foo")
+	assert.Equal(t, "foo", n.NodeKey())
+}
+
+func TestValueNode(t *testing.T) {
+	var n = NewValueNode("12", NewValueType(mapping.KEYWORD_FIELD_TYPE, true))
+	assert.Equal(t, "12", n.toPrintValue())
+	assert.Equal(t, true, n.isArrayType())
+	WithArrayType(false)(n)
+	assert.Equal(t, false, n.isArrayType())
+
+	n = NewValueNode(net.IP([]byte{1, 1, 1, 1}), NewValueType(mapping.IP_FIELD_TYPE, true))
+	assert.Equal(t, "1.1.1.1", n.toPrintValue())
+
+	var v, _ = version.NewVersion("v1.1.1")
+	n = NewValueNode(v, NewValueType(mapping.VERSION_FIELD_TYPE, true))
+	assert.Equal(t, "1.1.1", n.toPrintValue())
+}
+
+func TestKvNode(t *testing.T) {
+	var n = NewKVNode(NewFieldNode(NewLfNode(), "foo"), NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, true)))
+	assert.Equal(t, &kvNode{
+		fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+		valueNode: valueNode{valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true}, value: "bar"},
+	}, n)
+}
+
+func TestRgNode(t *testing.T) {
+	var n = NewRgNode(NewFieldNode(NewLfNode(), "foo"), NewValueType(mapping.KEYWORD_FIELD_TYPE, true),
+		"bar1", "bar2", GTE, LTE,
+	)
+	assert.Equal(t, &rgNode{
+		fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+		valueType: valueType{mapping.KEYWORD_FIELD_TYPE, true},
+		lValue:    "bar1", rValue: "bar2", lCmpSym: GTE, rCmpSym: LTE,
+	}, n)
+}

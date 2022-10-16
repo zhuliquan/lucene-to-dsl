@@ -217,7 +217,8 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 	var node = dsl.NewRangeNode(
 		dsl.NewRgNode(
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
-			property.Type, leftValue, rightValue, leftCmp, rightCmp,
+			dsl.NewValueType(property.Type, true),
+			leftValue, rightValue, leftCmp, rightCmp,
 		), dsl.WithBoost(termV.Boost()),
 	)
 	if err := dsl.CheckValidRangeNode(node); err != nil {
@@ -286,9 +287,8 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 			return dsl.NewRangeNode(
 				dsl.NewRgNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
-					property.Type,
-					lowerDate, upperDate,
-					dsl.GTE, dsl.LTE,
+					dsl.NewValueType(property.Type, true),
+					lowerDate, upperDate, dsl.GTE, dsl.LTE,
 				),
 				dsl.WithBoost(termV.Boost()),
 				dsl.WithFormat(datemath_parser.EPOCH_MILLIS),
@@ -304,7 +304,8 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 		if ip1, ip2, err := ip_tools.GetRangeIpByIpCidr(termV.String()); err == nil {
 			return dsl.NewRangeNode(dsl.NewRgNode(
 				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
-				property.Type, net.IP(ip1), net.IP(ip2), dsl.GTE, dsl.LTE,
+				dsl.NewValueType(property.Type, true),
+				net.IP(ip1), net.IP(ip2), dsl.GTE, dsl.LTE,
 			), dsl.WithBoost(termV.Boost())), nil
 		}
 		return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s",

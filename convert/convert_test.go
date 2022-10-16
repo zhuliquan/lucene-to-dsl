@@ -308,9 +308,8 @@ func TestConvertToGroup(t *testing.T) {
 			want: dsl.NewRangeNode(
 				dsl.NewRgNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-					mapping.INTEGER_FIELD_TYPE,
-					int32(78), dsl.MaxInt[32],
-					dsl.GT, dsl.LT,
+					dsl.NewValueType(mapping.INTEGER_FIELD_TYPE, true),
+					int32(78), dsl.MaxInt[32], dsl.GT, dsl.LT,
 				),
 				dsl.WithBoost(0.8),
 			),
@@ -352,9 +351,8 @@ func TestConvertToGroup(t *testing.T) {
 			want: dsl.NewRangeNode(
 				dsl.NewRgNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-					mapping.TEXT_FIELD_TYPE,
-					"", "2006-01-01",
-					dsl.GT, dsl.LTE,
+					dsl.NewValueType(mapping.TEXT_FIELD_TYPE, true),
+					"", "2006-01-01", dsl.GT, dsl.LTE,
 				),
 				dsl.WithBoost(0.8),
 			),
@@ -411,9 +409,8 @@ func TestConvertToGroup(t *testing.T) {
 			want: dsl.NewRangeNode(
 				dsl.NewRgNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-					mapping.INTEGER_FIELD_TYPE,
-					int32(78), int32(100),
-					dsl.GT, dsl.LT,
+					dsl.NewValueType(mapping.INTEGER_FIELD_TYPE, true),
+					int32(78), int32(100), dsl.GT, dsl.LT,
 				),
 				dsl.WithBoost(0.8),
 			),
@@ -527,27 +524,24 @@ func TestConvertToGroup(t *testing.T) {
 						dsl.NewRangeNode(
 							dsl.NewRgNode(
 								dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-								mapping.INTEGER_FIELD_TYPE,
-								dsl.MinInt[32], int32(50),
-								dsl.GT, dsl.LT,
+								dsl.NewValueType(mapping.INTEGER_FIELD_TYPE, true),
+								dsl.MinInt[32], int32(50), dsl.GT, dsl.LT,
 							),
 							dsl.WithBoost(0.8),
 						),
 						dsl.NewRangeNode(
 							dsl.NewRgNode(
 								dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-								mapping.INTEGER_FIELD_TYPE,
-								int32(78), int32(100),
-								dsl.GT, dsl.LT,
+								dsl.NewValueType(mapping.INTEGER_FIELD_TYPE, true),
+								int32(78), int32(100), dsl.GT, dsl.LT,
 							),
 							dsl.WithBoost(0.8),
 						),
 						dsl.NewRangeNode(
 							dsl.NewRgNode(
 								dsl.NewFieldNode(dsl.NewLfNode(), "x"),
-								mapping.INTEGER_FIELD_TYPE,
-								int32(178), dsl.MaxInt[32],
-								dsl.GT, dsl.LT,
+								dsl.NewValueType(mapping.INTEGER_FIELD_TYPE, true),
+								int32(178), dsl.MaxInt[32], dsl.GT, dsl.LT,
 							),
 							dsl.WithBoost(0.8),
 						),
