@@ -523,3 +523,103 @@ func termsToPrintValue(terms []LeafValue, t mapping.FieldType) interface{} {
 func compareBoost(a, b BoostNode) int {
 	return CompareAny(a.getBoost(), b.getBoost(), mapping.DOUBLE_FIELD_TYPE)
 }
+
+// wildcard match text and pattern
+func wildcardMatch(text []rune, pattern []rune) bool {
+	var n, m = len(text), len(pattern)
+	var dp = make([][]bool, n+1)
+	for i := 0; i <= n; i++ {
+		dp[i] = make([]bool, m+1)
+	}
+
+	dp[0][0] = true
+	for i := 1; i <= n; i++ {
+		dp[i][0] = false
+	}
+	for j := 1; j <= m; j++ {
+		if pattern[j-1] == '*' {
+			dp[0][j] = dp[0][j-1]
+		}
+	}
+
+	for i := 1; i <= n; i++ {
+		for j := 1; j <= m; j++ {
+			if pattern[j-1] == '?' || pattern[j-1] == text[i-1] {
+				dp[i][j] = dp[i-1][j-1]
+			} else if pattern[j-1] == '*' {
+				dp[i][j] = dp[i][j-1] || dp[i-1][j]
+			} else {
+				dp[i][j] = false
+			}
+		}
+	}
+	return dp[n][m]
+}
+
+func patternNodeUnionJoinTermNode(n PatternMatcher, o *TermNode) (AstNode, error) {
+	if n.Match([]byte(o.value.(string))) {
+		return n.(AstNode), nil
+	} else {
+		return lfNodeUnionJoinLfNode(n.(AstNode), o)
+	}
+}
+
+func patternNodeUnionJoinTermsNode(n PatternMatcher, o *TermsNode) (AstNode, error) {
+	var excludes = []LeafValue{}
+	for _, term := range o.terms {
+		if !n.Match([]byte(term.(string))) {
+			excludes = append(excludes, term)
+		}
+	}
+	return astNodeUnionJoinTermsNode(n.(AstNode), o, excludes)
+}
+
+func patternNodeIntersectTermNode(n PatternMatcher, o *TermNode) (AstNode, error) {
+	if n.(ArrayTypeNode).isArrayType() {
+		return lfNodeIntersectLfNode(n.(AstNode), o)
+	} else if n.Match([]byte(o.value.(string))) {
+		return o, nil
+	} else {
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())
+	}
+}
+
+func patternNodeIntersectTermsNode(n PatternMatcher, o *TermsNode) (AstNode, error) {
+	if n.(ArrayTypeNode).isArrayType() {
+		var excludes = []LeafValue{}
+		for _, term := range o.terms {
+			if !n.Match([]byte(term.(string))) {
+				excludes = append(excludes, term)
+			}
+		}
+		return astNodeIntersectTermsNode(n.(AstNode), o, excludes)
+	} else {
+		var includes = []LeafValue{}
+		for _, term := range o.terms {
+			if n.Match([]byte(term.(string))) {
+				includes = append(includes, term)
+			}
+		}
+		if len(includes) == 0 {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())
+		} else if len(includes) == 1 {
+			return &TermNode{
+				kvNode: kvNode{
+					fieldNode: o.fieldNode,
+					valueNode: valueNode{
+						valueType: o.valueType,
+						value:     includes[0],
+					},
+				},
+				boostNode: o.boostNode,
+			}, nil
+		} else {
+			return &TermsNode{
+				fieldNode: o.fieldNode,
+				boostNode: o.boostNode,
+				valueType: o.valueType,
+				terms:     includes,
+			}, nil
+		}
+	}
+}

@@ -294,3 +294,16 @@ func NewRgNode(fieldNode *fieldNode, valueType *valueType, lValue, rValue LeafVa
 		rCmpSym:   rCmpSym,
 	}
 }
+
+type PatternMatcher interface {
+	Match([]byte) bool
+}
+
+type patternNode struct {
+	matcher PatternMatcher
+}
+
+func (n *patternNode) Match(text []byte) bool {
+	return n.matcher.Match(text)
+}
+

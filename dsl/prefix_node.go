@@ -8,12 +8,26 @@ import (
 type PrefixNode struct {
 	kvNode
 	rewriteNode
+	patternNode
 }
 
-func NewPrefixNode(kvNode *kvNode, opts ...func(AstNode)) *PrefixNode {
+type prefixPattern struct {
+	pattern string
+}
+
+func NewPrefixPattern(pattern string) PatternMatcher {
+	return &prefixPattern{pattern: pattern}
+}
+
+func (p *prefixPattern) Match(text []byte) bool {
+	return strings.HasPrefix(string(text), p.pattern)
+}
+
+func NewPrefixNode(kvNode *kvNode, pattern PatternMatcher, opts ...func(AstNode)) *PrefixNode {
 	var n = &PrefixNode{
 		kvNode:      *kvNode,
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
+		patternNode: patternNode{matcher: pattern},
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -30,9 +44,9 @@ func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
-		return prefixUnionJoinTermNode(n, o.(*TermNode))
+		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
 	case TERMS_DSL_TYPE:
-		return prefixUnionJoinTermsNode(n, o.(*TermsNode))
+		return patternNodeUnionJoinTermsNode(n, o.(*TermsNode))
 	case PREFIX_DSL_TYPE:
 		return prefixNodeUnionJoinPrefixNode(n, o.(*PrefixNode))
 	default:
@@ -45,9 +59,9 @@ func (n *PrefixNode) InterSect(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.InterSect(n)
 	case TERM_DSL_TYPE:
-		return prefixNodeIntersectTermNode(n, o.(*TermNode))
+		return patternNodeIntersectTermNode(n, o.(*TermNode))
 	case TERMS_DSL_TYPE:
-		return prefixNodeIntersectTermsNode(n, o.(*TermsNode))
+		return patternNodeIntersectTermsNode(n, o.(*TermsNode))
 	case PREFIX_DSL_TYPE:
 		return prefixNodeIntersectPrefixNode(n, o.(*PrefixNode))
 	default:
@@ -74,27 +88,6 @@ func (n *PrefixNode) ToDSL() DSL {
 	}
 }
 
-func prefixUnionJoinTermNode(n *PrefixNode, o *TermNode) (AstNode, error) {
-	var prefixN = n.value.(string)
-	var valueO = n.value.(string)
-	if strings.HasPrefix(valueO, prefixN) {
-		return n, nil
-	} else {
-		return lfNodeUnionJoinLfNode(n, o)
-	}
-}
-
-func prefixUnionJoinTermsNode(n *PrefixNode, o *TermsNode) (AstNode, error) {
-	var prefixN = n.value.(string)
-	var excludes = []LeafValue{}
-	for _, term := range o.terms {
-		if !strings.HasPrefix(term.(string), prefixN) {
-			excludes = append(excludes, term)
-		}
-	}
-	return astNodeUnionJoinTermsNode(n, o, excludes)
-}
-
 func prefixNodeUnionJoinPrefixNode(n, o *PrefixNode) (AstNode, error) {
 	var prefixN = n.value.(string)
 	var prefixO = o.value.(string)
@@ -104,61 +97,6 @@ func prefixNodeUnionJoinPrefixNode(n, o *PrefixNode) (AstNode, error) {
 		return n, nil
 	} else {
 		return lfNodeUnionJoinLfNode(n, o)
-	}
-}
-
-func prefixNodeIntersectTermNode(n *PrefixNode, o *TermNode) (AstNode, error) {
-	if n.isArrayType() {
-		return lfNodeIntersectLfNode(n, o)
-	} else {
-		var prefixN = n.value.(string)
-		var term = o.value.(string)
-		if strings.HasPrefix(term, prefixN) {
-			return o, nil
-		} else {
-			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
-		}
-	}
-}
-
-func prefixNodeIntersectTermsNode(n *PrefixNode, o *TermsNode) (AstNode, error) {
-	if n.isArrayType() {
-		var prefixN = n.value.(string)
-		var excludes = []LeafValue{}
-		for _, term := range o.terms {
-			if !strings.HasPrefix(term.(string), prefixN) {
-				excludes = append(excludes, term)
-			}
-		}
-		return astNodeIntersectTermsNode(n, o, excludes)
-	} else {
-		var includes = []LeafValue{}
-		for _, term := range o.terms {
-			if strings.HasPrefix(term.(string), n.value.(string)) {
-				includes = append(includes, term)
-			}
-		}
-		if len(includes) == 0 {
-			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
-		} else if len(includes) == 1 {
-			return &TermNode{
-				kvNode: kvNode{
-					fieldNode: o.fieldNode,
-					valueNode: valueNode{
-						valueType: o.valueType,
-						value:     includes[0],
-					},
-				},
-				boostNode: o.boostNode,
-			}, nil
-		} else {
-			return &TermsNode{
-				fieldNode: o.fieldNode,
-				boostNode: o.boostNode,
-				valueType: o.valueType,
-				terms:     includes,
-			}, nil
-		}
 	}
 }
 

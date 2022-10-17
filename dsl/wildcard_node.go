@@ -6,17 +6,27 @@ type WildCardNode struct {
 	kvNode
 	boostNode
 	rewriteNode
-	statesNode
-	flags string
+	patternNode
 }
 
-func NewWildCardNode(kvNode *kvNode, opts ...func(AstNode)) *WildCardNode {
+type wildcardPattern struct {
+	pattern []rune
+}
+
+func NewWildCardPattern(pattern string) PatternMatcher {
+	return &wildcardPattern{pattern: []rune(pattern)}
+}
+
+func (w *wildcardPattern) Match(text []byte) bool {
+	return wildcardMatch([]rune(string(text)), w.pattern)
+}
+
+func NewWildCardNode(kvNode *kvNode, pattern PatternMatcher, opts ...func(AstNode)) *WildCardNode {
 	var n = &WildCardNode{
 		kvNode:      *kvNode,
 		boostNode:   boostNode{boost: 1.0},
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
-		statesNode:  statesNode{maxDeterminizedStates: 10000},
-		flags:       ALL_FLAG,
+		patternNode: patternNode{matcher: pattern},
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -29,14 +39,11 @@ func (n *WildCardNode) DslType() DslType {
 }
 
 func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
-	if n == nil && o == nil {
-		return nil, ErrUnionJoinNilNode
-	} else if n == nil && o != nil {
-		return o, nil
-	} else if n != nil && o == nil {
-		return n, nil
-	}
 	switch o.DslType() {
+	case TERM_DSL_TYPE:
+		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
+	case TERMS_DSL_TYPE:
+		return patternNodeUnionJoinTermsNode(n, o.(*TermsNode))
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
@@ -45,10 +52,11 @@ func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
-	if n == nil || o == nil {
-		return nil, ErrIntersectNilNode
-	}
 	switch o.DslType() {
+	case TERM_DSL_TYPE:
+		return patternNodeIntersectTermNode(n, o.(*TermNode))
+	case TERMS_DSL_TYPE:
+		return patternNodeIntersectTermsNode(n, o.(*TermsNode))
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
@@ -57,10 +65,12 @@ func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *WildCardNode) Inverse() (AstNode, error) {
-	if n == nil {
-		return nil, ErrInverseNilNode
-	}
-	return nil, fmt.Errorf("failed to inverse wildcard node")
+	return &NotNode{
+		opNode: opNode{filterCtxNode: n.filterCtxNode},
+		Nodes: map[string][]AstNode{
+			n.NodeKey(): {n},
+		},
+	}, nil
 }
 
 func (n *WildCardNode) ToDSL() DSL {
@@ -69,12 +79,8 @@ func (n *WildCardNode) ToDSL() DSL {
 			n.field: DSL{
 				VALUE_KEY:   n.toPrintValue(),
 				BOOST_KEY:   n.getBoost(),
-				FLAGS_KEY:   n.flags,
 				REWRITE_KEY: n.getRewrite(),
-
-				MAX_DETERMINIZED_STATES_KEY: n.getMaxDeterminizedStates(),
 			},
 		},
 	}
-
 }

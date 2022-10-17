@@ -1049,3 +1049,14 @@ func TestMinEditDistance(t *testing.T) {
 		})
 	}
 }
+
+func TestWildcardMatch(t *testing.T) {
+	assert.True(t, wildcardMatch([]rune(""), []rune("")))
+	assert.False(t, wildcardMatch([]rune("a"), []rune("")))
+	assert.True(t, wildcardMatch([]rune(""), []rune("*")))
+	assert.True(t, wildcardMatch([]rune("a"), []rune("a*")))
+	assert.True(t, wildcardMatch([]rune("ab"), []rune("a?")))
+	assert.True(t, wildcardMatch([]rune("abb"), []rune("a*b")))
+	assert.False(t, wildcardMatch([]rune("a"), []rune("a?")))
+	assert.True(t, wildcardMatch([]rune("我们"), []rune("我?")))
+}
