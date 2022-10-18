@@ -575,10 +575,10 @@ func patternNodeUnionJoinTermsNode(n PatternMatcher, o *TermsNode) (AstNode, err
 }
 
 func patternNodeIntersectTermNode(n PatternMatcher, o *TermNode) (AstNode, error) {
-	if n.(ArrayTypeNode).isArrayType() {
-		return lfNodeIntersectLfNode(n.(AstNode), o)
-	} else if n.Match([]byte(o.value.(string))) {
+	if n.Match([]byte(o.value.(string))) {
 		return o, nil
+	} else if n.(ArrayTypeNode).isArrayType() {
+		return lfNodeIntersectLfNode(n.(AstNode), o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())
 	}
