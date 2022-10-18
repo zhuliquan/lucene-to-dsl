@@ -6,7 +6,6 @@ import (
 
 type RegexpNode struct {
 	kvNode
-	boostNode
 	rewriteNode
 	statesNode
 	patternNode
@@ -16,7 +15,6 @@ type RegexpNode struct {
 func NewRegexNode(kvNode *kvNode, pattern *regexp.Regexp, opts ...func(AstNode)) *RegexpNode {
 	var n = &RegexpNode{
 		kvNode:      *kvNode,
-		boostNode:   boostNode{boost: 1.0},
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
 		statesNode:  statesNode{maxDeterminizedStates: 10000},
 		patternNode: patternNode{matcher: pattern},
@@ -71,7 +69,6 @@ func (n *RegexpNode) ToDSL() DSL {
 		REGEXP_KEY: DSL{
 			n.field: DSL{
 				VALUE_KEY:   n.toPrintValue(),
-				BOOST_KEY:   n.getBoost(),
 				REWRITE_KEY: n.getRewrite(),
 				FLAGS_KEY:   n.flags,
 
