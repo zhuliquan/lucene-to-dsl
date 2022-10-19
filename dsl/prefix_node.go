@@ -101,17 +101,15 @@ func prefixNodeUnionJoinPrefixNode(n, o *PrefixNode) (AstNode, error) {
 }
 
 func prefixNodeIntersectPrefixNode(n, o *PrefixNode) (AstNode, error) {
-	if n.isArrayType() {
+	var prefixN = n.value.(string)
+	var prefixO = o.value.(string)
+	if strings.HasPrefix(prefixN, prefixO) {
+		return n, nil
+	} else if strings.HasPrefix(prefixO, prefixN) {
+		return o, nil
+	} else if n.isArrayType() {
 		return lfNodeIntersectLfNode(n, o)
 	} else {
-		var prefixN = n.value.(string)
-		var prefixO = o.value.(string)
-		if strings.HasPrefix(prefixN, prefixO) {
-			return n, nil
-		} else if strings.HasPrefix(prefixO, prefixN) {
-			return o, nil
-		} else {
-			return nil, fmt.Errorf("failed to intersect %v and %v, err: prefix value is conflict", n.ToDSL(), o.ToDSL())
-		}
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: prefix value is conflict", n.ToDSL(), o.ToDSL())
 	}
 }
