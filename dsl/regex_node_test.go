@@ -1,11 +1,43 @@
 package dsl
 
-// import (
-// 	"testing"
+import (
+	"regexp"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/zhuliquan/lucene-to-dsl/mapping"
-// )
+	"github.com/stretchr/testify/assert"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
+)
+
+func TestRegexNode(t *testing.T) {
+	pattern := regexp.MustCompile("^[1-5]{1,9}")
+	var node1 = NewRegexNode(
+		NewKVNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueNode("^[1-5]{1,9}", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
+		),
+		pattern,
+		WithRewrite(SCORING_BOOLEAN),
+		WithMaxDeterminizedStates(10),
+		WithFlags(COMPLEMENT_FLAG),
+	)
+
+	assert.Equal(t, REGEXP_DSL_TYPE, node1.DslType())
+	assert.Equal(t, DSL{"regexp": DSL{
+		"foo": DSL{
+			"value":                   "^[1-5]{1,9}",
+			"rewrite":                 SCORING_BOOLEAN,
+			"max_determinized_states": 10,
+			"flags":                   COMPLEMENT_FLAG,
+		},
+	}}, node1.ToDSL())
+	node2, _ := node1.Inverse()
+	assert.Equal(t, &NotNode{
+		opNode: opNode{filterCtxNode: node1.filterCtxNode},
+		Nodes: map[string][]AstNode{
+			"foo": {node1},
+		},
+	}, node2)
+}
 
 // func TestRegexNode(t *testing.T) {
 // 	var node1 = &RegexpNode{
