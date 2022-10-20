@@ -95,11 +95,11 @@ func (a *analyzerNode) setAnalyzer(analyzer string) {
 
 // rewrite node interface
 type RewriteNode interface {
-	setRewrite(string)
-	getRewrite() string
+	setRewrite(RewriteType)
+	getRewrite() RewriteType
 }
 
-func WithRewrite(rewrite string) func(AstNode) {
+func WithRewrite(rewrite RewriteType) func(AstNode) {
 	return func(n AstNode) {
 		if r, ok := n.(RewriteNode); ok {
 			r.setRewrite(rewrite)
@@ -109,14 +109,14 @@ func WithRewrite(rewrite string) func(AstNode) {
 
 // rewrite node impl
 type rewriteNode struct {
-	rewrite string
+	rewrite RewriteType
 }
 
-func (r *rewriteNode) setRewrite(rewrite string) {
+func (r *rewriteNode) setRewrite(rewrite RewriteType) {
 	r.rewrite = rewrite
 }
 
-func (r *rewriteNode) getRewrite() string {
+func (r *rewriteNode) getRewrite() RewriteType {
 	return r.rewrite
 }
 
@@ -246,9 +246,22 @@ func (n *fieldNode) NodeKey() string {
 	return n.field
 }
 
+type ValueNode interface {
+	getValue() LeafValue
+	getVType() valueType
+}
+
 type valueNode struct {
 	valueType
 	value LeafValue
+}
+
+func (v *valueNode) getValue() LeafValue {
+	return v.value
+}
+
+func (v *valueNode) getVType() valueType {
+	return v.valueType
 }
 
 func NewValueNode(value LeafValue, valueType *valueType) *valueNode {
@@ -306,4 +319,3 @@ type patternNode struct {
 func (n *patternNode) Match(text []byte) bool {
 	return n.matcher.Match(text)
 }
-

@@ -39,28 +39,43 @@ func (n *WildCardNode) DslType() DslType {
 }
 
 func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
+	if b, ok := o.(BoostNode); ok {
+		if compareBoost(n, b) != 0 {
+			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+		}
+	}
 	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
 	case TERMS_DSL_TYPE:
 		return patternNodeUnionJoinTermsNode(n, o.(*TermsNode))
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
+	case WILDCARD_DSL_TYPE:
+		return valueNodeUnionJoinValueNode(n, o)
 	default:
-		return nil, fmt.Errorf("failed to union join wildcard node")
+		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
 
 func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
+	if b, ok := o.(BoostNode); ok {
+		if compareBoost(n, b) != 0 {
+			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+		}
+	}
+
 	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.InterSect(n)
 	case TERM_DSL_TYPE:
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
 	case TERMS_DSL_TYPE:
 		return patternNodeIntersectTermsNode(n, o.(*TermsNode))
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
+	case WILDCARD_DSL_TYPE:
+		return valueNodeIntersectValueNode(n, o)
 	default:
-		return nil, fmt.Errorf("failed to intersect wildcard node")
+		return lfNodeIntersectLfNode(n, o)
 	}
 }
 

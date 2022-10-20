@@ -623,3 +623,25 @@ func patternNodeIntersectTermsNode(n PatternMatcher, o *TermsNode) (AstNode, err
 		}
 	}
 }
+
+func valueNodeUnionJoinValueNode(n, o AstNode) (AstNode, error) {
+	nn := n.(ValueNode)
+	on := n.(ValueNode)
+	if CompareAny(nn.getValue(), on.getValue(), nn.getVType().mType) == 0 {
+		return n, nil
+	} else {
+		return lfNodeUnionJoinLfNode(n, o)
+	}
+}
+
+func valueNodeIntersectValueNode(n, o AstNode) (AstNode, error) {
+	nn := n.(ValueNode)
+	on := n.(ValueNode)
+	if CompareAny(nn.getValue(), on.getValue(), nn.getVType().mType) == 0 {
+		return n, nil
+	} else if nn.getVType().aType {
+		return lfNodeIntersectLfNode(n, o)
+	} else {
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
+	}
+}

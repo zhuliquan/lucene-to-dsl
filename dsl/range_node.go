@@ -9,7 +9,7 @@ type RangeNode struct {
 	rgNode
 	boostNode
 	format   string
-	relation string
+	relation RelationType
 	timeZone string
 }
 
@@ -21,7 +21,7 @@ func WithFormat(format string) func(AstNode) {
 	}
 }
 
-func WithRelation(relation string) func(AstNode) {
+func WithRelation(relation RelationType) func(AstNode) {
 	return func(n AstNode) {
 		if f, ok := n.(*RangeNode); ok {
 			f.relation = relation

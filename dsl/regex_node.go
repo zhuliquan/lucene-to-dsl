@@ -9,7 +9,15 @@ type RegexpNode struct {
 	rewriteNode
 	statesNode
 	patternNode
-	flags string
+	flags RegexpFlagType
+}
+
+func WithFlags(flags RegexpFlagType) func(AstNode) {
+	return func(n AstNode) {
+		if r, ok := n.(*RegexpNode); ok {
+			r.flags = flags
+		}
+	}
 }
 
 func NewRegexNode(kvNode *kvNode, pattern *regexp.Regexp, opts ...func(AstNode)) *RegexpNode {
@@ -38,6 +46,8 @@ func (n *RegexpNode) UnionJoin(o AstNode) (AstNode, error) {
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
 	case TERMS_DSL_TYPE:
 		return patternNodeUnionJoinTermsNode(n, o.(*TermsNode))
+	case REGEXP_DSL_TYPE:
+		return valueNodeUnionJoinValueNode(n, o)
 	default:
 		return lfNodeUnionJoinLfNode(n, o)
 	}
@@ -51,6 +61,8 @@ func (n *RegexpNode) InterSect(o AstNode) (AstNode, error) {
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
 	case TERMS_DSL_TYPE:
 		return patternNodeIntersectTermsNode(n, o.(*TermsNode))
+	case REGEXP_DSL_TYPE:
+		return valueNodeIntersectValueNode(n, o)
 	default:
 		return lfNodeIntersectLfNode(n, o)
 	}
