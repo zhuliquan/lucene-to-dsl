@@ -127,24 +127,26 @@ func (c CompareType) String() string {
 	return compareTypeStrings[c]
 }
 
+type RewriteType string
+
 const (
 	// Uses the constant_score_boolean method for fewer matching terms.
 	// Otherwise, this method finds all matching terms in sequence and returns matching documents using a bit set.
-	CONSTANT_SCORE = "constant_score" // default
+	CONSTANT_SCORE RewriteType = "constant_score" // default
 
 	// Assigns each document a relevance score equal to the boost parameter.
 	// This method changes the original query to a bool query.
 	// This bool query contains a should clause and term query for each matching term.
 	// This method can cause the final bool query to exceed the clause limit in the `indices.query.bool.max_clause_count` setting.
 	// If the query exceeds this limit, Elasticsearch returns an error.
-	CONSTANT_SCORE_BOOLEAN = "constant_score_boolean"
+	CONSTANT_SCORE_BOOLEAN RewriteType = "constant_score_boolean"
 
 	// Calculates a relevance score for each matching document.
 	// This method changes the original query to a bool query.
 	// This bool query contains a should clause and term query for each matching term.
 	// This method can cause the final bool query to exceed the clause limit in the indices.query.bool.max_clause_count setting.
 	// If the query exceeds this limit, Elasticsearch returns an error.
-	SCORING_BOOLEAN = "scoring_boolean"
+	SCORING_BOOLEAN RewriteType = "scoring_boolean"
 
 	// Calculates a relevance score for each matching document as if all terms had the same frequency.
 	// This frequency is the maximum frequency of all matching terms.
@@ -152,39 +154,43 @@ const (
 	// This bool query contains a should clause and term query for each matching term.
 	// The final bool query only includes term queries for the top N scoring terms.
 	// You can use this method to avoid exceeding the clause limit in the `indices.query.bool.max_clause_count` setting.
-	TOP_TERMS_BLENDED_FREQS_N = "top_terms_blended_freqs_N"
+	TOP_TERMS_BLENDED_FREQS_N RewriteType = "top_terms_blended_freqs_N"
 
 	// Assigns each matching document a relevance score equal to the boost parameter.
 	// This method changes the original query to a bool query.
 	// This bool query contains a should clause and term query for each matching term.
 	// The final bool query only includes term queries for the top N terms.
 	// You can use this method to avoid exceeding the clause limit in the `indices.query.bool.max_clause_count` setting.
-	TOP_TERMS_BOOST_N = "top_terms_boost_N"
+	TOP_TERMS_BOOST_N RewriteType = "top_terms_boost_N"
 
 	// Calculates a relevance score for each matching document.
 	// This method changes the original query to a bool query.
 	// This bool query contains a should clause and term query for each matching term.
 	// The final bool query only includes term queries for the top N scoring terms.
 	// You can use this method to avoid exceeding the clause limit in the `indices.query.bool.max_clause_count` setting.
-	TOP_TERMS_N = "top_terms_N"
+	TOP_TERMS_N RewriteType = "top_terms_N"
 )
+
+type RelationType string
 
 const (
 	// Matches documents with a range field value that intersects the query’s range.
-	INTERSECTS = "INTERSECTS" // default
+	INTERSECTS RelationType = "INTERSECTS" // default
 	// Matches documents with a range field value that entirely contains the query’s range.
-	CONTAINS = "CONTAINS"
+	CONTAINS RelationType = "CONTAINS"
 	// Matches documents with a range field value entirely within the query’s range.
-	WITHIN = "WITHIN"
+	WITHIN RelationType = "WITHIN"
 )
+
+type RegexpFlagType string
 
 // regex flags reference: https://www.elastic.co/guide/en/elasticsearch/reference/7.13/regexp-syntax.html#regexp-optional-operators
 const (
-	ALL_FLAG          = "ALL"
-	COMPLEMENT_FLAG   = "COMPLEMENT"
-	INTERVAL_FLAG     = "INTERVAL"
-	INTERSECTION_FLAG = "INTERSECTION"
-	ANYSTRING_FLAG    = "ANYSTRING"
+	ALL_FLAG          RegexpFlagType = "ALL"
+	COMPLEMENT_FLAG   RegexpFlagType = "COMPLEMENT"
+	INTERVAL_FLAG     RegexpFlagType = "INTERVAL"
+	INTERSECTION_FLAG RegexpFlagType = "INTERSECTION"
+	ANYSTRING_FLAG    RegexpFlagType = "ANYSTRING"
 )
 
 // dsl key
