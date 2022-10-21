@@ -626,7 +626,7 @@ func patternNodeIntersectTermsNode(n PatternMatcher, o *TermsNode) (AstNode, err
 
 func valueNodeUnionJoinValueNode(n, o AstNode) (AstNode, error) {
 	nn := n.(ValueNode)
-	on := n.(ValueNode)
+	on := o.(ValueNode)
 	if CompareAny(nn.getValue(), on.getValue(), nn.getVType().mType) == 0 {
 		return n, nil
 	} else {
@@ -636,7 +636,7 @@ func valueNodeUnionJoinValueNode(n, o AstNode) (AstNode, error) {
 
 func valueNodeIntersectValueNode(n, o AstNode) (AstNode, error) {
 	nn := n.(ValueNode)
-	on := n.(ValueNode)
+	on := o.(ValueNode)
 	if CompareAny(nn.getValue(), on.getValue(), nn.getVType().mType) == 0 {
 		return n, nil
 	} else if nn.getVType().aType {

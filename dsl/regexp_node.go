@@ -20,7 +20,7 @@ func WithFlags(flags RegexpFlagType) func(AstNode) {
 	}
 }
 
-func NewRegexNode(kvNode *kvNode, pattern *regexp.Regexp, opts ...func(AstNode)) *RegexpNode {
+func NewRegexpNode(kvNode *kvNode, pattern *regexp.Regexp, opts ...func(AstNode)) *RegexpNode {
 	var n = &RegexpNode{
 		kvNode:      *kvNode,
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
