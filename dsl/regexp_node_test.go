@@ -40,7 +40,7 @@ func TestRegexpNode(t *testing.T) {
 }
 
 func TestRegexpNodeMergeTermNode(t *testing.T) {
-	var pattern = regexp.MustCompile("^a\\wb\\w")
+	var pattern = regexp.MustCompile(`^a\wb\w`)
 	var n1 = NewRegexpNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("^a\\wb\\w", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
@@ -121,7 +121,7 @@ func TestRegexpNodeMergeTermNode(t *testing.T) {
 }
 
 func TestRegexpNodeMergeTermsNode(t *testing.T) {
-	var pattern = regexp.MustCompile("^a\\wb\\w")
+	var pattern = regexp.MustCompile(`^a\wb\w`)
 	var n1 = NewRegexpNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("^a\\wb\\w", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
@@ -439,8 +439,8 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 }
 
 func TestRegexpNodeMergeRegexpNode(t *testing.T) {
-	p1 := regexp.MustCompile("aab\\w+")
-	p2 := regexp.MustCompile("a\\wc")
+	p1 := regexp.MustCompile(`aab\w+`)
+	p2 := regexp.MustCompile(`a\wc`)
 	var n1 = NewRegexpNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("aab\\w+", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
