@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
@@ -291,7 +290,6 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 					lowerDate, upperDate, dsl.GTE, dsl.LTE,
 				),
 				dsl.WithBoost(termV.Boost()),
-				dsl.WithFormat(datemath_parser.EPOCH_MILLIS),
 			), nil
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
@@ -336,7 +334,7 @@ func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Prop
 	if pattern, err := regexp.Compile(valStr.(string)); err != nil {
 		return nil, fmt.Errorf("regexp str: %+v is invalid, err: %+v", valStr, err)
 	} else {
-		return dsl.NewRegexNode(
+		return dsl.NewRegexpNode(
 			dsl.NewKVNode(
 				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 				dsl.NewValueNode(valStr, dsl.NewValueType(property.Type, true)),
