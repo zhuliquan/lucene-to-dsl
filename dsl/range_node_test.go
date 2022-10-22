@@ -1,1012 +1,1502 @@
 package dsl
 
-// import (
-// 	"net"
-// 	"testing"
-// 	"time"
+import (
+	"net"
+	"testing"
+	"time"
 
-// 	"github.com/hashicorp/go-version"
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/zhuliquan/lucene-to-dsl/mapping"
-// )
+	"github.com/hashicorp/go-version"
+	"github.com/stretchr/testify/assert"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
+)
 
-// func TestRangeNodeString(t *testing.T) {
-// 	assert.Equal(t, "(1, 2)", (&RangeNode{LeftValue: 1, RightValue: 2, LeftCmpSym: GT, RightCmpSym: LT}).String())
-// 	assert.Equal(t, "[1, 2)", (&RangeNode{LeftValue: 1, RightValue: 2, LeftCmpSym: GTE, RightCmpSym: LT}).String())
-// 	assert.Equal(t, "(1, 2]", (&RangeNode{LeftValue: 1, RightValue: 2, LeftCmpSym: GT, RightCmpSym: LTE}).String())
-// 	assert.Equal(t, "[1, 2]", (&RangeNode{LeftValue: 1, RightValue: 2, LeftCmpSym: GTE, RightCmpSym: LTE}).String())
-// 	assert.Equal(t, "(\"1\", \"2\")", (&RangeNode{LeftValue: "1", RightValue: "2", LeftCmpSym: GT, RightCmpSym: LT}).String())
-// 	assert.Equal(t, "[\"1\", \"2\")", (&RangeNode{LeftValue: "1", RightValue: "2", LeftCmpSym: GTE, RightCmpSym: LT}).String())
-// 	assert.Equal(t, "(\"1\", \"2\"]", (&RangeNode{LeftValue: "1", RightValue: "2", LeftCmpSym: GT, RightCmpSym: LTE}).String())
-// 	assert.Equal(t, "[\"1\", \"2\"]", (&RangeNode{LeftValue: "1", RightValue: "2", LeftCmpSym: GTE, RightCmpSym: LTE}).String())
-// }
+func TestRangeNode(t *testing.T) {
+	var n1 = NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+			time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+			GTE,
+			LTE,
+		),
+		WithTimeZone(time.Local.String()),
+		WithRelation(INTERSECTS),
+		WithBoost(1.2),
+	)
+	assert.Equal(t, RANGE_DSL_TYPE, n1.DslType())
+	assert.Equal(t, DSL{
+		"range": DSL{
+			"foo": DSL{
+				"gte":       time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local).UnixNano() / 1e6,
+				"lte":       time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local).UnixNano() / 1e6,
+				"format":    "epoch_millis",
+				"time_zone": time.Local.String(),
+				"relation":  INTERSECTS,
+				"boost":     1.2,
+			},
+		},
+	}, n1.ToDSL())
 
-// func TestCheckRangeOverlap(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *RangeNode
-// 	}
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 		want bool
-// 	}{
-// 		{
-// 			name: "test_overlap_01",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: true,
-// 		},
-// 		{
-// 			name: "test_overlap_02",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want: true,
-// 		},
-// 		{
-// 			name: "test_no_overlap_01",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: false,
-// 		},
-// 		{
-// 			name: "test_no_overlap_02",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want: false,
-// 		},
-// 		{
-// 			name: "test_no_overlap_03",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 0,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: false,
-// 		},
-// 		{
-// 			name: "test_no_overlap_04",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 0,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got := checkRangeOverlap(tt.args.n, tt.args.t)
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+	n3 := NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+			time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+			GTE,
+			LTE,
+		),
+		WithBoost(1.3),
+	)
 
-// func TestRangeNodeUnionJoinRangeNode(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *RangeNode
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    AstNode
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_no_overlap",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 0,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want: &OrNode{
-// 				MinimumShouldMatch: 1,
-// 				Nodes: map[string][]AstNode{
-// 					"LEAF:foo": {
-// 						&RangeNode{
-// 							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							LeftValue: -1, RightValue: 0,
-// 							LeftCmpSym: GT, RightCmpSym: LTE,
-// 						},
-// 						&RangeNode{
-// 							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							LeftValue: 1, RightValue: 2,
-// 							LeftCmpSym: GTE, RightCmpSym: LT,
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_01",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 0, RightValue: 2,
-// 				LeftCmpSym: GT, RightCmpSym: LT,
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_02",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 0, RightValue: 2,
-// 				LeftCmpSym: GT, RightCmpSym: LT,
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_03",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 2,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 1,
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: -1, RightValue: 2,
-// 				LeftCmpSym: GTE, RightCmpSym: LT,
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_04",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 2,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: -1, RightValue: 2,
-// 				LeftCmpSym: GT, RightCmpSym: LTE,
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := rangeNodeUnionJoinRangeNode(tt.args.n, tt.args.t)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("rangeNodeUnionJoinRangeNode() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+	n4 := NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+			time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+			GTE,
+			LTE,
+		),
+		WithBoost(1.2),
+	)
+	_, err := n3.UnionJoin(n4)
+	assert.NotNil(t, err)
+	_, err = n3.InterSect(n4)
+	assert.NotNil(t, err)
+}
 
-// func TestRangeNodeIntersectRangeNode(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *RangeNode
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    AstNode
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_no_overlap",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 0,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want:    nil,
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "test_overlap_01",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 1,
-// 				LeftCmpSym: GTE, RightCmpSym: LTE,
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_02",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 0, RightValue: 1,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 1,
-// 				LeftCmpSym: GTE, RightCmpSym: LTE,
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_03",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 2,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 1,
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: -1, RightValue: 1,
-// 				LeftCmpSym: GT, RightCmpSym: LTE,
-// 			},
-// 		},
-// 		{
-// 			name: "test_overlap_04",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: -1, RightValue: 2,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 2,
-// 				LeftCmpSym: GTE, RightCmpSym: LT,
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := rangeNodeIntersectRangeNode(tt.args.n, tt.args.t)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("rangeNodeIntersectRangeNode() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+func TestRangeInverse(t *testing.T) {
+	var n1 = NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+			time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+			GTE,
+			LTE,
+		),
+	)
 
-// func TestCheckRangeInclude(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t LeafValue
-// 	}
-// 	tests := []struct {
-// 		name string
-// 		args args
-// 		want bool
-// 	}{
-// 		{
-// 			name: "test_check_include_01",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: 2,
-// 			},
-// 			want: true,
-// 		},
-// 		{
-// 			name: "test_check_include_02",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GTE, RightCmpSym: LT,
-// 				},
-// 				t: 1,
-// 			},
-// 			want: true,
-// 		},
-// 		{
-// 			name: "test_check_include_03",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LTE,
-// 				},
-// 				t: 3,
-// 			},
-// 			want: true,
-// 		},
-// 		{
-// 			name: "test_check_no_include_01",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: 4,
-// 			},
-// 			want: false,
-// 		},
-// 		{
-// 			name: "test_check_no_include_02",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: 0,
-// 			},
-// 			want: false,
-// 		},
-// 		{
+	n2, err := n1.Inverse()
+	assert.Nil(t, err)
+	assert.Equal(t, &OrNode{
+		MinimumShouldMatch: 1,
+		Nodes: map[string][]AstNode{
+			"foo": {
+				NewRangeNode(
+					NewRgNode(
+						NewFieldNode(NewLfNode(), "foo"),
+						NewValueType(mapping.DATE_FIELD_TYPE, false),
+						minInf[mapping.DATE_FIELD_TYPE],
+						time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+						GT,
+						LT,
+					),
+				),
+				NewRangeNode(
+					NewRgNode(
+						NewFieldNode(NewLfNode(), "foo"),
+						NewValueType(mapping.DATE_FIELD_TYPE, false),
+						time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+						maxInf[mapping.DATE_FIELD_TYPE],
+						GT,
+						LT,
+					),
+				),
+			},
+		},
+	}, n2)
 
-// 			name: "test_check_no_include_03",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: 1,
-// 			},
-// 			want: false,
-// 		},
-// 		{
-// 			name: "test_check_no_include_04",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_RANGE_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: 3,
-// 			},
-// 			want: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got := checkRangeInclude(tt.args.n, tt.args.t)
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+	n1 = NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			minInf[mapping.DATE_FIELD_TYPE],
+			time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+			GT,
+			LTE,
+		),
+	)
+	n2, err = n1.Inverse()
+	assert.Nil(t, err)
+	assert.Equal(t, NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			time.Date(2006, 1, 2, 0, 0, 0, 0, time.Local),
+			maxInf[mapping.DATE_FIELD_TYPE],
+			GT,
+			LT,
+		),
+	), n2)
 
-// func TestRangeNodeIntersectTermNode(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *TermNode
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    AstNode
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_not_include",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 2,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermNode{
-// 					KvNode: KvNode{Type: mapping.INTEGER_FIELD_TYPE, Value: 4},
-// 				},
-// 			},
-// 			want:    nil,
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "test_include",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermNode{
-// 					KvNode: KvNode{Type: mapping.INTEGER_FIELD_TYPE, Value: 2},
-// 				},
-// 			},
-// 			want: &TermNode{
-// 				KvNode: KvNode{Type: mapping.INTEGER_FIELD_TYPE, Value: 2},
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := rangeNodeIntersectTermNode(tt.args.n, tt.args.t)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("rangeNodeIntersectTermNode() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+	n1 = NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+			maxInf[mapping.DATE_FIELD_TYPE],
+			GTE,
+			LT,
+		),
+	)
+	n2, err = n1.Inverse()
+	assert.Nil(t, err)
+	assert.Equal(t, NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			minInf[mapping.DATE_FIELD_TYPE],
+			time.Date(2006, 1, 3, 0, 0, 0, 0, time.Local),
+			GT,
+			LT,
+		),
+	), n2)
 
-// func TestRangeNodeIntersectTermsNode(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *TermsNode
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    AstNode
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_intersect_partial",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.TEXT_FIELD_TYPE},
-// 					LeftValue: "1", RightValue: "5",
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 				t: &TermsNode{
-// 					KvNode: KvNode{Type: mapping.TEXT_FIELD_TYPE},
-// 					Values: []LeafValue{"1", "3", "8"},
-// 				},
-// 			},
-// 			want: &TermsNode{
-// 				KvNode: KvNode{Type: mapping.TEXT_FIELD_TYPE},
-// 				Values: []LeafValue{"1", "3"},
-// 			},
-// 			wantErr: false,
-// 		},
-// 		{
-// 			name: "test_intersect_partial",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.TEXT_FIELD_TYPE},
-// 					LeftValue: "1", RightValue: "5",
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 				t: &TermsNode{
-// 					KvNode: KvNode{Type: mapping.TEXT_FIELD_TYPE},
-// 					Values: []LeafValue{"0", "7", "8"},
-// 				},
-// 			},
-// 			want:    nil,
-// 			wantErr: true,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := rangeNodeIntersectTermsNode(tt.args.n, tt.args.t)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("rangeNodeIntersectTermsNode() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+	n1 = NewRangeNode(
+		NewRgNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueType(mapping.DATE_FIELD_TYPE, false),
+			minInf[mapping.DATE_FIELD_TYPE],
+			maxInf[mapping.DATE_FIELD_TYPE],
+			GT,
+			LT,
+		),
+	)
+	n2, err = n1.Inverse()
+	assert.Nil(t, err)
+	assert.Equal(t, &NotNode{
+		Nodes: map[string][]AstNode{
+			"foo": {
+				&ExistsNode{
+					fieldNode: n1.fieldNode,
+				},
+			},
+		},
+	}, n2)
 
-// func TestRangeNodeUnionJoinTermNode(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *TermNode
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    AstNode
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_include",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermNode{
-// 					KvNode: KvNode{Type: mapping.INTEGER_FIELD_TYPE, Value: 2},
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 3,
-// 				LeftCmpSym: GT, RightCmpSym: LT,
-// 			},
-// 		},
-// 		{
-// 			name: "test_not_include",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermNode{
-// 					KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE, Value: 4},
-// 				},
-// 			},
-// 			want: &OrNode{
-// 				MinimumShouldMatch: 1,
-// 				Nodes: map[string][]AstNode{
-// 					"LEAF:foo": {
-// 						&RangeNode{
-// 							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							LeftValue: 1, RightValue: 3,
-// 							LeftCmpSym: GT, RightCmpSym: LT,
-// 						},
-// 						&TermNode{
-// 							KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE, Value: 4},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 		{
-// 			name: "test_not_include_left",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermNode{
-// 					KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE, Value: 1},
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 3,
-// 				LeftCmpSym: GTE, RightCmpSym: LT,
-// 			},
-// 		},
-// 		{
-// 			name: "test_not_include_right",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermNode{
-// 					KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE, Value: 3},
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 3,
-// 				LeftCmpSym: GT, RightCmpSym: LTE,
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := rangeNodeUnionJoinTermNode(tt.args.n, tt.args.t)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("rangeNodeUnionJoinTermNode() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+}
 
-// func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
-// 	type args struct {
-// 		n *RangeNode
-// 		t *TermsNode
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		want    AstNode
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "test_include",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GTE, RightCmpSym: LTE,
-// 				},
-// 				t: &TermsNode{
-// 					KvNode: KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 					Values: []LeafValue{1, 2, 3},
-// 				},
-// 			},
-// 			want: &RangeNode{
-// 				KvNode:    KvNode{Type: mapping.INTEGER_FIELD_TYPE},
-// 				LeftValue: 1, RightValue: 3,
-// 				LeftCmpSym: GTE, RightCmpSym: LTE,
-// 			},
-// 		},
-// 		{
-// 			name: "test_partial_include",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermsNode{
-// 					KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					Values: []LeafValue{2, 4},
-// 				},
-// 			},
-// 			want: &OrNode{
-// 				MinimumShouldMatch: 1,
-// 				Nodes: map[string][]AstNode{
-// 					"LEAF:foo": {
-// 						&RangeNode{
-// 							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							LeftValue: 1, RightValue: 3,
-// 							LeftCmpSym: GT, RightCmpSym: LT,
-// 						},
-// 						&TermsNode{
-// 							KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							Values: []LeafValue{4},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 		{
-// 			name: "test_partial_include_left",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermsNode{
-// 					KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					Values: []LeafValue{1, 2, 4},
-// 				},
-// 			},
-// 			want: &OrNode{
-// 				MinimumShouldMatch: 1,
-// 				Nodes: map[string][]AstNode{
-// 					"LEAF:foo": {
-// 						&RangeNode{
-// 							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							LeftValue: 1, RightValue: 3,
-// 							LeftCmpSym: GTE, RightCmpSym: LT,
-// 						},
-// 						&TermsNode{
-// 							KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							Values: []LeafValue{4},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 		{
-// 			name: "test_partial_include_right",
-// 			args: args{
-// 				n: &RangeNode{
-// 					KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					LeftValue: 1, RightValue: 3,
-// 					LeftCmpSym: GT, RightCmpSym: LT,
-// 				},
-// 				t: &TermsNode{
-// 					KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 					Values: []LeafValue{2, 3, 4},
-// 				},
-// 			},
-// 			want: &OrNode{
-// 				MinimumShouldMatch: 1,
-// 				Nodes: map[string][]AstNode{
-// 					"LEAF:foo": {
-// 						&RangeNode{
-// 							KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							LeftValue: 1, RightValue: 3,
-// 							LeftCmpSym: GT, RightCmpSym: LTE,
-// 						},
-// 						&TermsNode{
-// 							KvNode: KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 							Values: []LeafValue{4},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := rangeNodeUnionJoinTermsNode(tt.args.n, tt.args.t)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("rangeNodeUnionJoinTermsNode() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.want, got)
-// 		})
-// 	}
-// }
+func TestRangeNodeString(t *testing.T) {
+	assert.Equal(t, "(1, 2)", (&RangeNode{rgNode: rgNode{lValue: 1, rValue: 2, lCmpSym: GT, rCmpSym: LT, valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE}}}).String())
+	assert.Equal(t, "[1, 2)", (&RangeNode{rgNode: rgNode{lValue: 1, rValue: 2, lCmpSym: GTE, rCmpSym: LT, valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE}}}).String())
+	assert.Equal(t, "(1, 2]", (&RangeNode{rgNode: rgNode{lValue: 1, rValue: 2, lCmpSym: GT, rCmpSym: LTE, valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE}}}).String())
+	assert.Equal(t, "[1, 2]", (&RangeNode{rgNode: rgNode{lValue: 1, rValue: 2, lCmpSym: GTE, rCmpSym: LTE, valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE}}}).String())
+	assert.Equal(t, "(\"1\", \"2\")", (&RangeNode{rgNode: rgNode{lValue: "1", rValue: "2", lCmpSym: GT, rCmpSym: LT, valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE}}}).String())
+	assert.Equal(t, "[\"1\", \"2\")", (&RangeNode{rgNode: rgNode{lValue: "1", rValue: "2", lCmpSym: GTE, rCmpSym: LT, valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE}}}).String())
+	assert.Equal(t, "(\"1\", \"2\"]", (&RangeNode{rgNode: rgNode{lValue: "1", rValue: "2", lCmpSym: GT, rCmpSym: LTE, valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE}}}).String())
+	assert.Equal(t, "[\"1\", \"2\"]", (&RangeNode{rgNode: rgNode{lValue: "1", rValue: "2", lCmpSym: GTE, rCmpSym: LTE, valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE}}}).String())
+}
 
-// func TestRangeNodeInverse(t *testing.T) {
-// 	var node1 = &RangeNode{
-// 		KvNode:      KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 		LeftValue:   MinInt[32],
-// 		RightValue:  MaxInt[32],
-// 		LeftCmpSym:  GT,
-// 		RightCmpSym: LT,
-// 	}
+func TestCheckRangeOverlap(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *RangeNode
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_overlap_01",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2,
+						lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1,
+						lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test_overlap_02",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 2,
+						lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2,
+						lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test_no_overlap_01",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2,
+						lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1,
+						lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test_no_overlap_02",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1,
+						lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2,
+						lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test_no_overlap_03",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2,
+						lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 0,
+						lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test_no_overlap_04",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 0,
+						lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2,
+						lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := checkRangeOverlap(tt.args.n, tt.args.t)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// 	var node2, _ = node1.Inverse()
-// 	assert.Equal(t, &NotNode{
-// 		Nodes: map[string][]AstNode{
-// 			"LEAF:foo": {&ExistsNode{KvNode: node1.KvNode}},
-// 		},
-// 	}, node2)
+func TestRangeNodeUnionJoinRangeNode(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *RangeNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_no_overlap",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 0, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &OrNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+								lValue:    -1, rValue: 0, lCmpSym: GT, rCmpSym: LTE,
+							},
+						},
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+								lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LTE,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "test_overlap_01",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    0, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+				},
+			},
+		},
+		{
+			name: "test_overlap_02",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    0, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+				},
+			},
+		},
+		{
+			name: "test_overlap_03",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 1, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    -1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+				},
+			},
+		},
+		{
+			name: "test_overlap_04",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    -1, rValue: 2, lCmpSym: GT, rCmpSym: LTE,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := rangeNodeUnionJoinRangeNode(tt.args.n, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("rangeNodeUnionJoinRangeNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// 	node1 = &RangeNode{
-// 		KvNode:      KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 		LeftValue:   MinInt[32],
-// 		RightValue:  4,
-// 		LeftCmpSym:  GT,
-// 		RightCmpSym: LT,
-// 	}
+func TestRangeNodeIntersectRangeNode(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *RangeNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_no_overlap",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 0, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test_no_overlap_in_array_type",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true},
+						lValue:    -1, rValue: 0, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true},
+								lValue:    -1, rValue: 0, lCmpSym: GT, rCmpSym: LTE,
+							},
+						},
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true},
+								lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_overlap_01",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 1, lCmpSym: GTE, rCmpSym: LTE,
+				},
+			},
+		},
+		{
+			name: "test_overlap_02",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    0, rValue: 1, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 1, lCmpSym: GTE, rCmpSym: LTE,
+				},
+			},
+		},
+		{
+			name: "test_overlap_03",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 1, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    -1, rValue: 1, lCmpSym: GT, rCmpSym: LTE,
+				},
+			},
+		},
+		{
+			name: "test_overlap_04",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    -1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 2, lCmpSym: GTE, rCmpSym: LT,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := rangeNodeIntersectRangeNode(tt.args.n, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("rangeNodeIntersectRangeNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// 	node2, _ = node1.Inverse()
-// 	assert.Equal(t, &RangeNode{
-// 		KvNode:      node1.KvNode,
-// 		LeftValue:   4,
-// 		RightValue:  MaxInt[32],
-// 		LeftCmpSym:  GTE,
-// 		RightCmpSym: LT,
-// 	}, node2)
+func TestCheckRangeInclude(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t LeafValue
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test_check_include_01",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: 2,
+			},
+			want: true,
+		},
+		{
+			name: "test_check_include_02",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+				t: 1,
+			},
+			want: true,
+		},
+		{
+			name: "test_check_include_03",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LTE,
+					},
+				},
+				t: 3,
+			},
+			want: true,
+		},
+		{
+			name: "test_check_no_include_01",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: 4,
+			},
+			want: false,
+		},
+		{
+			name: "test_check_no_include_02",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+				t: 0,
+			},
+			want: false,
+		},
+		{
 
-// 	node1 = &RangeNode{
-// 		KvNode:      KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 		LeftValue:   4,
-// 		RightValue:  MaxInt[32],
-// 		LeftCmpSym:  GT,
-// 		RightCmpSym: LT,
-// 	}
+			name: "test_check_no_include_03",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: 1,
+			},
+			want: false,
+		},
+		{
+			name: "test_check_no_include_04",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LT,
+					},
+				},
+				t: 3,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := checkRangeInclude(tt.args.n, tt.args.t)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// 	node2, _ = node1.Inverse()
-// 	assert.Equal(t, &RangeNode{
-// 		KvNode:      node1.KvNode,
-// 		LeftValue:   MinInt[32],
-// 		RightValue:  4,
-// 		LeftCmpSym:  GT,
-// 		RightCmpSym: LTE,
-// 	}, node2)
+func TestRangeNodeIntersectTermNode(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *TermNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_not_include",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 4},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test_not_include_with_array_type",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true},
+						lValue:    1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true}, value: 4},
+					},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true},
+								lValue:    1, rValue: 2, lCmpSym: GT, rCmpSym: LT,
+							},
+						},
+						&TermNode{
+							kvNode: kvNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: true}, value: 4},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_include",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 2},
+					},
+				},
+			},
+			want: &TermNode{
+				kvNode: kvNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 2},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := rangeNodeIntersectTermNode(tt.args.n, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("rangeNodeIntersectTermNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// 	node1 = &RangeNode{
-// 		KvNode:      KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 		LeftValue:   4,
-// 		RightValue:  7,
-// 		LeftCmpSym:  GT,
-// 		RightCmpSym: LT,
-// 	}
+func TestRangeNodeIntersectTermsNode(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *TermsNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_intersect_partial",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+						lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{"1", "3", "8"},
+				},
+			},
+			want: &TermsNode{
+				fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+				valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+				terms:     []LeafValue{"1", "3"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_intersect_one_term",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+						lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{"1", "8"},
+				},
+			},
+			want: &TermNode{
+				kvNode: kvNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueNode: valueNode{valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false}, value: "1"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_intersect_no_term",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+						lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{"7", "9", "8"},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "test_intersect_one_exclude",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+						lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+					terms:     []LeafValue{"1", "3", "8"},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+								lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+							},
+						},
+						&TermNode{
+							kvNode: kvNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueNode: valueNode{valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true}, value: "8"},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_intersect_many_exclude",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+						lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+					terms:     []LeafValue{"1", "7", "8"},
+				},
+			},
+			want: &AndNode{
+				MustNodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+								lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+							},
+						},
+						&TermsNode{
+							fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+							valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+							terms:     []LeafValue{"7", "8"},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_intersect_no_exclude",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+						lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+					terms:     []LeafValue{"1", "3", "5"},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.TEXT_FIELD_TYPE, aType: true},
+					lValue:    "1", rValue: "5", lCmpSym: GTE, rCmpSym: LTE,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := rangeNodeIntersectTermsNode(tt.args.n, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("rangeNodeIntersectTermsNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// 	node2, _ = node1.Inverse()
-// 	assert.Equal(t, &OrNode{
-// 		MinimumShouldMatch: 1,
-// 		Nodes: map[string][]AstNode{
-// 			node1.NodeKey(): {
-// 				&RangeNode{
-// 					KvNode:      node1.KvNode,
-// 					LeftValue:   MinInt[32],
-// 					RightValue:  4,
-// 					LeftCmpSym:  GT,
-// 					RightCmpSym: LTE,
-// 				},
-// 				&RangeNode{
-// 					KvNode:      node1.KvNode,
-// 					LeftValue:   7,
-// 					RightValue:  MaxInt[32],
-// 					LeftCmpSym:  GTE,
-// 					RightCmpSym: LT,
-// 				},
-// 			},
-// 		},
-// 	}, node2)
+func TestRangeNodeUnionJoinTermNode(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *TermNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_include",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 2},
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+				},
+			},
+		},
+		{
+			name: "test_not_include",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 4},
+					},
+				},
+			},
+			want: &OrNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+								lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+							},
+						},
+						&TermNode{
+							kvNode: kvNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 4},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "test_not_include_left",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 1},
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LT,
+				},
+			},
+		},
+		{
+			name: "test_not_include_right",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 3},
+					},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LTE,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := rangeNodeUnionJoinTermNode(tt.args.n, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("rangeNodeUnionJoinTermNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// }
+func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
+	type args struct {
+		n *RangeNode
+		t *TermsNode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    AstNode
+		wantErr bool
+	}{
+		{
+			name: "test_include",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LTE,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{1, 2, 3},
+				},
+			},
+			want: &RangeNode{
+				rgNode: rgNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LTE,
+				},
+			},
+		},
+		{
+			name: "test_partial_include",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{2, 4},
+				},
+			},
+			want: &OrNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+								lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+							},
+						},
+						&TermNode{
+							kvNode: kvNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 4},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "test_partial_include_left",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{1, 4, 5},
+				},
+			},
+			want: &OrNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+								lValue:    1, rValue: 3, lCmpSym: GTE, rCmpSym: LT,
+							},
+						},
+						&TermsNode{
+							fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+							valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+							terms:     []LeafValue{4, 5},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "test_partial_include_right",
+			args: args{
+				n: &RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+						valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+						lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LT,
+					},
+				},
+				t: &TermsNode{
+					fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+					valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+					terms:     []LeafValue{2, 3, 5},
+				},
+			},
+			want: &OrNode{
+				MinimumShouldMatch: 1,
+				Nodes: map[string][]AstNode{
+					"foo": {
+						&RangeNode{
+							rgNode: rgNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+								lValue:    1, rValue: 3, lCmpSym: GT, rCmpSym: LTE,
+							},
+						},
+						&TermNode{
+							kvNode: kvNode{
+								fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+								valueNode: valueNode{valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false}, value: 5},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := rangeNodeUnionJoinTermsNode(tt.args.n, tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("rangeNodeUnionJoinTermsNode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
-// func TestRangeNodeToDsl(t *testing.T) {
-// 	var node1 = &RangeNode{
-// 		KvNode:    KvNode{Field: "foo", Type: mapping.INTEGER_FIELD_TYPE},
-// 		LeftValue: 1, LeftCmpSym: GT,
-// 		RightValue: 7, RightCmpSym: LT,
-// 		Boost: 1.0,
-// 	}
+func TestRangeNodeToDsl(t *testing.T) {
+	var node1 = &RangeNode{
+		rgNode: rgNode{
+			fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+			valueType: valueType{mType: mapping.INTEGER_FIELD_TYPE, aType: false},
+			lValue:    1, rValue: 7, lCmpSym: GT, rCmpSym: LTE,
+		},
+		boostNode: boostNode{boost: 1.0},
+	}
 
-// 	assert.Equal(t, DSL{
-// 		"range": DSL{
-// 			"foo": DSL{
-// 				GT.String(): 1,
-// 				LT.String(): 7,
-// 				"relation":  "WITHIN",
-// 				"boost":     1.0,
-// 			},
-// 		},
-// 	}, node1.ToDSL())
+	assert.Equal(t, DSL{
+		"range": DSL{
+			"foo": DSL{
+				GT.String():  1,
+				LTE.String(): 7,
+				"relation":   RelationType(""),
+				"boost":      1.0,
+			},
+		},
+	}, node1.ToDSL())
+	t.Log(node1.ToDSL().String())
 
-// 	var node2 = &RangeNode{
-// 		KvNode:    KvNode{Field: "foo", Type: mapping.DATE_FIELD_TYPE},
-// 		LeftValue: time.Date(2022, 01, 02, 0, 0, 0, 0, time.UTC), LeftCmpSym: GT,
-// 		RightValue: time.Date(2022, 01, 03, 0, 0, 0, 0, time.UTC), RightCmpSym: LT,
-// 		Boost: 1.0,
-// 	}
+	var node2 = &RangeNode{
+		rgNode: rgNode{
+			fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+			valueType: valueType{mType: mapping.DATE_FIELD_TYPE, aType: false},
+			lValue:    time.Date(2022, 01, 02, 0, 0, 0, 0, time.UTC),
+			rValue:    time.Date(2022, 01, 03, 0, 0, 0, 0, time.UTC),
+			lCmpSym:   GT, rCmpSym: LTE,
+		},
+		boostNode: boostNode{boost: 1.0},
+	}
 
-// 	assert.Equal(t, DSL{
-// 		"range": DSL{
-// 			"foo": DSL{
-// 				GT.String(): leafValueToPrintValue(node2.LeftValue, node2.Type),
-// 				LT.String(): leafValueToPrintValue(node2.RightValue, node2.Type),
-// 				"format":    "epoch_millis",
-// 				"relation":  "WITHIN",
-// 				"boost":     1.0,
-// 			},
-// 		},
-// 	}, node2.ToDSL())
+	assert.Equal(t, DSL{
+		"range": DSL{
+			"foo": DSL{
+				GT.String():  leafValueToPrintValue(node2.lValue, node2.mType),
+				LTE.String(): leafValueToPrintValue(node2.rValue, node2.mType),
+				"format":     "epoch_millis",
+				"relation":   RelationType(""),
+				"boost":      1.0,
+			},
+		},
+	}, node2.ToDSL())
+	t.Log(node2.ToDSL().String())
 
-// 	var node3 = &RangeNode{
-// 		KvNode:    KvNode{Field: "foo", Type: mapping.IP_FIELD_TYPE},
-// 		LeftValue: net.IP([]byte{1, 2, 3, 4}), LeftCmpSym: GT,
-// 		RightValue: net.IP([]byte{1, 2, 4, 5}), RightCmpSym: LT,
-// 		Boost: 1.0,
-// 	}
+	var node3 = &RangeNode{
+		rgNode: rgNode{
+			fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+			valueType: valueType{mType: mapping.IP_FIELD_TYPE, aType: false},
+			lValue:    net.IP([]byte{1, 2, 3, 4}),
+			rValue:    net.IP([]byte{1, 2, 4, 5}),
+			lCmpSym:   GT, rCmpSym: LTE,
+		},
+		boostNode: boostNode{boost: 1.0},
+	}
 
-// 	assert.Equal(t, DSL{
-// 		"range": DSL{
-// 			"foo": DSL{
-// 				GT.String(): leafValueToPrintValue(node3.LeftValue, node3.Type),
-// 				LT.String(): leafValueToPrintValue(node3.RightValue, node3.Type),
-// 				"relation":  "WITHIN",
-// 				"boost":     1.0,
-// 			},
-// 		},
-// 	}, node3.ToDSL())
+	assert.Equal(t, DSL{
+		"range": DSL{
+			"foo": DSL{
+				GT.String():  leafValueToPrintValue(node3.lValue, node3.mType),
+				LTE.String(): leafValueToPrintValue(node3.rValue, node3.mType),
+				"relation":   RelationType(""),
+				"boost":      1.0,
+			},
+		},
+	}, node3.ToDSL())
+	t.Log(node3.ToDSL().String())
 
-// 	var v1, _ = version.NewVersion("1.2.3")
-// 	var v2, _ = version.NewVersion("1.2.10")
-// 	var node4 = &RangeNode{
-// 		KvNode:    KvNode{Field: "foo", Type: mapping.VERSION_FIELD_TYPE},
-// 		LeftValue: v1, LeftCmpSym: GT,
-// 		RightValue: v2, RightCmpSym: LT,
-// 		Boost: 1.0,
-// 	}
+	var v1, _ = version.NewVersion("1.2.3")
+	var v2, _ = version.NewVersion("1.2.10")
+	var node4 = &RangeNode{
+		rgNode: rgNode{
+			fieldNode: fieldNode{lfNode: lfNode{}, field: "foo"},
+			valueType: valueType{mType: mapping.VERSION_FIELD_TYPE, aType: false},
+			lValue:    v1,
+			rValue:    v2,
+			lCmpSym:   GT, rCmpSym: LTE,
+		},
+		boostNode: boostNode{boost: 1.0},
+	}
 
-// 	assert.Equal(t, DSL{
-// 		"range": DSL{
-// 			"foo": DSL{
-// 				GT.String(): leafValueToPrintValue(node4.LeftValue, node4.Type),
-// 				LT.String(): leafValueToPrintValue(node4.RightValue, node4.Type),
-// 				"relation":  "WITHIN",
-// 				"boost":     1.0,
-// 			},
-// 		},
-// 	}, node4.ToDSL())
-// }
+	assert.Equal(t, DSL{
+		"range": DSL{
+			"foo": DSL{
+				GT.String():  leafValueToPrintValue(node4.lValue, node4.mType),
+				LTE.String(): leafValueToPrintValue(node4.rValue, node4.mType),
+				"relation":   RelationType(""),
+				"boost":      1.0,
+			},
+		},
+	}, node4.ToDSL())
+	t.Log(node4.ToDSL().String())
+}

@@ -3,22 +3,17 @@ package dsl
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/zhuliquan/datemath_parser"
+	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
 type RangeNode struct {
 	rgNode
 	boostNode
-	format   string
+	// format   string // 如果是 date类型直接变为epoch_millis
 	relation RelationType
 	timeZone string
-}
-
-func WithFormat(format string) func(AstNode) {
-	return func(n AstNode) {
-		if f, ok := n.(*RangeNode); ok {
-			f.format = format
-		}
-	}
 }
 
 func WithRelation(relation RelationType) func(AstNode) {
@@ -103,11 +98,7 @@ func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 	case RANGE_DSL_TYPE:
 		return rangeNodeIntersectRangeNode(n, o.(*RangeNode))
 	default:
-		return &AndNode{
-			MustNodes: map[string][]AstNode{
-				n.NodeKey(): {n, o},
-			},
-		}, nil
+		return lfNodeIntersectLfNode(n, o)
 	}
 }
 
@@ -128,22 +119,28 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 		leftNode   = &RangeNode{
 			rgNode: rgNode{
 				fieldNode: n.fieldNode,
+				valueType: n.valueType,
 				lValue:    minInf[n.mType],
 				rValue:    n.lValue,
 				lCmpSym:   GT,
 				rCmpSym:   lCmpSym,
 			},
-			boostNode: boostNode{boost: n.getBoost()},
+			timeZone:  n.timeZone,
+			relation:  n.relation,
+			boostNode: n.boostNode,
 		}
 		rightNode = &RangeNode{
 			rgNode: rgNode{
 				fieldNode: n.fieldNode,
+				valueType: n.valueType,
 				lValue:    n.rValue,
 				rValue:    maxInf[n.mType],
 				lCmpSym:   rCmpSym,
 				rCmpSym:   LT,
 			},
-			boostNode: boostNode{boost: n.getBoost()},
+			timeZone:  n.timeZone,
+			relation:  n.relation,
+			boostNode: n.boostNode,
 		}
 	)
 
@@ -178,8 +175,10 @@ func (n *RangeNode) ToDSL() DSL {
 		n.lCmpSym.String(): leafValueToPrintValue(n.lValue, n.mType),
 		n.rCmpSym.String(): leafValueToPrintValue(n.rValue, n.mType),
 	}
+	if mapping.CheckDateType(n.mType) {
+		addValueForDSL(res, FORMAT_KEY, datemath_parser.EPOCH_MILLIS)
+	}
 	addValueForDSL(res, TIME_ZONE_KEY, n.timeZone)
-	addValueForDSL(res, FORMAT_KEY, n.format)
 	return DSL{RANGE_KEY: DSL{n.field: res}}
 }
 
@@ -189,11 +188,14 @@ func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 			return &RangeNode{
 				rgNode: rgNode{
 					fieldNode: n.fieldNode,
+					valueType: n.valueType,
 					lValue:    n.lValue,
 					rValue:    n.rValue,
 					lCmpSym:   GTE,
 					rCmpSym:   n.rCmpSym,
 				},
+				timeZone:  n.timeZone,
+				relation:  n.relation,
 				boostNode: n.boostNode,
 			}, nil
 		}
@@ -201,11 +203,14 @@ func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 			return &RangeNode{
 				rgNode: rgNode{
 					fieldNode: n.fieldNode,
+					valueType: n.valueType,
 					lValue:    n.lValue,
 					rValue:    n.rValue,
 					lCmpSym:   n.lCmpSym,
 					rCmpSym:   LTE,
 				},
+				timeZone:  n.timeZone,
+				relation:  n.relation,
 				boostNode: n.boostNode,
 			}, nil
 		}
@@ -236,11 +241,14 @@ func rangeNodeUnionJoinTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
 	var rangeNode = &RangeNode{
 		rgNode: rgNode{
 			fieldNode: n.fieldNode,
+			valueType: n.valueType,
 			lValue:    n.lValue,
 			rValue:    n.rValue,
 			lCmpSym:   lCmpSym,
 			rCmpSym:   rCmpSym,
 		},
+		timeZone:  n.timeZone,
+		relation:  n.relation,
 		boostNode: n.boostNode,
 	}
 	return astNodeUnionJoinTermsNode(rangeNode, t, excludes)
@@ -261,7 +269,10 @@ func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 	var dst = &RangeNode{
 		rgNode: rgNode{
 			fieldNode: n.fieldNode,
+			valueType: n.valueType,
 		},
+		timeZone:  n.timeZone,
+		relation:  n.relation,
 		boostNode: n.boostNode,
 	}
 
@@ -309,32 +320,72 @@ func unionCmpRight(n, t, dst *RangeNode) {
 func rangeNodeIntersectTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 	if checkRangeInclude(n, t.value) {
 		return t, nil
-	} else {
+	} else if n.isArrayType() {
 		return lfNodeIntersectLfNode(n, t)
+	} else {
+		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), t.ToDSL())
 	}
 }
 
 func rangeNodeIntersectTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
-	var excludes = []LeafValue{}
-	for _, term := range t.terms {
-		if !checkRangeInclude(n, term) {
-			excludes = append(excludes, term)
+	if n.isArrayType() {
+		var excludes = []LeafValue{}
+		for _, term := range t.terms {
+			if !checkRangeInclude(n, term) {
+				excludes = append(excludes, term)
+			}
+		}
+		return astNodeIntersectTermsNode(n, t, excludes)
+	} else {
+		var includes = []LeafValue{}
+		for _, term := range t.terms {
+			if checkRangeInclude(n, term) {
+				includes = append(includes, term)
+			}
+		}
+		if len(includes) == 0 {
+			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), t.ToDSL())
+		} else if len(includes) == 1 {
+			return &TermNode{
+				kvNode: kvNode{
+					fieldNode: t.fieldNode,
+					valueNode: valueNode{
+						valueType: t.valueType,
+						value:     includes[0],
+					},
+				},
+				boostNode: t.boostNode,
+			}, nil
+		} else {
+			return &TermsNode{
+				fieldNode: t.fieldNode,
+				boostNode: t.boostNode,
+				valueType: t.valueType,
+				terms:     includes,
+			}, nil
 		}
 	}
-	return astNodeIntersectTermsNode(n, t, excludes)
+
 }
 
 func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {
 	// first check have range overlap zone
 	if !checkRangeOverlap(n, t) {
-		return nil, fmt.Errorf("range node: %s can't intersect with range node: %s, no overlap between two range", n.ToDSL(), t.ToDSL())
+		if n.isArrayType() {
+			return lfNodeIntersectLfNode(n, t)
+		} else {
+			return nil, fmt.Errorf("range node: %s can't intersect with range node: %s, no overlap between two range", n.ToDSL(), t.ToDSL())
+		}
 	}
 	// compare left value of n and t, and get higher value, and cmp symbol is associate with higher value
 	// compare left value of n and t, and get lower value, and cmp symbol is associate with lower value
 	var dst = &RangeNode{
 		rgNode: rgNode{
 			fieldNode: n.fieldNode,
+			valueType: n.valueType,
 		},
+		timeZone:  n.timeZone,
+		relation:  n.relation,
 		boostNode: n.boostNode,
 	}
 	intersectCmpLeft(t, n, dst)
