@@ -72,13 +72,13 @@ func (n *AndNode) Inverse() (AstNode, error) {
 func (n *AndNode) ToDSL() DSL {
 	var res = DSL{}
 	if nodes := flattenNodes(n.MustNodes); nodes != nil {
-		res["must"] = nodes
+		res[MUST_KEY] = nodes
 	}
 	if nodes := flattenNodes(n.FilterNodes); nodes != nil {
-		res["filter"] = nodes
+		res[FILTER_KEY] = nodes
 	}
 	if len(res) == 0 {
 		return EmptyDSL
 	}
-	return DSL{"bool": res}
+	return DSL{BOOL_KEY: res}
 }

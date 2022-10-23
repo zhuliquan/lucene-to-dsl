@@ -71,6 +71,9 @@ func (n *PrefixNode) InterSect(o AstNode) (AstNode, error) {
 
 func (n *PrefixNode) Inverse() (AstNode, error) {
 	return &NotNode{
+		opNode: opNode{
+			filterCtxNode: n.filterCtxNode,
+		},
 		Nodes: map[string][]AstNode{
 			n.NodeKey(): {n},
 		},

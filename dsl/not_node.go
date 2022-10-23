@@ -15,7 +15,11 @@ func (n *NotNode) NodeKey() string {
 
 func (n *NotNode) ToDSL() DSL {
 	if nodes := flattenNodes(n.Nodes); nodes != nil {
-		return DSL{"bool": DSL{"must_node": nodes}}
+		return DSL{
+			BOOL_KEY: DSL{
+				MUST_NOT_KEY: nodes,
+			},
+		}
 	} else {
 		return EmptyDSL
 	}

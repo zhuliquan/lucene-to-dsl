@@ -213,9 +213,16 @@ const (
 	MAX_EXPANSIONS_KEY          = "max_expansions"
 	TRANSPOSITIONS_KEY          = "transpositions"
 	MAX_DETERMINIZED_STATES_KEY = "max_determinized_states"
+	MINIMUM_SHOULD_MATCH_KEY    = "minimum_should_match"
 )
 
 const (
+	BOOL_KEY     = "bool"
+	MUST_KEY     = "must"
+	MUST_NOT_KEY = "must_not"
+	SHOULD_KEY   = "should"
+	FILTER_KEY   = "filter"
+
 	IDS_KEY    = "ids"
 	TERM_KEY   = "term"
 	TERMS_KEY  = "terms"

@@ -81,7 +81,9 @@ func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
 
 func (n *WildCardNode) Inverse() (AstNode, error) {
 	return &NotNode{
-		opNode: opNode{filterCtxNode: n.filterCtxNode},
+		opNode: opNode{
+			filterCtxNode: n.filterCtxNode,
+		},
 		Nodes: map[string][]AstNode{
 			n.NodeKey(): {n},
 		},

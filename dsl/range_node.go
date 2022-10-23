@@ -157,6 +157,9 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 		return rightNode, nil
 	} else {
 		return &NotNode{
+			opNode: opNode{
+				filterCtxNode: n.filterCtxNode,
+			},
 			Nodes: map[string][]AstNode{
 				n.NodeKey(): {
 					&ExistsNode{

@@ -76,10 +76,10 @@ func (n *OrNode) ToDSL() DSL {
 			shouldMatch = n.MinimumShouldMatch
 		}
 		return DSL{
-			"bool": DSL{
-				"should": res,
+			BOOL_KEY: DSL{
+				SHOULD_KEY: res,
 			},
-			"minimum_should_match": shouldMatch,
+			MINIMUM_SHOULD_MATCH_KEY: shouldMatch,
 		}
 	}
 }

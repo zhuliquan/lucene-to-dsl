@@ -65,7 +65,7 @@ func (n *FuzzyNode) UnionJoin(o AstNode) (AstNode, error) {
 func (n *FuzzyNode) InterSect(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
+		return o.InterSect(n)
 	default:
 		return lfNodeIntersectLfNode(n, o)
 	}
@@ -73,6 +73,7 @@ func (n *FuzzyNode) InterSect(o AstNode) (AstNode, error) {
 
 func (n *FuzzyNode) Inverse() (AstNode, error) {
 	return &NotNode{
+		opNode: opNode{filterCtxNode: n.filterCtxNode},
 		Nodes: map[string][]AstNode{
 			n.NodeKey(): {n},
 		},
