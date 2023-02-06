@@ -24,21 +24,38 @@ func (n *MatchPhraseNode) DslType() DslType {
 }
 
 func (n *MatchPhraseNode) ToDSL() DSL {
-	return DSL{
-		"match_phrase": DSL{
-			n.field: n.toPrintValue(),
-		},
+	d := DSL{
+		n.field: n.toPrintValue(),
+	}
+	if n.getAnaLyzer() != "" {
+		d[ANALYZER_KEY] = n.getAnaLyzer()
+	}
+	return DSL{MATCH_PHRASE_KEY: d}
+}
+
+func (n *MatchPhraseNode) UnionJoin(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.UnionJoin(n)
+	default:
+		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
 
-func (n *MatchPhraseNode) UnionJoin(AstNode) (AstNode, error) {
-	return nil, nil
-}
-
-func (n *MatchPhraseNode) InterSect(AstNode) (AstNode, error) {
-	return nil, nil
+func (n *MatchPhraseNode) InterSect(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.InterSect(n)
+	default:
+		return lfNodeIntersectLfNode(n, o)
+	}
 }
 
 func (n *MatchPhraseNode) Inverse() (AstNode, error) {
-	return nil, nil
+	return &NotNode{
+		opNode: opNode{filterCtxNode: n.filterCtxNode},
+		Nodes: map[string][]AstNode{
+			n.NodeKey(): {n},
+		},
+	}, nil
 }

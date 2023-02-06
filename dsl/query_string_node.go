@@ -9,13 +9,15 @@ type QueryStringNode struct {
 	kvNode
 	boostNode
 	rewriteNode
+	analyzerNode
 }
 
 func NewQueryStringNode(kvNode *kvNode, opts ...func(AstNode)) *QueryStringNode {
 	var n = &QueryStringNode{
-		kvNode:      *kvNode,
-		boostNode:   boostNode{boost: 1.0},
-		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},
+		kvNode:       *kvNode,
+		boostNode:    boostNode{boost: 1.0},
+		rewriteNode:  rewriteNode{rewrite: CONSTANT_SCORE},
+		analyzerNode: analyzerNode{},
 	}
 	for _, opt := range opts {
 		opt(n)
@@ -64,12 +66,15 @@ func (n *QueryStringNode) DslType() DslType {
 }
 
 func (n *QueryStringNode) ToDSL() DSL {
-	return DSL{
-		QUERY_STRING_KEY: DSL{
-			QUERY_KEY:         n.toPrintValue(),
-			BOOST_KEY:         n.getBoost(),
-			REGEXP_KEY:        n.getRewrite(),
-			DEFAULT_FIELD_KEY: n.field,
-		},
+	d := DSL{
+		QUERY_KEY:         n.toPrintValue(),
+		BOOST_KEY:         n.getBoost(),
+		REGEXP_KEY:        n.getRewrite(),
+		DEFAULT_FIELD_KEY: n.field,
 	}
+	if n.getAnaLyzer() != "" {
+		d[ANALYZER_KEY] = n.getAnaLyzer()
+	}
+
+	return DSL{QUERY_STRING_KEY: d}
 }

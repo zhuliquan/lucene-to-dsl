@@ -37,13 +37,13 @@ func (n *MatchNode) Inverse() (AstNode, error) {
 }
 
 func (n *MatchNode) ToDSL() DSL {
-	return DSL{
-		MATCH_KEY: DSL{
-			n.field: DSL{
-				QUERY_KEY:          n.toPrintValue(),
-				BOOST_KEY:          n.getBoost(),
-				MAX_EXPANSIONS_KEY: n.getMaxExpands(),
-			},
-		},
+	d := DSL{
+		QUERY_KEY:          n.toPrintValue(),
+		BOOST_KEY:          n.getBoost(),
+		MAX_EXPANSIONS_KEY: n.getMaxExpands(),
 	}
+	if n.getAnaLyzer() != "" {
+		d[ANALYZER_KEY] = n.getAnaLyzer()
+	}
+	return DSL{MATCH_KEY: DSL{n.field: d}}
 }

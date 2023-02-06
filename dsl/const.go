@@ -48,7 +48,7 @@ const (
 )
 
 var (
-	eps        = 1E-8
+	eps        = 1e-8
 	MinUint    = uint64(0)
 	MinFloat16 = float16.Fromfloat32(-65504)
 	MaxFloat16 = float16.Fromfloat32(65504)
@@ -204,6 +204,7 @@ const (
 	VALUES_KEY = "values"
 	FORMAT_KEY = "format"
 
+	ANALYZER_KEY                = "analyzer"
 	REWRITE_KEY                 = "rewrite"
 	RELATION_KEY                = "relation"
 	FUZZINESS_KEY               = "fuzziness"

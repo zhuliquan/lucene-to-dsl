@@ -39,11 +39,15 @@ func (n *MatchPhrasePrefixNode) DslType() DslType {
 }
 
 func (n *MatchPhrasePrefixNode) ToDSL() DSL {
+	d := DSL{
+		QUERY_KEY:          n.toPrintValue(),
+		SLOP_KEY:           n.getSlop(),
+		MAX_EXPANSIONS_KEY: n.getMaxExpands(),
+	}
+	if n.getAnaLyzer() != "" {
+		d[ANALYZER_KEY] = n.getAnaLyzer()
+	}
 	return DSL{
-		MATCH_PHRASE_PREFIX_KEY: DSL{
-			QUERY_KEY:          n.toPrintValue(),
-			SLOP_KEY:           n.getSlop(),
-			MAX_EXPANSIONS_KEY: n.getMaxExpands(),
-		},
+		MATCH_PHRASE_PREFIX_KEY: d,
 	}
 }
