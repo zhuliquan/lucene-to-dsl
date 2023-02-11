@@ -1,5 +1,7 @@
 package dsl
 
+import "fmt"
+
 // match node
 type MatchNode struct {
 	kvNode
@@ -25,15 +27,40 @@ func (n *MatchNode) DslType() DslType {
 }
 
 func (n *MatchNode) UnionJoin(o AstNode) (AstNode, error) {
-	return n, nil
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.UnionJoin(n)
+	default:
+		if b, ok := o.(BoostNode); ok {
+			if compareBoost(n, b) != 0 {
+				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			}
+		}
+		return lfNodeUnionJoinLfNode(n, o)
+	}
 }
 
 func (n *MatchNode) InterSect(o AstNode) (AstNode, error) {
-	return n, nil
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.InterSect(n)
+	default:
+		if b, ok := o.(BoostNode); ok {
+			if compareBoost(n, b) != 0 {
+				return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			}
+		}
+		return lfNodeIntersectLfNode(n, o)
+	}
 }
 
 func (n *MatchNode) Inverse() (AstNode, error) {
-	return n, nil
+	return &NotNode{
+		opNode: opNode{filterCtxNode: n.filterCtxNode},
+		Nodes: map[string][]AstNode{
+			n.NodeKey(): {n},
+		},
+	}, nil
 }
 
 func (n *MatchNode) ToDSL() DSL {

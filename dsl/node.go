@@ -319,3 +319,4 @@ type patternNode struct {
 func (n *patternNode) Match(text []byte) bool {
 	return n.matcher.Match(text)
 }
+

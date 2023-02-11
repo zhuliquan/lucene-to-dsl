@@ -1,5 +1,7 @@
 package dsl
 
+import "fmt"
+
 // match_phrase node
 type MatchPhrasePrefixNode struct {
 	kvNode
@@ -22,16 +24,41 @@ func NewMatchPhrasePrefixNode(kvNode *kvNode, opts ...func(AstNode)) *MatchPhras
 	return n
 }
 
-func (n *MatchPhrasePrefixNode) UnionJoin(AstNode) (AstNode, error) {
-	return nil, nil
+func (n *MatchPhrasePrefixNode) UnionJoin(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.UnionJoin(n)
+	default:
+		if b, ok := o.(BoostNode); ok {
+			if compareBoost(n, b) != 0 {
+				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			}
+		}
+		return lfNodeUnionJoinLfNode(n, o)
+	}
 }
 
-func (n *MatchPhrasePrefixNode) InterSect(AstNode) (AstNode, error) {
-	return nil, nil
+func (n *MatchPhrasePrefixNode) InterSect(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE:
+		return o.InterSect(n)
+	default:
+		if b, ok := o.(BoostNode); ok {
+			if compareBoost(n, b) != 0 {
+				return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			}
+		}
+		return lfNodeIntersectLfNode(n, o)
+	}
 }
 
 func (n *MatchPhrasePrefixNode) Inverse() (AstNode, error) {
-	return nil, nil
+	return &NotNode{
+		opNode: opNode{filterCtxNode: n.filterCtxNode},
+		Nodes: map[string][]AstNode{
+			n.NodeKey(): {n},
+		},
+	}, nil
 }
 
 func (n *MatchPhrasePrefixNode) DslType() DslType {
