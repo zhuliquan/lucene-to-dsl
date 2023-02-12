@@ -1,6 +1,10 @@
 package dsl
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/zhuliquan/lucene-to-dsl/utils"
+)
 
 type WildCardNode struct {
 	kvNode
@@ -18,7 +22,7 @@ func NewWildCardPattern(pattern string) PatternMatcher {
 }
 
 func (w *wildcardPattern) Match(text []byte) bool {
-	return wildcardMatch([]rune(string(text)), w.pattern)
+	return utils.WildcardMatch([]rune(string(text)), w.pattern)
 }
 
 func NewWildCardNode(kvNode *kvNode, pattern PatternMatcher, opts ...func(AstNode)) *WildCardNode {
