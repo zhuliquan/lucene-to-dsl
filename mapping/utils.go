@@ -11,47 +11,59 @@ func checkTypeSupportLucene(typ FieldType) bool {
 	return ok
 }
 
-func matchFieldPath(matchPath []string, targetPath []string, index int) bool {
-	if len(matchPath) > len(targetPath)-index {
+func matchFieldPath(partialPath []string, fullPath []string, index int) bool {
+	if len(partialPath) > len(fullPath)-index {
 		return false
 	}
-	for i := 0; i < len(matchPath); i++ {
-		if matchPath[i] != targetPath[index+i] {
+	for i := 0; i < len(partialPath); i++ {
+		if partialPath[i] != fullPath[index+i] {
 			return false
 		}
 	}
 	return true
 }
 
-func _getProperty(mpp map[string]*Property, index int, paths []string) (*Property, error) {
+func _getProperty(mpp map[string]*Property, index int, fullPath []string) (*Property, error) {
 	for cf, cp := range mpp {
 		if cp.Type == ALIAS_FIELD_TYPE {
 			continue
 		}
-		if !matchFieldPath(strings.Split(cf, "."), paths, index) {
+		
+		partialPath := strings.Split(cf, ".")
+		if !matchFieldPath(partialPath, fullPath, index) {
 			continue
 		}
 
-		if index == len(paths)-1 {
+		if index == len(fullPath)-1 {
 			switch cp.Type {
-			case OBJECT_FIELD_TYPE, NESTED_FIELD_TYPE:
-				return nil, fmt.Errorf("field: %s is not fully field path", strings.Join(paths, "."))
+			case OBJECT_FIELD_TYPE, NESTED_FIELD_TYPE, FLATTENED_FIELD_TYPE:
+				return nil, fmt.Errorf("field: %s is not fully field path", strings.Join(fullPath, "."))
 			default:
 				return cp, nil
 			}
 		}
 
-		if len(cp.Properties) != 0 {
-			if p, err := _getProperty(cp.Properties, index+1, paths); err != nil {
-				if strings.HasSuffix(err.Error(), "is not fully field path") {
-					return nil, err
+		if cp.Type == FLATTENED_FIELD_TYPE { // support flattened type
+			return cp, nil
+		}
+
+		idxInc := len(partialPath)
+
+		for _, subProperties := range []map[string]*Property {
+			cp.Properties, cp.Fields,
+		} {
+			if len(subProperties) != 0 {
+				if p, err := _getProperty(subProperties, index+idxInc, fullPath); err != nil {
+					if strings.HasSuffix(err.Error(), "is not fully field path") {
+						return nil, err
+					}
+				} else {
+					return p, nil
 				}
-			} else {
-				return p, nil
 			}
 		}
 	}
-	return nil, fmt.Errorf("don't found field: %s in mapping", strings.Join(paths, "."))
+	return nil, fmt.Errorf("don't found field: %s in mapping", strings.Join(fullPath, "."))
 }
 
 func getProperty(m *PropertyMapping, target string) (*Property, error) {
