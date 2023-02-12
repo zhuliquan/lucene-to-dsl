@@ -205,10 +205,9 @@ func TestFetchProperty(t *testing.T) {
 		target string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    *Property
-		wantErr bool
+		name string
+		args args
+		want map[string]*Property
 	}{
 		{
 			name: "test_error_01",
@@ -220,8 +219,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x",
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string]*Property{},
 		},
 		{
 			name: "test_error_02",
@@ -235,8 +233,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.y",
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string]*Property{},
 		},
 		{
 			name: "test_error_03",
@@ -257,8 +254,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x",
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string]*Property{},
 		},
 		{
 			name: "test_error_04",
@@ -286,8 +282,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.y",
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string]*Property{},
 		},
 		{
 			name: "test_err_05",
@@ -315,8 +310,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.y.z",
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string]*Property{},
 		},
 		{
 			name: "test_ok_01",
@@ -330,8 +324,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x",
 			},
-			want: nil,
-			wantErr: true,
+			want: map[string]*Property{},
 		},
 		{
 			name: "test_ok_01_01",
@@ -345,10 +338,11 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.y",
 			},
-			want: &Property{
-				Type: FLATTENED_FIELD_TYPE,
+			want: map[string]*Property{
+				"x.y": {
+					Type: FLATTENED_FIELD_TYPE,
+				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "test_ok_02",
@@ -369,10 +363,11 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.y",
 			},
-			want: &Property{
-				Type: TEXT_FIELD_TYPE,
+			want: map[string]*Property{
+				"x.y": {
+					Type: TEXT_FIELD_TYPE,
+				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "test_ok_03",
@@ -391,10 +386,40 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.raw",
 			},
-			want: &Property{
-				Type: KEYWORD_FIELD_TYPE,
+			want: map[string]*Property{
+				"x.raw": {
+					Type: KEYWORD_FIELD_TYPE,
+				},
 			},
-			wantErr: false,
+		},
+		{
+			name: "test_ok_04",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: TEXT_FIELD_TYPE,
+							Fields: map[string]*Property{
+								"raw1": {
+									Type: KEYWORD_FIELD_TYPE,
+								},
+								"raw2": {
+									Type: LONG_FIELD_TYPE,
+								},
+							},
+						},
+					},
+				},
+				target: "x.raw\\*",
+			},
+			want: map[string]*Property{
+				"x.raw1": {
+					Type: KEYWORD_FIELD_TYPE,
+				},
+				"x.raw2": {
+					Type: LONG_FIELD_TYPE,
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -402,8 +427,7 @@ func TestFetchProperty(t *testing.T) {
 			var m = &PropertyMapping{
 				fieldMapping: tt.args.m,
 			}
-			got, err := getProperty(m, tt.args.target)
-			assert.Equal(t, tt.wantErr, (err != nil))
+			got := getProperty(m, tt.args.target)
 			assert.Equal(t, tt.want, got)
 		})
 	}

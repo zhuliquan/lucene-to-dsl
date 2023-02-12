@@ -158,23 +158,26 @@ func fieldQueryToAstNode(q *lucene.FieldQuery) (dsl.AstNode, error) {
 	} else if q.Field == nil || q.Term == nil {
 		return nil, ErrEmptyFieldQuery
 	}
-	if property, err := convertMapping.GetProperty(q.Field.String()); err != nil {
-		return nil, err
+	if props := convertMapping.GetProperty(q.Field.String()); len(props) == 0 {
+		return nil, fmt.Errorf("field: %s don't match any es mapping", q.Field.String())
 	} else {
-		var termType = q.Term.GetTermType()
-		if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
-			return convertToRange(q.Field, q.Term, property)
-		} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
-			return convertToSingle(q.Field, q.Term, property)
-		} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
-			return convertToPhrase(q.Field, q.Term, property)
-		} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
-			return convertToGroup(q.Field, q.Term, property)
-		} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
-			return convertToRegexp(q.Field, q.Term, property)
-		} else {
-			return nil, fmt.Errorf("con't convert term query: %s", q.String())
+		for _, property := range props {
+			var termType = q.Term.GetTermType()
+			if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
+				return convertToRange(q.Field, q.Term, property)
+			} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
+				return convertToSingle(q.Field, q.Term, property)
+			} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
+				return convertToPhrase(q.Field, q.Term, property)
+			} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
+				return convertToGroup(q.Field, q.Term, property)
+			} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
+				return convertToRegexp(q.Field, q.Term, property)
+			} else {
+				return nil, fmt.Errorf("con't convert term query: %s", q.String())
+			}
 		}
+		return nil, nil
 	}
 }
 

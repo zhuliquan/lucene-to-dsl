@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
+	"log"
 )
 
 type Meta struct {
@@ -297,7 +299,8 @@ func (m *Mapping) String() string {
 // first parameter: the term value, e.g. lucene query "foo:bar", bar is term value
 // second parameter: is ExtProperties defined in Mapping struct
 // example:
-//   using func("bar", map[string]interface{}{"only_upper": true}), you can convert "bar" to "BAR"
+//
+//	using func("bar", map[string]interface{}{"only_upper": true}), you can convert "bar" to "BAR"
 type ConvertFunc = func(interface{}, ExtProperties) (interface{}, error)
 
 type PropertyMapping struct {
@@ -314,26 +317,20 @@ type PropertyMapping struct {
 	fieldExtFuncs map[string]ConvertFunc
 }
 
-func (m *PropertyMapping) GetProperty(field string) (*Property, error) {
+func (m *PropertyMapping) GetProperty(field string) map[string]*Property {
 	if target, have := m.fieldAliasMap[field]; have {
 		field = target
 	}
-	var res *Property
-	// get property from cache
-	if prop, have := m.propertyCache[field]; have {
-		res = prop
-		// get property from mapping property
-	} else if prop, err := getProperty(m, field); err != nil {
-		return nil, err
-	} else {
-		m.propertyCache[field] = prop
-		res = prop
+	var res = map[string]*Property{}
+	// get property from mapping property
+	for key, prop := range getProperty(m, field) {
+		if checkTypeSupportLucene(prop.Type) {
+			res[key] = prop
+		} else {
+			log.Printf("filed: %s type: %s don't support lucene query", key, prop.Type)
+		}
 	}
-	if !checkTypeSupportLucene(res.Type) {
-		return nil, fmt.Errorf("filed: %s type: %s don't support lucene query", field, res.Type)
-	} else {
-		return res, nil
-	}
+	return res
 }
 
 func (m *PropertyMapping) GetExtFuncs(field string) ConvertFunc {

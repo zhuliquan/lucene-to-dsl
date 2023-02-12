@@ -148,55 +148,54 @@ func TestGetProperty(t *testing.T) {
 		t.Errorf("expect don't got error")
 	}
 	type testCase struct {
-		name    string
-		field   string
-		prop    *Property
-		wantErr bool
+		name  string
+		field string
+		prop  map[string]*Property
 	}
 
 	for _, tt := range []testCase{
 		{
 			name:  "test_get_alias",
 			field: "host_name_alias",
-			prop: &Property{
-				Type: "keyword",
+			prop: map[string]*Property{
+				"host_name": {
+					Type: "keyword",
+				},
 			},
-			wantErr: false,
 		},
 		{
 			name:  "test_get_created_at",
 			field: "created_at",
-			prop: &Property{
-				Type:   "date",
-				Format: "EEE MMM dd HH:mm:ss Z yyyy",
+			prop: map[string]*Property{
+				"created_at": {
+					Type:   "date",
+					Format: "EEE MMM dd HH:mm:ss Z yyyy",
+				},
 			},
-			wantErr: false,
 		},
 		{
 			name:  "test_retry_get_created_at",
 			field: "created_at",
-			prop: &Property{
-				Type:   "date",
-				Format: "EEE MMM dd HH:mm:ss Z yyyy",
+			prop: map[string]*Property{
+				"created_at": {
+					Type:   "date",
+					Format: "EEE MMM dd HH:mm:ss Z yyyy",
+				},
 			},
-			wantErr: false,
 		},
 		{
-			name:    "test_not_find_error",
-			field:   "not_find_field",
-			prop:    nil,
-			wantErr: true,
+			name:  "test_not_find_error",
+			field: "not_find_field",
+			prop:  map[string]*Property{},
 		},
 		{
-			name:    "test_not_support_lucene",
-			field:   "shape_field",
-			prop:    nil,
-			wantErr: true,
+			name:  "test_not_support_lucene",
+			field: "shape_field",
+			prop:  map[string]*Property{},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			prop, err := pm.GetProperty(tt.field)
-			assert.Equal(t, tt.wantErr, (err != nil))
+			prop := pm.GetProperty(tt.field)
 			assert.Equal(t, tt.prop, prop)
 		})
 	}

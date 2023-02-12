@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/zhuliquan/lucene-to-dsl/utils"
 )
 
 func checkTypeSupportLucene(typ FieldType) bool {
@@ -11,63 +13,74 @@ func checkTypeSupportLucene(typ FieldType) bool {
 	return ok
 }
 
-func matchFieldPath(partialPath []string, fullPath []string, index int) bool {
-	if len(partialPath) > len(fullPath)-index {
+func matchFieldPath(partialPath []string, patternPath []string, index int) bool {
+	if len(partialPath) > len(patternPath)-index {
 		return false
 	}
 	for i := 0; i < len(partialPath); i++ {
-		if partialPath[i] != fullPath[index+i] {
+		if !utils.WildcardMatch([]rune(partialPath[i]), []rune(
+			strings.ReplaceAll(strings.ReplaceAll(patternPath[index+i], "\\*", "*"), "\\?", "?"))) {
 			return false
 		}
 	}
 	return true
 }
 
-func _getProperty(mpp map[string]*Property, index int, fullPath []string) (*Property, error) {
+func checkRestPathFlattenOk(path []string) bool {
+	for _, p := range path {
+		// flatten path can't contain any wildcard char.
+		if strings.Contains(p, "*") || strings.Contains(p, "?") {
+			return false
+		}
+	}
+	return true
+}
+
+func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath []string) map[string]*Property {
+	res := map[string]*Property{}
 	for cf, cp := range mpp {
 		if cp.Type == ALIAS_FIELD_TYPE {
 			continue
 		}
-		
+
 		partialPath := strings.Split(cf, ".")
-		if !matchFieldPath(partialPath, fullPath, index) {
+		if !matchFieldPath(partialPath, patternPath, index) {
 			continue
 		}
 
-		if index == len(fullPath)-1 {
+		idxInc := len(partialPath)
+		matchingPath := append(matchedPath, cf)
+		if index+idxInc == len(patternPath) {
 			switch cp.Type {
 			case OBJECT_FIELD_TYPE, NESTED_FIELD_TYPE, FLATTENED_FIELD_TYPE:
-				return nil, fmt.Errorf("field: %s is not fully field path", strings.Join(fullPath, "."))
+				// do nothing
 			default:
-				return cp, nil
+				res[strings.Join(matchingPath, ".")] = cp
 			}
+			continue
 		}
 
 		if cp.Type == FLATTENED_FIELD_TYPE { // support flattened type
-			return cp, nil
+			// pattern path must be specific, can't be fuzzy (i.g. \*.x, x.\*)
+			if checkRestPathFlattenOk(patternPath) {
+				res[strings.Join(patternPath, ".")] = cp
+			}
+			continue
 		}
 
-		idxInc := len(partialPath)
-
-		for _, subProperties := range []map[string]*Property {
+		for _, subProperties := range []map[string]*Property{
 			cp.Properties, cp.Fields,
 		} {
-			if len(subProperties) != 0 {
-				if p, err := _getProperty(subProperties, index+idxInc, fullPath); err != nil {
-					if strings.HasSuffix(err.Error(), "is not fully field path") {
-						return nil, err
-					}
-				} else {
-					return p, nil
-				}
+			for p, subRes := range _getProperty(subProperties, index+idxInc, matchingPath, patternPath) {
+				res[p] = subRes
 			}
 		}
 	}
-	return nil, fmt.Errorf("don't found field: %s in mapping", strings.Join(fullPath, "."))
+	return res
 }
 
-func getProperty(m *PropertyMapping, target string) (*Property, error) {
-	return _getProperty(m.fieldMapping.Properties, 0, strings.Split(target, "."))
+func getProperty(m *PropertyMapping, target string) map[string]*Property {
+	return _getProperty(m.fieldMapping.Properties, 0, []string{}, strings.Split(target, "."))
 }
 
 func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *PropertyMapping) error {
@@ -85,10 +98,10 @@ func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *
 			} else if cp.Path == fd {
 				return fmt.Errorf("field: %s is alias, but path is same", fd)
 			}
-			if property, err := getProperty(pp, cp.Path); err != nil {
+			if property := getProperty(pp, cp.Path); len(property) == 0 {
 				return fmt.Errorf("filed: %s is alias, but can't find property for path: %s", fd, cp.Path)
 			} else {
-				pp.propertyCache[cp.Path] = property
+				pp.propertyCache[cp.Path] = property[cp.Path]
 			}
 			am[fd] = cp.Path
 		default:
