@@ -330,6 +330,21 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x",
 			},
+			want: nil,
+			wantErr: true,
+		},
+		{
+			name: "test_ok_01_01",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: FLATTENED_FIELD_TYPE,
+						},
+					},
+				},
+				target: "x.y",
+			},
 			want: &Property{
 				Type: FLATTENED_FIELD_TYPE,
 			},
@@ -356,6 +371,28 @@ func TestFetchProperty(t *testing.T) {
 			},
 			want: &Property{
 				Type: TEXT_FIELD_TYPE,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_ok_03",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: TEXT_FIELD_TYPE,
+							Fields: map[string]*Property{
+								"raw": {
+									Type: KEYWORD_FIELD_TYPE,
+								},
+							},
+						},
+					},
+				},
+				target: "x.raw",
+			},
+			want: &Property{
+				Type: KEYWORD_FIELD_TYPE,
 			},
 			wantErr: false,
 		},
