@@ -36,9 +36,14 @@ func checkRestPathFlattenOk(path []string) bool {
 	return true
 }
 
-func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath []string) map[string]*Property {
+func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath []string, wildcard bool) map[string]*Property {
 	res := map[string]*Property{}
 	for cf, cp := range mpp {
+		
+		if !wildcard && len(res) > 0 { // normal field (no wildcard) find property need return 
+			break
+		}
+
 		if cp.Type == ALIAS_FIELD_TYPE {
 			continue
 		}
@@ -71,7 +76,7 @@ func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath 
 		for _, subProperties := range []map[string]*Property{
 			cp.Properties, cp.Fields,
 		} {
-			for p, subRes := range _getProperty(subProperties, index+idxInc, matchingPath, patternPath) {
+			for p, subRes := range _getProperty(subProperties, index+idxInc, matchingPath, patternPath, wildcard) {
 				res[p] = subRes
 			}
 		}
@@ -80,7 +85,9 @@ func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath 
 }
 
 func getProperty(m *PropertyMapping, target string) map[string]*Property {
-	return _getProperty(m.fieldMapping.Properties, 0, []string{}, strings.Split(target, "."))
+	patternPath := strings.Split(target, ".")
+	isWildcardField := !checkRestPathFlattenOk(patternPath)
+	return _getProperty(m.fieldMapping.Properties, 0, []string{}, patternPath, isWildcardField)
 }
 
 func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *PropertyMapping) error {
