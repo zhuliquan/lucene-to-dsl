@@ -18,13 +18,19 @@ const (
 	LEAF_NODE_TYPE
 )
 
+type OpType uint32
+
+const (
+	AND OpType = 1 << iota
+	OR
+	NOT
+)
+
 type DslType uint32
 
 const (
 	EMPTY_DSL_TYPE DslType = iota
-	AND_DSL_TYPE
-	OR_DSL_TYPE
-	NOT_DSL_TYPE
+	BOOL_DSL_TYPE
 	IDS_DSL_TYPE
 	TERM_DSL_TYPE
 	TERMS_DSL_TYPE
@@ -42,9 +48,10 @@ const (
 )
 
 const (
-	OR_OP_KEY  = "OP:OR"
-	AND_OP_KEY = "OP:AND"
-	NOT_OP_KEY = "OP:NOT"
+	OP_KEY = "OP"
+	// OR_OP_KEY  = "OP:OR"
+	// AND_OP_KEY = "OP:AND"
+	// NOT_OP_KEY = "OP:NOT"
 )
 
 var (

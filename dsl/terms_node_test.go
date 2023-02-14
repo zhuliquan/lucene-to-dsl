@@ -19,9 +19,9 @@ func TestTermsNode(t *testing.T) {
 	assert.Equal(t, DSL{"terms": DSL{"foo": termsToPrintValue(node1.terms, node1.mType), "boost": 1.2}}, node1.ToDSL())
 	assert.Equal(t, TERMS_DSL_TYPE, node1.DslType())
 	node3, _ := node1.Inverse()
-	assert.Equal(t, &NotNode{
-		opNode: opNode{filterCtxNode: node1.filterCtxNode},
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: NOT},
+		MustNot: map[string][]AstNode{
 			"foo": {
 				&TermNode{
 					kvNode: kvNode{
@@ -73,8 +73,9 @@ func TestTermsNodeMergeTermsNode(t *testing.T) {
 
 	node5, err = node1.InterSect(node3)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				&TermNode{
 					kvNode: kvNode{
@@ -107,8 +108,9 @@ func TestTermsNodeMergeTermsNode(t *testing.T) {
 
 	node5, err = node1.InterSect(node4)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				&TermsNode{
 					fieldNode: node1.fieldNode,

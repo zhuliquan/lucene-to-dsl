@@ -10,8 +10,9 @@ import (
 )
 
 func TestOpNode(t *testing.T) {
-	var n = NewOpNode()
+	var n = NewOpNode(OR)
 	assert.Equal(t, OP_NODE_TYPE, n.AstType())
+	assert.Equal(t, OR, n.OpType())
 	WithFilterCtx(true)(n)
 	assert.Equal(t, true, n.getFilterCtx())
 	WithFilterCtx(false)(n)

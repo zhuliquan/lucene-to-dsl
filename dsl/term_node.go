@@ -64,14 +64,7 @@ func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *TermNode) Inverse() (AstNode, error) {
-	return &NotNode{
-		opNode: opNode{
-			filterCtxNode: n.filterCtxNode,
-		},
-		Nodes: map[string][]AstNode{
-			n.field: {n},
-		},
-	}, nil
+	return NewBoolNode(n, NOT), nil
 }
 
 func termNodeUnionJoinTermNode(n, o *TermNode) (AstNode, error) {

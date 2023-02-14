@@ -81,9 +81,9 @@ func (n *TermsNode) Inverse() (AstNode, error) {
 			},
 		)
 	}
-	return &NotNode{
-		opNode: opNode{filterCtxNode: n.filterCtxNode},
-		Nodes:  map[string][]AstNode{n.field: nodes},
+	return &BoolNode{
+		opNode:  opNode{opType: NOT},
+		MustNot: map[string][]AstNode{n.field: nodes},
 	}, nil
 }
 

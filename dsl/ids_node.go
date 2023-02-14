@@ -56,11 +56,7 @@ func (n *IdsNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *IdsNode) Inverse() (AstNode, error) {
-	return &NotNode{
-		Nodes: map[string][]AstNode{
-			n.NodeKey(): {n},
-		},
-	}, nil
+	return NewBoolNode(n, NOT), nil
 }
 
 func (n *IdsNode) NodeKey() string {

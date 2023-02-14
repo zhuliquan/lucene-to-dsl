@@ -198,18 +198,24 @@ func (n *filterCtxNode) setFilterCtx(filterCtx bool) {
 
 type opNode struct {
 	filterCtxNode
+	opType OpType
 }
 
-func NewOpNode() *opNode {
+func NewOpNode(opType OpType) *opNode {
 	return &opNode{
 		filterCtxNode: filterCtxNode{
 			filterCtx: false,
 		},
+		opType: opType,
 	}
 }
 
 func (n *opNode) AstType() AstType {
 	return OP_NODE_TYPE
+}
+
+func (n *opNode) OpType() OpType {
+	return n.opType
 }
 
 // leaf node
@@ -319,4 +325,3 @@ type patternNode struct {
 func (n *patternNode) Match(text []byte) bool {
 	return n.matcher.Match(text)
 }
-

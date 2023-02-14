@@ -81,9 +81,9 @@ func TestRangeInverse(t *testing.T) {
 
 	n2, err := n1.Inverse()
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		MinimumShouldMatch: 1,
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {
 				NewRangeNode(
 					NewRgNode(
@@ -107,6 +107,7 @@ func TestRangeInverse(t *testing.T) {
 				),
 			},
 		},
+		MinimumShouldMatch: 1,
 	}, n2)
 
 	n1 = NewRangeNode(
@@ -167,8 +168,9 @@ func TestRangeInverse(t *testing.T) {
 	)
 	n2, err = n1.Inverse()
 	assert.Nil(t, err)
-	assert.Equal(t, &NotNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: NOT},
+		MustNot: map[string][]AstNode{
 			"foo": {
 				&ExistsNode{
 					fieldNode: n1.fieldNode,
@@ -370,9 +372,9 @@ func TestRangeNodeUnionJoinRangeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &OrNode{
-				MinimumShouldMatch: 1,
-				Nodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: OR},
+				Should: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -390,6 +392,7 @@ func TestRangeNodeUnionJoinRangeNode(t *testing.T) {
 						},
 					},
 				},
+				MinimumShouldMatch: 1,
 			},
 		},
 		{
@@ -559,8 +562,9 @@ func TestRangeNodeIntersectRangeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -864,8 +868,9 @@ func TestRangeNodeIntersectTermNode(t *testing.T) {
 					},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1016,8 +1021,9 @@ func TestRangeNodeIntersectTermsNode(t *testing.T) {
 					terms:     []LeafValue{"1", "3", "8"},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1053,8 +1059,9 @@ func TestRangeNodeIntersectTermsNode(t *testing.T) {
 					terms:     []LeafValue{"1", "7", "8"},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1164,9 +1171,9 @@ func TestRangeNodeUnionJoinTermNode(t *testing.T) {
 					},
 				},
 			},
-			want: &OrNode{
-				MinimumShouldMatch: 1,
-				Nodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: OR},
+				Should: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1183,6 +1190,7 @@ func TestRangeNodeUnionJoinTermNode(t *testing.T) {
 						},
 					},
 				},
+				MinimumShouldMatch: 1,
 			},
 		},
 		{
@@ -1299,9 +1307,9 @@ func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
 					terms:     []LeafValue{2, 4},
 				},
 			},
-			want: &OrNode{
-				MinimumShouldMatch: 1,
-				Nodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: OR},
+				Should: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1318,6 +1326,7 @@ func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
 						},
 					},
 				},
+				MinimumShouldMatch: 1,
 			},
 		},
 		{
@@ -1336,9 +1345,9 @@ func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
 					terms:     []LeafValue{1, 4, 5},
 				},
 			},
-			want: &OrNode{
-				MinimumShouldMatch: 1,
-				Nodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: OR},
+				Should: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1354,6 +1363,7 @@ func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
 						},
 					},
 				},
+				MinimumShouldMatch: 1,
 			},
 		},
 		{
@@ -1372,9 +1382,9 @@ func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
 					terms:     []LeafValue{2, 3, 5},
 				},
 			},
-			want: &OrNode{
-				MinimumShouldMatch: 1,
-				Nodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: OR},
+				Should: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -1391,6 +1401,7 @@ func TestRangeNodeUnionJoinTermsNode(t *testing.T) {
 						},
 					},
 				},
+				MinimumShouldMatch: 1,
 			},
 		},
 	}

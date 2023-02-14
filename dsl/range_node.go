@@ -145,29 +145,19 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 	)
 
 	if !isLeftInf && !isRightInf {
-		return &OrNode{
-			MinimumShouldMatch: 1,
-			Nodes: map[string][]AstNode{
+		return &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
 				n.NodeKey(): {leftNode, rightNode},
 			},
+			MinimumShouldMatch: 1,
 		}, nil
 	} else if !isLeftInf {
 		return leftNode, nil
 	} else if !isRightInf {
 		return rightNode, nil
 	} else {
-		return &NotNode{
-			opNode: opNode{
-				filterCtxNode: n.filterCtxNode,
-			},
-			Nodes: map[string][]AstNode{
-				n.NodeKey(): {
-					&ExistsNode{
-						fieldNode: n.fieldNode,
-					},
-				},
-			},
-		}, nil
+		return NewBoolNode(NewExistsNode(&n.fieldNode), NOT), nil
 	}
 }
 
@@ -260,11 +250,12 @@ func rangeNodeUnionJoinTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
 func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 	// first check overlap, if no overlap, return or ast node
 	if !checkRangeOverlap(n, t) {
-		return &OrNode{
-			MinimumShouldMatch: 1,
-			Nodes: map[string][]AstNode{
+		return &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
 				n.NodeKey(): {n, t},
 			},
+			MinimumShouldMatch: 1,
 		}, nil
 	}
 	// compare left value of n and t, and get lower value, and cmp symbol is associate with lower value

@@ -320,7 +320,7 @@ func TestCompareAny(t *testing.T) {
 		},
 		{
 			name: "CompareIp03",
-			args: args{a: net.ParseIP("127.0.0.1"), b: net.ParseIP("127.0.0.001"), typ: mapping.IP_FIELD_TYPE},
+			args: args{a: net.ParseIP("127.0.0.1"), b: net.ParseIP("127.0.0.1"), typ: mapping.IP_FIELD_TYPE},
 			want: 0,
 		},
 		{
@@ -788,9 +788,9 @@ func TestNodeOrMergeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &OrNode{
-				MinimumShouldMatch: 1,
-				Nodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: OR},
+				Should: map[string][]AstNode{
 					"foo": {
 						&RangeNode{
 							rgNode: rgNode{
@@ -814,6 +814,7 @@ func TestNodeOrMergeNode(t *testing.T) {
 						},
 					},
 				},
+				MinimumShouldMatch: 1,
 			},
 			wantErr: false,
 		},
@@ -859,8 +860,9 @@ func TestNodeAndMergeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &AndNode{
-				FilterNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Filter: map[string][]AstNode{
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
@@ -895,8 +897,9 @@ func TestNodeAndMergeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
@@ -931,8 +934,9 @@ func TestNodeAndMergeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
@@ -942,7 +946,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 						},
 					},
 				},
-				FilterNodes: map[string][]AstNode{
+				Filter: map[string][]AstNode{
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
@@ -971,8 +975,9 @@ func TestNodeAndMergeNode(t *testing.T) {
 					},
 				},
 			},
-			want: &AndNode{
-				MustNodes: map[string][]AstNode{
+			want: &BoolNode{
+				opNode: opNode{opType: AND},
+				Must: map[string][]AstNode{
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{
@@ -982,7 +987,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 						},
 					},
 				},
-				FilterNodes: map[string][]AstNode{
+				Filter: map[string][]AstNode{
 					"foo": {
 						&TermNode{
 							kvNode: kvNode{

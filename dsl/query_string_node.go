@@ -54,11 +54,7 @@ func (n *QueryStringNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *QueryStringNode) Inverse() (AstNode, error) {
-	return &NotNode{
-		Nodes: map[string][]AstNode{
-			n.NodeKey(): {n},
-		},
-	}, nil
+	return NewBoolNode(n, NOT), nil
 }
 
 func (n *QueryStringNode) DslType() DslType {

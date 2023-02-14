@@ -34,7 +34,7 @@ func TestIdsNode(t *testing.T) {
 				},
 				field: "foo",
 			},
-			valueNode:valueNode{
+			valueNode: valueNode{
 				valueType: valueType{
 					aType: false,
 					mType: mapping.TEXT_FIELD_TYPE,
@@ -53,9 +53,12 @@ func TestIdsNode(t *testing.T) {
 
 	node3, err = node1.Inverse()
 	assert.Nil(t, err)
-	assert.Equal(t, &NotNode{Nodes: map[string][]AstNode{
-		"_id": {node1},
-	}}, node3)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: NOT},
+		MustNot: map[string][]AstNode{
+			"_id": {node1},
+		},
+	}, node3)
 
 	assert.Equal(t, "_id", node1.NodeKey())
 	assert.Equal(t, DSL{"ids": DSL{"values": []string{"1", "2"}}}, node1.ToDSL())

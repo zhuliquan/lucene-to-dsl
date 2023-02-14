@@ -23,11 +23,9 @@ func TestExistNode(t *testing.T) {
 
 	node3, err = node1.Inverse()
 	assert.Nil(t, err)
-	assert.Equal(t, &NotNode{
-		opNode: opNode{
-			filterCtxNode: node1.filterCtxNode,
-		},
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: NOT},
+		MustNot: map[string][]AstNode{
 			"foo": {node1},
 		},
 	}, node3)

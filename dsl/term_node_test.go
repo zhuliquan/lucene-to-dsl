@@ -60,8 +60,9 @@ func TestTermNodeMergeTermNode(t *testing.T) {
 
 	node8, err = node4.InterSect(node6)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			node4.NodeKey(): {node4, node6},
 		},
 	}, node8)
@@ -131,8 +132,9 @@ func TestTermNodeMergeTermsNode(t *testing.T) {
 
 	node11, err = node6.InterSect(node8)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				node6, &TermNode{
 					kvNode: kvNode{
@@ -151,8 +153,9 @@ func TestTermNodeMergeTermsNode(t *testing.T) {
 
 	node11, err = node6.InterSect(node9)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				node6, &TermsNode{
 					fieldNode: node6.fieldNode,
@@ -175,8 +178,9 @@ func TestTermNodeMergeTermsNode(t *testing.T) {
 
 	node11, err = node6.InterSect(node10)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				node6, &TermsNode{
 					fieldNode: node6.fieldNode,

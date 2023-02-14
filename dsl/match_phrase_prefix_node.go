@@ -53,12 +53,7 @@ func (n *MatchPhrasePrefixNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *MatchPhrasePrefixNode) Inverse() (AstNode, error) {
-	return &NotNode{
-		opNode: opNode{filterCtxNode: n.filterCtxNode},
-		Nodes: map[string][]AstNode{
-			n.NodeKey(): {n},
-		},
-	}, nil
+	return NewBoolNode(n, NOT), nil
 }
 
 func (n *MatchPhrasePrefixNode) DslType() DslType {

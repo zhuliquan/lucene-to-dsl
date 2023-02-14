@@ -31,9 +31,9 @@ func TestRegexpNode(t *testing.T) {
 		},
 	}}, node1.ToDSL())
 	node2, _ := node1.Inverse()
-	assert.Equal(t, &NotNode{
-		opNode: opNode{filterCtxNode: node1.filterCtxNode},
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: NOT},
+		MustNot: map[string][]AstNode{
 			"foo": {node1},
 		},
 	}, node2)
@@ -73,9 +73,9 @@ func TestRegexpNodeMergeTermNode(t *testing.T) {
 
 	n7, err := n1.UnionJoin(n3)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		opNode: opNode{filterCtxNode: n1.filterCtxNode},
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n1, n3},
 		},
 		MinimumShouldMatch: 1,
@@ -95,8 +95,9 @@ func TestRegexpNodeMergeTermNode(t *testing.T) {
 
 	n7, err = n2.UnionJoin(n5)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n2, n5},
 		},
 		MinimumShouldMatch: 1,
@@ -108,9 +109,9 @@ func TestRegexpNodeMergeTermNode(t *testing.T) {
 
 	n7, err = n2.InterSect(n5)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		opNode: opNode{filterCtxNode: n2.filterCtxNode},
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {n2, n5},
 		},
 	}, n7)
@@ -174,8 +175,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n1.UnionJoin(n4)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n1, &TermNode{
 				kvNode: kvNode{
 					fieldNode: n4.fieldNode,
@@ -192,8 +194,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n1.UnionJoin(n5)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n1, &TermsNode{
 				fieldNode: n5.fieldNode,
 				valueType: n5.valueType,
@@ -210,8 +213,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n2.UnionJoin(n7)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n2, &TermNode{
 				kvNode: kvNode{
 					fieldNode: n7.fieldNode,
@@ -228,8 +232,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n2.UnionJoin(n8)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n2, &TermsNode{
 				fieldNode: n8.fieldNode,
 				valueType: n8.valueType,
@@ -344,8 +349,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 	/////
 	n9, err = n2.InterSect(n13)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				n2, &TermNode{
 					kvNode: kvNode{
@@ -363,8 +369,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n2.InterSect(n14)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				n2, &TermNode{
 					kvNode: kvNode{
@@ -382,8 +389,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n2.InterSect(n15)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				n2, &TermNode{
 					kvNode: kvNode{
@@ -405,8 +413,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n2.InterSect(n7)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				n2, &TermNode{
 					kvNode: kvNode{
@@ -424,8 +433,9 @@ func TestRegexpNodeMergeTermsNode(t *testing.T) {
 
 	n9, err = n2.InterSect(n8)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {
 				n2, &TermsNode{
 					fieldNode: n8.fieldNode,
@@ -467,8 +477,9 @@ func TestRegexpNodeMergeRegexpNode(t *testing.T) {
 
 	n5, err = n1.UnionJoin(n2)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n1, n2},
 		},
 		MinimumShouldMatch: 1,
@@ -488,8 +499,9 @@ func TestRegexpNodeMergeRegexpNode(t *testing.T) {
 
 	n5, err = n3.UnionJoin(n4)
 	assert.Nil(t, err)
-	assert.Equal(t, &OrNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
 			"foo": {n3, n4},
 		},
 		MinimumShouldMatch: 1,
@@ -501,8 +513,9 @@ func TestRegexpNodeMergeRegexpNode(t *testing.T) {
 
 	n5, err = n3.InterSect(n4)
 	assert.Nil(t, err)
-	assert.Equal(t, &AndNode{
-		MustNodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
 			"foo": {n3, n4},
 		},
 	}, n5)

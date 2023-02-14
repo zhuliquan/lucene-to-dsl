@@ -29,8 +29,9 @@ func TestFuzzyNode(t *testing.T) {
 	assert.Equal(t, node1, node4)
 
 	var node5, _ = node1.Inverse()
-	assert.Equal(t, &NotNode{
-		Nodes: map[string][]AstNode{
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: NOT},
+		MustNot: map[string][]AstNode{
 			node4.NodeKey(): {node1},
 		},
 	}, node5)

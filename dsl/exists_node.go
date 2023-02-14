@@ -25,14 +25,7 @@ func (n *ExistsNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *ExistsNode) Inverse() (AstNode, error) {
-	return &NotNode{
-		opNode: opNode{
-			filterCtxNode: n.filterCtxNode,
-		},
-		Nodes: map[string][]AstNode{
-			n.NodeKey(): {n},
-		},
-	}, nil
+	return NewBoolNode(n, NOT), nil
 }
 
 func (n *ExistsNode) ToDSL() DSL {
