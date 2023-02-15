@@ -1,5 +1,39 @@
 package utils
 
+import (
+	"strings"
+)
+
+type PatternMatcher interface {
+	Match([]byte) bool
+}
+
+// prefix matcher
+type prefixPattern struct {
+	pattern string
+}
+
+func NewPrefixPattern(pattern string) PatternMatcher {
+	return &prefixPattern{pattern: pattern}
+}
+
+func (p *prefixPattern) Match(text []byte) bool {
+	return strings.HasPrefix(string(text), p.pattern)
+}
+
+// wildcard matcher
+type wildcardPattern struct {
+	pattern []rune
+}
+
+func NewWildCardPattern(pattern string) PatternMatcher {
+	return &wildcardPattern{pattern: []rune(pattern)}
+}
+
+func (w *wildcardPattern) Match(text []byte) bool {
+	return WildcardMatch([]rune(string(text)), w.pattern)
+}
+
 // wildcard match text and pattern
 func WildcardMatch(text []rune, pattern []rune) bool {
 	var n, m = len(text), len(pattern)

@@ -3,6 +3,8 @@ package dsl
 import (
 	"fmt"
 	"strings"
+
+	"github.com/zhuliquan/lucene-to-dsl/utils"
 )
 
 type PrefixNode struct {
@@ -11,19 +13,7 @@ type PrefixNode struct {
 	patternNode
 }
 
-type prefixPattern struct {
-	pattern string
-}
-
-func NewPrefixPattern(pattern string) PatternMatcher {
-	return &prefixPattern{pattern: pattern}
-}
-
-func (p *prefixPattern) Match(text []byte) bool {
-	return strings.HasPrefix(string(text), p.pattern)
-}
-
-func NewPrefixNode(kvNode *kvNode, pattern PatternMatcher, opts ...func(AstNode)) *PrefixNode {
+func NewPrefixNode(kvNode *kvNode, pattern utils.PatternMatcher, opts ...func(AstNode)) *PrefixNode {
 	var n = &PrefixNode{
 		kvNode:      *kvNode,
 		rewriteNode: rewriteNode{rewrite: CONSTANT_SCORE},

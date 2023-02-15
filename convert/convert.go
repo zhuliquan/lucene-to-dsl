@@ -32,36 +32,15 @@ func luceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
 	if node, err := orQueryToAstNode(q.OrQuery); err != nil {
 		return nil, err
 	} else {
-		var nodes = map[string][]dsl.AstNode{node.NodeKey(): {node}}
-		for _, query := range q.OSQuery {
-			if curNode, err := osQueryToAstNode(query); err != nil {
+		boolNode := dsl.NewBoolNode(node, dsl.OR)
+		for _, osQuery := range q.OSQuery {
+			if curNode, err := osQueryToAstNode(osQuery); err != nil {
 				return nil, err
-			} else {
-				if preNode, ok := nodes[curNode.NodeKey()]; ok {
-					if curNode.DslType() == dsl.AND_DSL_TYPE ||
-						curNode.DslType() == dsl.NOT_DSL_TYPE {
-						nodes[curNode.NodeKey()] = append(nodes[curNode.NodeKey()], curNode)
-					} else {
-						if node, err := preNode[0].UnionJoin(curNode); err != nil {
-							return nil, err
-						} else {
-							delete(nodes, curNode.NodeKey())
-							nodes[node.NodeKey()] = []dsl.AstNode{node}
-						}
-					}
-				} else {
-					nodes[curNode.NodeKey()] = []dsl.AstNode{curNode}
-				}
+			} else if boolNode, err = boolNode.UnionJoin(curNode); err != nil {
+				return nil, err
 			}
 		}
-		if len(nodes) == 1 {
-			for _, ns := range nodes {
-				if len(ns) == 1 {
-					return ns[0], nil
-				}
-			}
-		}
-		return &dsl.OrNode{Nodes: nodes}, nil
+		return boolNode, nil
 	}
 }
 
@@ -72,35 +51,15 @@ func orQueryToAstNode(q *lucene.OrQuery) (dsl.AstNode, error) {
 	if node, err := andQueryToAstNode(q.AndQuery); err != nil {
 		return nil, err
 	} else {
-		var nodes = map[string][]dsl.AstNode{node.NodeKey(): {node}}
-		for _, query := range q.AnSQuery {
-			if curNode, err := ansQueryToAstNode(query); err != nil {
+		boolNode := dsl.NewBoolNode(node, dsl.OR)
+		for _, ansQuery := range q.AnSQuery {
+			if curNode, err := ansQueryToAstNode(ansQuery); err != nil {
 				return nil, err
-			} else {
-				if preNode, ok := nodes[curNode.NodeKey()]; ok {
-					if curNode.DslType() == dsl.OR_DSL_TYPE {
-						nodes[curNode.NodeKey()] = append(nodes[curNode.NodeKey()], curNode)
-					} else {
-						if node, err := preNode[0].InterSect(curNode); err != nil {
-							return nil, err
-						} else {
-							delete(nodes, curNode.NodeKey())
-							nodes[node.NodeKey()] = []dsl.AstNode{node}
-						}
-					}
-				} else {
-					nodes[curNode.NodeKey()] = []dsl.AstNode{curNode}
-				}
+			} else if boolNode, err = boolNode.InterSect(curNode); err != nil {
+				return nil, err
 			}
 		}
-		if len(nodes) == 1 {
-			for _, ns := range nodes {
-				if len(ns) == 1 {
-					return ns[0], nil
-				}
-			}
-		}
-		return &dsl.AndNode{MustNodes: nodes}, nil
+		return boolNode, nil
 	}
 }
 
@@ -161,23 +120,34 @@ func fieldQueryToAstNode(q *lucene.FieldQuery) (dsl.AstNode, error) {
 	if props := convertMapping.GetProperty(q.Field.String()); len(props) == 0 {
 		return nil, fmt.Errorf("field: %s don't match any es mapping", q.Field.String())
 	} else {
-		for _, property := range props {
-			var termType = q.Term.GetTermType()
-			if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
-				return convertToRange(q.Field, q.Term, property)
-			} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
-				return convertToSingle(q.Field, q.Term, property)
-			} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
-				return convertToPhrase(q.Field, q.Term, property)
-			} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
-				return convertToGroup(q.Field, q.Term, property)
-			} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
-				return convertToRegexp(q.Field, q.Term, property)
-			} else {
-				return nil, fmt.Errorf("con't convert term query: %s", q.String())
-			}
-		}
+		// orNode := dsl.OrNode{}
+		// for _, prop := range props {
+		// 	if node, err := fieldQueryToAstNodeByProp(q, prop); err != nil {
+		// 		if len(props) == 1 {
+		// 			return nil, err
+		// 		} else {
+		// 			log.Printf("failed to convert field query: `%s` to ast node, err: %s", q.String(), err)
+		// 		}
+		// 	}
+		// }
 		return nil, nil
+	}
+}
+
+func fieldQueryToAstNodeByProp(q *lucene.FieldQuery, property *mapping.Property) (dsl.AstNode, error) {
+	var termType = q.Term.GetTermType()
+	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
+		return convertToRange(q.Field, q.Term, property)
+	} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
+		return convertToSingle(q.Field, q.Term, property)
+	} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
+		return convertToPhrase(q.Field, q.Term, property)
+	} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
+		return convertToGroup(q.Field, q.Term, property)
+	} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
+		return convertToRegexp(q.Field, q.Term, property)
+	} else {
+		return nil, fmt.Errorf("con't convert term query: %s", q.String())
 	}
 }
 

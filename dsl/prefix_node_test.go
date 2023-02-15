@@ -5,13 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	"github.com/zhuliquan/lucene-to-dsl/utils"
 )
 
 func TestPrefixNode(t *testing.T) {
 	var n1 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	assert.Equal(t, PREFIX_DSL_TYPE, n1.DslType())
 	assert.Equal(t, DSL{"prefix": DSL{"foo": DSL{"value": "ab", "rewrite": CONSTANT_SCORE_BOOLEAN}}}, n1.ToDSL())
@@ -27,7 +28,7 @@ func TestPrefixNodeMergeExistNode(t *testing.T) {
 	var node2 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	node3, err := node1.UnionJoin(node2)
 	assert.Nil(t, err)
@@ -42,12 +43,12 @@ func TestPrefixNodeMergeTermNode(t *testing.T) {
 	var n1 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n2 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n3 = NewTermNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
@@ -123,12 +124,12 @@ func TestPrefixNodeMergeTermsNode(t *testing.T) {
 	var n1 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n2 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n3 = NewTermsNode(
 		NewFieldNode(NewLfNode(), "foo"),
@@ -461,17 +462,17 @@ func TestPrefixNodeIntersectPrefixNode(t *testing.T) {
 	var n1 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n2 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("abc", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
-	), NewPrefixPattern("abc"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("abc"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n3 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ed", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
-	), NewPrefixPattern("ed"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ed"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	n4, err := n1.UnionJoin(n2)
 	assert.Nil(t, err)
@@ -512,12 +513,12 @@ func TestPrefixNodeIntersectPrefixNode(t *testing.T) {
 	var n5 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ab", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ab"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	var n6 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("ed", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), NewPrefixPattern("ed"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
+	), utils.NewPrefixPattern("ed"), WithRewrite(CONSTANT_SCORE_BOOLEAN))
 
 	n4, err = n5.UnionJoin(n6)
 	assert.Nil(t, err)

@@ -13,19 +13,7 @@ type WildCardNode struct {
 	patternNode
 }
 
-type wildcardPattern struct {
-	pattern []rune
-}
-
-func NewWildCardPattern(pattern string) PatternMatcher {
-	return &wildcardPattern{pattern: []rune(pattern)}
-}
-
-func (w *wildcardPattern) Match(text []byte) bool {
-	return utils.WildcardMatch([]rune(string(text)), w.pattern)
-}
-
-func NewWildCardNode(kvNode *kvNode, pattern PatternMatcher, opts ...func(AstNode)) *WildCardNode {
+func NewWildCardNode(kvNode *kvNode, pattern utils.PatternMatcher, opts ...func(AstNode)) *WildCardNode {
 	var n = &WildCardNode{
 		kvNode:      *kvNode,
 		boostNode:   boostNode{boost: 1.0},

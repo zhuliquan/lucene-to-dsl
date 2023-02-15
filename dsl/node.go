@@ -1,5 +1,7 @@
 package dsl
 
+import "github.com/zhuliquan/lucene-to-dsl/utils"
+
 // define ast node of dsl
 type AstNode interface {
 	AstType() AstType
@@ -314,12 +316,12 @@ func NewRgNode(fieldNode *fieldNode, valueType *valueType, lValue, rValue LeafVa
 	}
 }
 
-type PatternMatcher interface {
+type PatternNode interface {
 	Match([]byte) bool
 }
 
 type patternNode struct {
-	matcher PatternMatcher
+	matcher utils.PatternMatcher
 }
 
 func (n *patternNode) Match(text []byte) bool {

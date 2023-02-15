@@ -527,7 +527,7 @@ func compareBoost(a, b BoostNode) int {
 	return CompareAny(a.getBoost(), b.getBoost(), mapping.DOUBLE_FIELD_TYPE)
 }
 
-func patternNodeUnionJoinTermNode(n PatternMatcher, o *TermNode) (AstNode, error) {
+func patternNodeUnionJoinTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	if n.Match([]byte(o.value.(string))) {
 		return n.(AstNode), nil
 	} else {
@@ -535,7 +535,7 @@ func patternNodeUnionJoinTermNode(n PatternMatcher, o *TermNode) (AstNode, error
 	}
 }
 
-func patternNodeUnionJoinTermsNode(n PatternMatcher, o *TermsNode) (AstNode, error) {
+func patternNodeUnionJoinTermsNode(n PatternNode, o *TermsNode) (AstNode, error) {
 	var excludes = []LeafValue{}
 	for _, term := range o.terms {
 		if !n.Match([]byte(term.(string))) {
@@ -545,7 +545,7 @@ func patternNodeUnionJoinTermsNode(n PatternMatcher, o *TermsNode) (AstNode, err
 	return astNodeUnionJoinTermsNode(n.(AstNode), o, excludes)
 }
 
-func patternNodeIntersectTermNode(n PatternMatcher, o *TermNode) (AstNode, error) {
+func patternNodeIntersectTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	if n.Match([]byte(o.value.(string))) {
 		return o, nil
 	} else if n.(ArrayTypeNode).isArrayType() {
@@ -555,7 +555,7 @@ func patternNodeIntersectTermNode(n PatternMatcher, o *TermNode) (AstNode, error
 	}
 }
 
-func patternNodeIntersectTermsNode(n PatternMatcher, o *TermsNode) (AstNode, error) {
+func patternNodeIntersectTermsNode(n PatternNode, o *TermsNode) (AstNode, error) {
 	if n.(ArrayTypeNode).isArrayType() {
 		var excludes = []LeafValue{}
 		for _, term := range o.terms {

@@ -5,10 +5,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	"github.com/zhuliquan/lucene-to-dsl/utils"
 )
 
 func TestWildcardNode(t *testing.T) {
-	pattern := NewWildCardPattern("a?b*")
+	pattern := utils.NewWildCardPattern("a?b*")
 	node1 := NewWildCardNode(
 		NewKVNode(
 			NewFieldNode(NewLfNode(), "foo"),
@@ -40,7 +41,7 @@ func TestWildcardNode(t *testing.T) {
 }
 
 func TestWildcardNodeMergeTermNode(t *testing.T) {
-	var pattern = NewWildCardPattern("a?b*")
+	var pattern = utils.NewWildCardPattern("a?b*")
 	var n1 = NewPrefixNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
@@ -122,7 +123,7 @@ func TestWildcardNodeMergeTermNode(t *testing.T) {
 }
 
 func TestWildcardNodeMergeTermsNode(t *testing.T) {
-	var pattern = NewWildCardPattern("a?b*")
+	var pattern = utils.NewWildCardPattern("a?b*")
 	var n1 = NewWildCardNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
@@ -449,8 +450,8 @@ func TestWildcardNodeMergeTermsNode(t *testing.T) {
 }
 
 func TestWildcardNodeMergeWildcardNode(t *testing.T) {
-	p1 := NewWildCardPattern("aab*")
-	p2 := NewWildCardPattern("a?c")
+	p1 := utils.NewWildCardPattern("aab*")
+	p2 := utils.NewWildCardPattern("a?c")
 	var n1 = NewWildCardNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),
 		NewValueNode("aab*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
