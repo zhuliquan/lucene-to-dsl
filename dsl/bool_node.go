@@ -1,5 +1,7 @@
 package dsl
 
+import "fmt"
+
 // bool node
 // must = [a, b]
 // must_not = [c, d]
@@ -47,11 +49,49 @@ func (n *BoolNode) NodeKey() string {
 	return OP_KEY
 }
 
-func (n *BoolNode) UnionJoin(AstNode) (AstNode, error) {
-	return nil, nil
+func (n *BoolNode) UnionJoin(x AstNode) (AstNode, error) {
+	if x.AstType() == OP_NODE_TYPE {
+		o := x.(*BoolNode)
+		n.opType |= o.opType
+		return n, nil
+	} else {
+		return boolNodeUnionJoinLeafNode(n, x)
+	}
+}
+
+func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
+	n.opType |= OR
+	if n.Should == nil {
+		n.Should = map[string][]AstNode{}
+	}
+	nodes := n.Should[x.NodeKey()]
+	errs := []error{}
+	merge := false
+	for i, node := range nodes {
+		n3, err := node.UnionJoin(x)
+		if err == nil {
+			if n3.AstType() != OP_NODE_TYPE { // union join two nodes into a single node as soon as possible
+				nodes[i] = n3
+				merge = true
+				break
+			}
+		} else {
+			errs = append(errs, err)
+		}
+	}
+	if !merge {
+		if len(errs) == len(nodes) && len(nodes) != 0 {
+			return nil, fmt.Errorf("failed to union node: %+v, errs: %+v", x, errs)
+		} else {
+			nodes = append(nodes, x)
+		}
+	}
+	n.Should[x.NodeKey()] = nodes
+	return n, nil
 }
 
 func (n *BoolNode) InterSect(o AstNode) (AstNode, error) {
+
 	// var t *AndNode = o.(*AndNode)
 	// for key, curNodes := range t.MustNodes {
 	// 	if preNodes, ok := n.MustNodes[key]; ok {
