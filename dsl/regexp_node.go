@@ -44,8 +44,6 @@ func (n *RegexpNode) UnionJoin(o AstNode) (AstNode, error) {
 		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
-	case TERMS_DSL_TYPE:
-		return patternNodeUnionJoinTermsNode(n, o.(*TermsNode))
 	case REGEXP_DSL_TYPE:
 		return valueNodeUnionJoinValueNode(n, o)
 	default:
@@ -59,8 +57,6 @@ func (n *RegexpNode) InterSect(o AstNode) (AstNode, error) {
 		return o.InterSect(n)
 	case TERM_DSL_TYPE:
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
-	case TERMS_DSL_TYPE:
-		return patternNodeIntersectTermsNode(n, o.(*TermsNode))
 	case REGEXP_DSL_TYPE:
 		return valueNodeIntersectValueNode(n, o)
 	default:

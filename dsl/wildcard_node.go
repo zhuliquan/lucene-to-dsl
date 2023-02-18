@@ -41,8 +41,6 @@ func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
 		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
-	case TERMS_DSL_TYPE:
-		return patternNodeUnionJoinTermsNode(n, o.(*TermsNode))
 	case WILDCARD_DSL_TYPE:
 		return valueNodeUnionJoinValueNode(n, o)
 	default:
@@ -62,8 +60,6 @@ func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
 		return o.InterSect(n)
 	case TERM_DSL_TYPE:
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
-	case TERMS_DSL_TYPE:
-		return patternNodeIntersectTermsNode(n, o.(*TermsNode))
 	case WILDCARD_DSL_TYPE:
 		return valueNodeIntersectValueNode(n, o)
 	default:

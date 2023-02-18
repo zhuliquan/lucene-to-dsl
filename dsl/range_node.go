@@ -73,8 +73,6 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		return rangeNodeUnionJoinTermNode(n, o.(*TermNode))
-	case TERMS_DSL_TYPE:
-		return rangeNodeUnionJoinTermsNode(n, o.(*TermsNode))
 	case RANGE_DSL_TYPE:
 		return rangeNodeUnionJoinRangeNode(n, o.(*RangeNode))
 	default:
@@ -93,8 +91,6 @@ func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 		return o.InterSect(n)
 	case TERM_DSL_TYPE:
 		return rangeNodeIntersectTermNode(n, o.(*TermNode))
-	case TERMS_DSL_TYPE:
-		return rangeNodeIntersectTermsNode(n, o.(*TermsNode))
 	case RANGE_DSL_TYPE:
 		return rangeNodeIntersectRangeNode(n, o.(*RangeNode))
 	default:
@@ -213,40 +209,6 @@ func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 	}
 }
 
-func rangeNodeUnionJoinTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
-	var (
-		excludes = []LeafValue{}
-		lCmpSym  = n.lCmpSym
-		rCmpSym  = n.rCmpSym
-	)
-
-	for _, term := range t.terms {
-		if !checkRangeInclude(n, term) {
-			if CompareAny(n.lValue, term, n.mType) == 0 && n.lCmpSym == GT {
-				lCmpSym = GTE
-			} else if CompareAny(n.rValue, term, n.mType) == 0 && n.rCmpSym == LT {
-				rCmpSym = LTE
-			} else {
-				excludes = append(excludes, term)
-			}
-		}
-	}
-	var rangeNode = &RangeNode{
-		rgNode: rgNode{
-			fieldNode: n.fieldNode,
-			valueType: n.valueType,
-			lValue:    n.lValue,
-			rValue:    n.rValue,
-			lCmpSym:   lCmpSym,
-			rCmpSym:   rCmpSym,
-		},
-		timeZone:  n.timeZone,
-		relation:  n.relation,
-		boostNode: n.boostNode,
-	}
-	return astNodeUnionJoinTermsNode(rangeNode, t, excludes)
-}
-
 func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 	// first check overlap, if no overlap, return or ast node
 	if !checkRangeOverlap(n, t) {
@@ -319,47 +281,6 @@ func rangeNodeIntersectTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), t.ToDSL())
 	}
-}
-
-func rangeNodeIntersectTermsNode(n *RangeNode, t *TermsNode) (AstNode, error) {
-	if n.isArrayType() {
-		var excludes = []LeafValue{}
-		for _, term := range t.terms {
-			if !checkRangeInclude(n, term) {
-				excludes = append(excludes, term)
-			}
-		}
-		return astNodeIntersectTermsNode(n, t, excludes)
-	} else {
-		var includes = []LeafValue{}
-		for _, term := range t.terms {
-			if checkRangeInclude(n, term) {
-				includes = append(includes, term)
-			}
-		}
-		if len(includes) == 0 {
-			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), t.ToDSL())
-		} else if len(includes) == 1 {
-			return &TermNode{
-				kvNode: kvNode{
-					fieldNode: t.fieldNode,
-					valueNode: valueNode{
-						valueType: t.valueType,
-						value:     includes[0],
-					},
-				},
-				boostNode: t.boostNode,
-			}, nil
-		} else {
-			return &TermsNode{
-				fieldNode: t.fieldNode,
-				boostNode: t.boostNode,
-				valueType: t.valueType,
-				terms:     includes,
-			}, nil
-		}
-	}
-
 }
 
 func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {

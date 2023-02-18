@@ -62,31 +62,44 @@ func (n *BoolNode) UnionJoin(x AstNode) (AstNode, error) {
 func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 	n.opType |= OR
 	if n.Should == nil {
-		n.Should = map[string][]AstNode{}
+		n.Should = make(map[string][]AstNode, 0)
 	}
-	nodes := n.Should[x.NodeKey()]
-	errs := []error{}
-	merge := false
-	for i, node := range nodes {
-		n3, err := node.UnionJoin(x)
-		if err == nil {
-			if n3.AstType() != OP_NODE_TYPE { // union join two nodes into a single node as soon as possible
-				nodes[i] = n3
-				merge = true
-				break
+
+	for before, first := append(n.Should[x.NodeKey()], x), true; ; first = false {
+
+		rest := before[:len(before)-1]
+		node := before[len(before)-1]
+		errs := []error{}
+		join := false
+
+		for i, n1 := range rest {
+			if n2, err := n1.UnionJoin(node); err == nil {
+				if n2.AstType() != OP_NODE_TYPE { // union join two nodes into a single node as soon as possible
+					rest[i] = n2
+					join = true
+					break
+				}
+			} else {
+				errs = append(errs, err)
 			}
-		} else {
-			errs = append(errs, err)
 		}
-	}
-	if !merge {
-		if len(errs) == len(nodes) && len(nodes) != 0 {
-			return nil, fmt.Errorf("failed to union node: %+v, errs: %+v", x, errs)
-		} else {
-			nodes = append(nodes, x)
+
+		if !join {
+			if first {
+				if len(errs) == len(rest) && len(errs) > 0 { // all error for nodes union join with x
+					return nil, fmt.Errorf("failed to union node: %+v, errs: %+v", node, errs)
+				} else {
+					rest = append(rest, node)
+				}
+			} else {
+				rest = append(rest, node)
+			}
+			n.Should[x.NodeKey()] = rest
+			break
 		}
+
+		before = rest // loop find any other node which can be union join with x
 	}
-	n.Should[x.NodeKey()] = nodes
 	return n, nil
 }
 
@@ -130,6 +143,8 @@ func (n *BoolNode) InterSect(o AstNode) (AstNode, error) {
 
 	return nil, nil
 }
+
+// func boolNodeIntersect
 
 // not 全部都不是的反例是至少有一个:
 func (n *BoolNode) Inverse() (AstNode, error) {

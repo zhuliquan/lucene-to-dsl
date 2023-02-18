@@ -85,9 +85,9 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 		rgNode: rgNode{
 			fieldNode: fieldNode{field: "foo1"},
 			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-			rValue:    "bar3",
-			lValue:    "bar0",
-			rCmpSym:   LTE,
+			rValue:    "bar5",
+			lValue:    "bar2",
+			rCmpSym:   LT,
 			lCmpSym:   GTE,
 		},
 	}
@@ -109,11 +109,112 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 		},
 		Should: map[string][]AstNode{
 			"foo1": {
+				&TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{field: "foo1"},
+						valueNode: valueNode{
+							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+							value:     "bar1",
+						},
+					},
+				},
 				&RangeNode{
 					rgNode: rgNode{
 						fieldNode: fieldNode{field: "foo1"},
 						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-						rValue:    "bar3",
+						rValue:    "bar5",
+						lValue:    "bar2",
+						rCmpSym:   LT,
+						lCmpSym:   GTE,
+					},
+				},
+			},
+		},
+	}, n3)
+
+	x4 := &TermNode{
+		kvNode: kvNode{
+			fieldNode: fieldNode{field: "foo1"},
+			valueNode: valueNode{
+				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+				value:     "bar5",
+			},
+		},
+	}
+	n4, _ := n3.UnionJoin(x4)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND | OR},
+		Must: map[string][]AstNode{
+			"foo": {
+				&TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{field: "foo"},
+						valueNode: valueNode{
+							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+							value:     "bar",
+						},
+					},
+				},
+			},
+		},
+		Should: map[string][]AstNode{
+			"foo1": {
+				&TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{field: "foo1"},
+						valueNode: valueNode{
+							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+							value:     "bar1",
+						},
+					},
+				},
+				&RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{field: "foo1"},
+						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+						rValue:    "bar5",
+						lValue:    "bar2",
+						rCmpSym:   LTE,
+						lCmpSym:   GTE,
+					},
+				},
+			},
+		},
+	}, n4)
+
+	x5 := &RangeNode{
+		rgNode: rgNode{
+			fieldNode: fieldNode{field: "foo1"},
+			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+			rValue:    "bar3",
+			lValue:    "bar0",
+			rCmpSym:   LTE,
+			lCmpSym:   GTE,
+		},
+	}
+	n5, _ := n4.UnionJoin(x5)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND | OR},
+		Must: map[string][]AstNode{
+			"foo": {
+				&TermNode{
+					kvNode: kvNode{
+						fieldNode: fieldNode{field: "foo"},
+						valueNode: valueNode{
+							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+							value:     "bar",
+						},
+					},
+				},
+			},
+		},
+		Should: map[string][]AstNode{
+			"foo1": {
+				&RangeNode{
+					rgNode: rgNode{
+						fieldNode: fieldNode{field: "foo1"},
+						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+						rValue:    "bar5",
 						lValue:    "bar0",
 						rCmpSym:   LTE,
 						lCmpSym:   GTE,
@@ -121,6 +222,6 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-	}, n3)
+	}, n5)
 
 }

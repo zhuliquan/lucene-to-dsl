@@ -453,52 +453,6 @@ func minInt16(a, b int16) int16 {
 	}
 }
 
-func astNodeUnionJoinTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (AstNode, error) {
-	if len(excludes) == 0 {
-		return n, nil
-	} else if len(excludes) == 1 {
-		return lfNodeUnionJoinLfNode(n, &TermNode{
-			kvNode: kvNode{
-				fieldNode: o.fieldNode,
-				valueNode: valueNode{valueType: o.valueType, value: excludes[0]},
-			},
-			boostNode: o.boostNode,
-		})
-	} else {
-		return lfNodeUnionJoinLfNode(n,
-			&TermsNode{
-				fieldNode: o.fieldNode,
-				valueType: o.valueType,
-				boostNode: o.boostNode,
-				terms:     excludes,
-			},
-		)
-	}
-}
-
-func astNodeIntersectTermsNode(n AstNode, o *TermsNode, excludes []LeafValue) (AstNode, error) {
-	if len(excludes) == 0 {
-		return n, nil
-	} else if len(excludes) == 1 {
-		return lfNodeIntersectLfNode(n, &TermNode{
-			kvNode: kvNode{
-				fieldNode: o.fieldNode,
-				valueNode: valueNode{valueType: o.valueType, value: excludes[0]},
-			},
-			boostNode: o.boostNode,
-		})
-	} else {
-		return lfNodeIntersectLfNode(n,
-			&TermsNode{
-				fieldNode: o.fieldNode,
-				valueType: o.valueType,
-				boostNode: o.boostNode,
-				terms:     excludes,
-			},
-		)
-	}
-}
-
 func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
 	if mapping.CheckDateType(t) {
 		return x.(time.Time).UnixNano() / 1e6
@@ -535,16 +489,6 @@ func patternNodeUnionJoinTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	}
 }
 
-func patternNodeUnionJoinTermsNode(n PatternNode, o *TermsNode) (AstNode, error) {
-	var excludes = []LeafValue{}
-	for _, term := range o.terms {
-		if !n.Match([]byte(term.(string))) {
-			excludes = append(excludes, term)
-		}
-	}
-	return astNodeUnionJoinTermsNode(n.(AstNode), o, excludes)
-}
-
 func patternNodeIntersectTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	if n.Match([]byte(o.value.(string))) {
 		return o, nil
@@ -552,46 +496,6 @@ func patternNodeIntersectTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 		return lfNodeIntersectLfNode(n.(AstNode), o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())
-	}
-}
-
-func patternNodeIntersectTermsNode(n PatternNode, o *TermsNode) (AstNode, error) {
-	if n.(ArrayTypeNode).isArrayType() {
-		var excludes = []LeafValue{}
-		for _, term := range o.terms {
-			if !n.Match([]byte(term.(string))) {
-				excludes = append(excludes, term)
-			}
-		}
-		return astNodeIntersectTermsNode(n.(AstNode), o, excludes)
-	} else {
-		var includes = []LeafValue{}
-		for _, term := range o.terms {
-			if n.Match([]byte(term.(string))) {
-				includes = append(includes, term)
-			}
-		}
-		if len(includes) == 0 {
-			return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())
-		} else if len(includes) == 1 {
-			return &TermNode{
-				kvNode: kvNode{
-					fieldNode: o.fieldNode,
-					valueNode: valueNode{
-						valueType: o.valueType,
-						value:     includes[0],
-					},
-				},
-				boostNode: o.boostNode,
-			}, nil
-		} else {
-			return &TermsNode{
-				fieldNode: o.fieldNode,
-				boostNode: o.boostNode,
-				valueType: o.valueType,
-				terms:     includes,
-			}, nil
-		}
 	}
 }
 
