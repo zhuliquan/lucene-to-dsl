@@ -245,3 +245,23 @@ const (
 	MATCH_PHRASE_KEY        = "match_phrase"
 	MATCH_PHRASE_PREFIX_KEY = "match_phrase_prefix"
 )
+
+const (
+	UNION_JOIN = "union_join"
+	INTERSECT  = "intersect"
+	INVERSE    = "inverse"
+)
+
+type MergeMethodFunc func(AstNode, AstNode) (AstNode, error)
+
+var UnionJoin = func(x, y AstNode) (AstNode, error) {
+	return x.UnionJoin(y)
+}
+
+var Intersect = func(x, y AstNode) (AstNode, error) {
+	return x.InterSect(y)
+}
+
+var Inverse = func(x AstNode) (AstNode, error) {
+	return x.Inverse()
+}

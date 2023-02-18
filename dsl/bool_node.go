@@ -64,46 +64,23 @@ func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 	if n.Should == nil {
 		n.Should = make(map[string][]AstNode, 0)
 	}
-
-	for before, first := append(n.Should[x.NodeKey()], x), true; ; first = false {
-
-		rest := before[:len(before)-1]
-		node := before[len(before)-1]
-		errs := []error{}
-		join := false
-
-		for i, n1 := range rest {
-			if n2, err := n1.UnionJoin(node); err == nil {
-				if n2.AstType() != OP_NODE_TYPE { // union join two nodes into a single node as soon as possible
-					rest[i] = n2
-					join = true
-					break
-				}
-			} else {
-				errs = append(errs, err)
-			}
-		}
-
-		if !join {
-			if first {
-				if len(errs) == len(rest) && len(errs) > 0 { // all error for nodes union join with x
-					return nil, fmt.Errorf("failed to union node: %+v, errs: %+v", node, errs)
-				} else {
-					rest = append(rest, node)
-				}
-			} else {
-				rest = append(rest, node)
-			}
-			n.Should[x.NodeKey()] = rest
-			break
-		}
-
-		before = rest // loop find any other node which can be union join with x
+	key := x.NodeKey()
+	if nodes, err := reduceNodes(append(n.Should[key], x), UNION_JOIN, UnionJoin); err != nil {
+		return nil, err
+	} else {
+		n.Should[key] = nodes
 	}
 	return n, nil
 }
 
-func (n *BoolNode) InterSect(o AstNode) (AstNode, error) {
+func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
+	if x.AstType() == OP_NODE_TYPE {
+		o := x.(*BoolNode)
+		n.opType |= o.opType
+		return n, nil
+	} else {
+		return boolNodeIntersectLeafNode(n, x)
+	}
 
 	// var t *AndNode = o.(*AndNode)
 	// for key, curNodes := range t.MustNodes {
@@ -140,11 +117,78 @@ func (n *BoolNode) InterSect(o AstNode) (AstNode, error) {
 	// 		n.FilterNodes[key] = curNodes
 	// 	}
 	// }
-
-	return nil, nil
 }
 
-// func boolNodeIntersect
+func boolNodeIntersectLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
+	n.opType |= AND
+	if filterNode, ok := x.(FilterCtxNode); ok && filterNode.getFilterCtx() {
+		return boolNodeIntersectFilterLeafNode(n, x)
+	} else {
+		return boolNodeIntersectMustLeafNode(n, x)
+	}
+}
+
+func boolNodeIntersectFilterLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
+	if n.Filter == nil {
+		n.Filter = make(map[string][]AstNode, 0)
+	}
+	key := x.NodeKey()
+	if nodes, err := reduceNodes(append(n.Filter[key], x), INTERSECT, Intersect); err != nil {
+		return nil, err
+	} else {
+		n.Filter[key] = nodes
+	}
+	return n, nil
+}
+
+func boolNodeIntersectMustLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
+	if n.Must == nil {
+		n.Must = make(map[string][]AstNode, 0)
+	}
+	key := x.NodeKey()
+	if nodes, err := reduceNodes(append(n.Must[key], x), INTERSECT, Intersect); err != nil {
+		return nil, err
+	} else {
+		n.Must[key] = nodes
+	}
+	return n, nil
+}
+
+func reduceNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc MergeMethodFunc) ([]AstNode, error) {
+	for before, first := nodes, true; ; first = false {
+		rest := before[:len(before)-1]
+		node := before[len(before)-1]
+		errs := []error{}
+		join := false
+
+		for i, n1 := range rest {
+			if n2, err := mergeMethodFunc(n1, node); err == nil {
+				if n2.AstType() != OP_NODE_TYPE { // merge two nodes into a single node as soon as possible
+					rest[i] = n2
+					join = true
+					break
+				}
+			} else {
+				errs = append(errs, err)
+			}
+		}
+
+		if !join {
+			if first {
+				if len(errs) == len(rest) && len(errs) > 0 { // all error for nodes merge with n0
+					return nil, fmt.Errorf("failed to %s node: %+v, errs: %+v", mergeMethodName, node, errs)
+				} else {
+					rest = append(rest, node)
+				}
+			} else {
+				rest = append(rest, node)
+			}
+			return rest, nil
+		}
+
+		before = rest // loop find any other node which can be merge with n0
+	}
+}
 
 // not 全部都不是的反例是至少有一个:
 func (n *BoolNode) Inverse() (AstNode, error) {
