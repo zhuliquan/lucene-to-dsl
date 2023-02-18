@@ -57,8 +57,4 @@ func (v *valueType) setArrayType(isArrayType bool) {
 
 var EmptyValue LeafValue = nil
 
-var emptyValue = EmptyValue
-
 var EmptyDSL = DSL{}
-
-var emptyDSL = EmptyDSL
