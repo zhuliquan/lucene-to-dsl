@@ -469,14 +469,6 @@ func leafValueToPrintValue(x LeafValue, t mapping.FieldType) interface{} {
 	}
 }
 
-func termsToPrintValue(terms []LeafValue, t mapping.FieldType) interface{} {
-	x := []interface{}{}
-	for _, term := range terms {
-		x = append(x, leafValueToPrintValue(term, t))
-	}
-	return x
-}
-
 func compareBoost(a, b BoostNode) int {
 	return CompareAny(a.getBoost(), b.getBoost(), mapping.DOUBLE_FIELD_TYPE)
 }
