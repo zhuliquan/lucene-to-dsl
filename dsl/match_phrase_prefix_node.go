@@ -66,9 +66,7 @@ func (n *MatchPhrasePrefixNode) ToDSL() DSL {
 		SLOP_KEY:           n.getSlop(),
 		MAX_EXPANSIONS_KEY: n.getMaxExpands(),
 	}
-	if n.getAnaLyzer() != "" {
-		d[ANALYZER_KEY] = n.getAnaLyzer()
-	}
+	addValueForDSL(d, ANALYZER_KEY, n.getAnaLyzer())
 	return DSL{
 		MATCH_PHRASE_PREFIX_KEY: d,
 	}

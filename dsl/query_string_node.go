@@ -68,9 +68,6 @@ func (n *QueryStringNode) ToDSL() DSL {
 		REGEXP_KEY:        n.getRewrite(),
 		DEFAULT_FIELD_KEY: n.field,
 	}
-	if n.getAnaLyzer() != "" {
-		d[ANALYZER_KEY] = n.getAnaLyzer()
-	}
-
+	addValueForDSL(d, ANALYZER_KEY, n.getAnaLyzer())
 	return DSL{QUERY_STRING_KEY: d}
 }

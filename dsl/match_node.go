@@ -64,8 +64,6 @@ func (n *MatchNode) ToDSL() DSL {
 		BOOST_KEY:          n.getBoost(),
 		MAX_EXPANSIONS_KEY: n.getMaxExpands(),
 	}
-	if n.getAnaLyzer() != "" {
-		d[ANALYZER_KEY] = n.getAnaLyzer()
-	}
+	addValueForDSL(d, ANALYZER_KEY, n.getAnaLyzer())
 	return DSL{MATCH_KEY: DSL{n.field: d}}
 }

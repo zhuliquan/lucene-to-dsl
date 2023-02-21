@@ -29,9 +29,7 @@ func (n *MatchPhraseNode) ToDSL() DSL {
 	d := DSL{
 		n.field: n.toPrintValue(),
 	}
-	if n.getAnaLyzer() != "" {
-		d[ANALYZER_KEY] = n.getAnaLyzer()
-	}
+	addValueForDSL(d, ANALYZER_KEY, n.getAnaLyzer())
 	return DSL{MATCH_PHRASE_KEY: d}
 }
 
