@@ -65,7 +65,7 @@ func (n *QueryStringNode) ToDSL() DSL {
 	d := DSL{
 		QUERY_KEY:         n.toPrintValue(),
 		BOOST_KEY:         n.getBoost(),
-		REGEXP_KEY:        n.getRewrite(),
+		REWRITE_KEY:       n.getRewrite(),
 		DEFAULT_FIELD_KEY: n.field,
 	}
 	addValueForDSL(d, ANALYZER_KEY, n.getAnaLyzer())
