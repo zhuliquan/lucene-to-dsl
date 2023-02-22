@@ -10,7 +10,6 @@ import "fmt"
 // a && b && !c && !d && (e || f || g)
 type BoolNode struct {
 	opNode
-	boostNode
 
 	Must    map[string][]AstNode // must
 	MustNot map[string][]AstNode // must_not
@@ -20,9 +19,23 @@ type BoolNode struct {
 	MinimumShouldMatch int
 }
 
-func NewBoolNode(node AstNode, opType OpType) AstNode {
-	boolNode := &BoolNode{
+func newDefaultBoolNode(opType OpType) *BoolNode {
+	minimumShouldMatch := 0
+	if opType == OR {
+		minimumShouldMatch = 1
+	}
+	return &BoolNode{
 		opNode: opNode{opType: opType},
+
+		MinimumShouldMatch: minimumShouldMatch,
+	}
+}
+
+func NewBoolNode(node AstNode, opType OpType, opts ...func(AstNode)) AstNode {
+	boolNode := newDefaultBoolNode(opType)
+
+	for _, opt := range opts {
+		opt(boolNode)
 	}
 	switch opType {
 	case AND:
@@ -33,7 +46,6 @@ func NewBoolNode(node AstNode, opType OpType) AstNode {
 		}
 	case OR:
 		boolNode.Should = map[string][]AstNode{node.NodeKey(): {node}}
-		boolNode.MinimumShouldMatch = 1
 	case NOT:
 		boolNode.MustNot = map[string][]AstNode{node.NodeKey(): {node}}
 	}
@@ -280,7 +292,6 @@ func (n *BoolNode) ToDSL() DSL {
 	}
 	if nodes := flattenNodes(n.Should); nodes != nil {
 		res[SHOULD_KEY] = nodes
-		res[MINIMUM_SHOULD_MATCH_KEY] = n.MinimumShouldMatch
 		onlyMust = false
 	}
 	if nodes := flattenNodes(n.MustNot); nodes != nil {
@@ -293,7 +304,7 @@ func (n *BoolNode) ToDSL() DSL {
 	if onlyMust {
 		return res[FILTER_KEY].(DSL)
 	} else {
-		res[BOOST_KEY] = n.getBoost()
+		addValueForDSL(res, MINIMUM_SHOULD_MATCH_KEY, n.MinimumShouldMatch)
 		return DSL{BOOL_KEY: res}
 	}
 }
