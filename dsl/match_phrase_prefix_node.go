@@ -16,6 +16,7 @@ func NewMatchPhrasePrefixNode(kvNode *kvNode, opts ...func(AstNode)) *MatchPhras
 		kvNode:       *kvNode,
 		slopNode:     slopNode{slop: 2},
 		boostNode:    boostNode{boost: 1.0},
+		expandsNode:  expandsNode{maxExpands: 50},
 		analyzerNode: analyzerNode{},
 	}
 	for _, opt := range opts {
@@ -67,7 +68,5 @@ func (n *MatchPhrasePrefixNode) ToDSL() DSL {
 		MAX_EXPANSIONS_KEY: n.getMaxExpands(),
 	}
 	addValueForDSL(d, ANALYZER_KEY, n.getAnaLyzer())
-	return DSL{
-		MATCH_PHRASE_PREFIX_KEY: d,
-	}
+	return DSL{MATCH_PHRASE_PREFIX_KEY: DSL{n.field: d}}
 }

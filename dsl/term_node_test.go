@@ -48,6 +48,8 @@ func TestTermNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {node1, node3},
 		},
+
+		MinimumShouldMatch: 1,
 	}, node8)
 
 	node8, err = node4.InterSect(node5)
@@ -74,6 +76,8 @@ func TestTermNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {node4, node6},
 		},
+
+		MinimumShouldMatch: 1,
 	}, node8)
 }
 

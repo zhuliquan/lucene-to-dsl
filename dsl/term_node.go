@@ -67,12 +67,7 @@ func termNodeUnionJoinTermNode(n, o *TermNode) (AstNode, error) {
 	if CompareAny(o.value, n.value, n.mType) == 0 {
 		return o, nil
 	} else {
-		return &BoolNode{
-			opNode: opNode{opType: OR},
-			Should: map[string][]AstNode{
-				n.NodeKey(): {n, o},
-			},
-		}, nil
+		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
 

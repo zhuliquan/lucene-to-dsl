@@ -7,8 +7,8 @@ import (
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
 )
 
-func TestMatchNode(t *testing.T) {
-	var node1 = NewMatchNode(&kvNode{
+func TestMatchPhrasePrefixNode(t *testing.T) {
+	var node1 = NewMatchPhrasePrefixNode(&kvNode{
 		fieldNode: fieldNode{
 			lfNode: lfNode{},
 			field:  "foo",
@@ -16,7 +16,10 @@ func TestMatchNode(t *testing.T) {
 		valueNode: valueNode{valueType: valueType{mType: mapping.TEXT_FIELD_TYPE}, value: "bar2"},
 	},
 		WithBoost(1.4),
+		WithSlop(3),
+		WithMaxExpands(40),
 	)
+
 	var node3 = NewQueryStringNode(&kvNode{
 		fieldNode: fieldNode{
 			lfNode: lfNode{},
@@ -70,16 +73,15 @@ func TestMatchNode(t *testing.T) {
 	assert.Equal(t, node4, node5)
 
 	assert.Equal(t, "foo", node1.NodeKey())
-	assert.Equal(t, MATCH_DSL_TYPE, node1.DslType())
+	assert.Equal(t, MATCH_PHRASE_PREFIX_DSL_TYPE, node1.DslType())
 	assert.Equal(t, LEAF_NODE_TYPE, node1.AstType())
 	assert.Equal(t, DSL{
-		"match": DSL{
+		"match_phrase_prefix": DSL{
 			node1.field: DSL{
 				"query":          node1.getValue(),
-				"boost":          node1.getBoost(),
-				"max_expansions": 50,
+				"slop":           3,
+				"max_expansions": 40,
 			},
 		},
 	}, node1.ToDSL())
-
 }
