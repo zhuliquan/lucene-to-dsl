@@ -1,9 +1,5 @@
 package dsl
 
-import (
-	"fmt"
-)
-
 // query_string node
 type QueryStringNode struct {
 	kvNode
@@ -30,11 +26,6 @@ func (n *QueryStringNode) UnionJoin(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
-		if b, ok := o.(BoostNode); ok {
-			if compareBoost(n, b) != 0 {
-				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
-			}
-		}
 		return lfNodeUnionJoinLfNode(n, o)
 	}
 }
@@ -44,11 +35,6 @@ func (n *QueryStringNode) InterSect(o AstNode) (AstNode, error) {
 	case EXISTS_DSL_TYPE:
 		return o.InterSect(n)
 	default:
-		if b, ok := o.(BoostNode); ok {
-			if compareBoost(n, b) != 0 {
-				return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
-			}
-		}
 		return lfNodeIntersectLfNode(n, o)
 	}
 }

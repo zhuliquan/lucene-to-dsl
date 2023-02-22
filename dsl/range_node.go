@@ -65,7 +65,7 @@ func (n *RangeNode) DslType() DslType {
 func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost value isn't equal", n.ToDSL(), o.ToDSL())
+			return lfNodeUnionJoinLfNode(n, o) // 不可以合并boost 不相同的数据
 		}
 	}
 	switch o.DslType() {
@@ -83,7 +83,7 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost value isn't equal", n.ToDSL(), o.ToDSL())
+			return lfNodeIntersectLfNode(n, o) // 不可以合并boost不同的数据
 		}
 	}
 	switch o.DslType() {
