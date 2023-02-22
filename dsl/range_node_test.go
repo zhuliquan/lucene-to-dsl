@@ -61,10 +61,23 @@ func TestRangeNode(t *testing.T) {
 		),
 		WithBoost(1.2),
 	)
-	_, err := n3.UnionJoin(n4)
-	assert.NotNil(t, err)
-	_, err = n3.InterSect(n4)
-	assert.NotNil(t, err)
+	n5, err := n3.UnionJoin(n4)
+	assert.Nil(t, err)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
+			"foo": {n3, n4},
+		},
+		MinimumShouldMatch: 1,
+	}, n5)
+	n6, err := n3.InterSect(n4)
+	assert.Nil(t, err)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
+			"foo": {n3, n4},
+		},
+	}, n6)
 }
 
 func TestRangeInverse(t *testing.T) {

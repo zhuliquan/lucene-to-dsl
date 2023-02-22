@@ -17,16 +17,6 @@ func TestQueryStringNode(t *testing.T) {
 	},
 		WithBoost(1.4),
 	)
-	var node2 = &MatchNode{
-		kvNode: kvNode{
-			fieldNode: fieldNode{
-				lfNode: lfNode{},
-				field:  "foo",
-			},
-			valueNode: valueNode{valueType: valueType{mType: mapping.TEXT_FIELD_TYPE}, value: "bar1"},
-		},
-		boostNode: boostNode{boost: 1.3},
-	}
 	var node3 = &MatchNode{
 		kvNode: kvNode{
 			fieldNode: fieldNode{
@@ -47,17 +37,11 @@ func TestQueryStringNode(t *testing.T) {
 	var node5, err = node1.Inverse()
 	assert.Nil(t, err)
 	assert.Equal(t, &BoolNode{
-		opNode:    opNode{opType: NOT},
-		boostNode: boostNode{boost: 1.0},
+		opNode: opNode{opType: NOT},
 		MustNot: map[string][]AstNode{
 			"foo": {node1},
 		},
-		MinimumShouldMatch: 1,
 	}, node5)
-
-	node5, err = node1.InterSect(node2)
-	assert.NotNil(t, err)
-	assert.Nil(t, node5)
 
 	node5, err = node1.InterSect(node3)
 	assert.Nil(t, err)
@@ -71,10 +55,6 @@ func TestQueryStringNode(t *testing.T) {
 	node5, err = node1.InterSect(node4)
 	assert.Nil(t, err)
 	assert.Equal(t, node1, node5)
-
-	node5, err = node1.UnionJoin(node2)
-	assert.NotNil(t, err)
-	assert.Nil(t, node5)
 
 	node5, err = node1.UnionJoin(node3)
 	assert.Nil(t, err)
