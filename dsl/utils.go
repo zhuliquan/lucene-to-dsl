@@ -347,13 +347,11 @@ var maxInf = map[mapping.FieldType]LeafValue{
 
 // union join two leaf node
 func lfNodeUnionJoinLfNode(a, b AstNode) (AstNode, error) {
-	return &BoolNode{
-		opNode: opNode{opType: OR},
-		Should: map[string][]AstNode{
-			a.NodeKey(): {a, b},
-		},
-		MinimumShouldMatch: 1,
-	}, nil
+	orNode := newDefaultBoolNode(OR)
+	orNode.Should = map[string][]AstNode{
+		a.NodeKey(): {a, b},
+	}
+	return orNode, nil
 }
 
 // intersect two leaf node
@@ -385,9 +383,7 @@ func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
 		)
 	}
 
-	var andNode = &BoolNode{
-		opNode: opNode{opType: AND},
-	}
+	var andNode = newDefaultBoolNode(AND)
 	if len(mustNodes[a.NodeKey()]) != 0 {
 		andNode.Must = mustNodes
 	}
