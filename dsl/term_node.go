@@ -60,14 +60,14 @@ func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *TermNode) Inverse() (AstNode, error) {
-	return NewBoolNode(n, NOT), nil
+	return inverseNode(n), nil
 }
 
 func termNodeUnionJoinTermNode(n, o *TermNode) (AstNode, error) {
 	if CompareAny(o.value, n.value, n.mType) == 0 {
 		return o, nil
 	} else {
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -75,7 +75,7 @@ func termNodeIntersectTermNode(n, o *TermNode) (AstNode, error) {
 	if CompareAny(o.value, n.value, n.mType) == 0 {
 		return o, nil
 	} else if n.isArrayType() {
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
 	}

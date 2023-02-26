@@ -29,18 +29,19 @@ func luceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
 		return nil, ErrEmptyAndQuery
 	}
 
-	if node, err := orQueryToAstNode(q.OrQuery); err != nil {
+	if preNode, err := orQueryToAstNode(q.OrQuery); err != nil {
 		return nil, err
 	} else {
-		boolNode := dsl.NewBoolNode(node, dsl.OR)
+		var curNode dsl.AstNode
+		var convertErr, unionErr error
 		for _, osQuery := range q.OSQuery {
-			if curNode, err := osQueryToAstNode(osQuery); err != nil {
-				return nil, err
-			} else if boolNode, err = boolNode.UnionJoin(curNode); err != nil {
-				return nil, err
+			if curNode, convertErr = osQueryToAstNode(osQuery); convertErr != nil {
+				return nil, convertErr
+			} else if preNode, unionErr = preNode.UnionJoin(curNode); unionErr != nil {
+				return nil, unionErr
 			}
 		}
-		return boolNode, nil
+		return preNode, nil
 	}
 }
 
@@ -48,18 +49,19 @@ func orQueryToAstNode(q *lucene.OrQuery) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyOrQuery
 	}
-	if node, err := andQueryToAstNode(q.AndQuery); err != nil {
+	if preNode, err := andQueryToAstNode(q.AndQuery); err != nil {
 		return nil, err
 	} else {
-		boolNode := dsl.NewBoolNode(node, dsl.OR)
+		var curNode dsl.AstNode
+		var convertErr, unionErr error
 		for _, ansQuery := range q.AnSQuery {
-			if curNode, err := ansQueryToAstNode(ansQuery); err != nil {
-				return nil, err
-			} else if boolNode, err = boolNode.InterSect(curNode); err != nil {
-				return nil, err
+			if curNode, convertErr = ansQueryToAstNode(ansQuery); convertErr != nil {
+				return nil, convertErr
+			} else if preNode, unionErr = preNode.InterSect(curNode); unionErr != nil {
+				return nil, unionErr
 			}
 		}
-		return boolNode, nil
+		return preNode, nil
 	}
 }
 

@@ -78,7 +78,7 @@ func TestRegexpNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n3},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n7)
 
 	n7, err = n1.UnionJoin(n4)
@@ -100,7 +100,7 @@ func TestRegexpNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n2, n5},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n7)
 
 	n7, err = n2.UnionJoin(n6)
@@ -155,7 +155,7 @@ func TestRegexpNodeMergeRegexpNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n2},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n5)
 
 	n5, err = n1.InterSect(n1)
@@ -177,7 +177,7 @@ func TestRegexpNodeMergeRegexpNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n3, n4},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n5)
 
 	n5, err = n3.InterSect(n3)

@@ -346,67 +346,135 @@ var maxInf = map[mapping.FieldType]LeafValue{
 }
 
 // union join two leaf node
-func lfNodeUnionJoinLfNode(a, b AstNode) (AstNode, error) {
+func lfNodeUnionJoinLfNode(key string, a, b AstNode) (AstNode, error) {
 	orNode := newDefaultBoolNode(OR)
-	orNode.Should = map[string][]AstNode{
-		a.NodeKey(): {a, b},
-	}
+	orNode.Should = map[string][]AstNode{key: {a, b}}
 	return orNode, nil
 }
 
 // intersect two leaf node
-func lfNodeIntersectLfNode(a, b AstNode) (AstNode, error) {
+func lfNodeIntersectLfNode(key string, a, b AstNode) (AstNode, error) {
 	af := a.(FilterCtxNode)
 	bf := b.(FilterCtxNode)
-	var mustNodes = map[string][]AstNode{
-		a.NodeKey(): {},
-	}
-	var filterNodes = map[string][]AstNode{
-		a.NodeKey(): {},
-	}
+	var mustNodes = map[string][]AstNode{key: {}}
+	var filterNodes = map[string][]AstNode{key: {}}
 	if af.getFilterCtx() {
-		filterNodes[a.NodeKey()] = append(
-			filterNodes[a.NodeKey()], a,
-		)
+		filterNodes[key] = append(filterNodes[key], a)
 	} else {
-		mustNodes[a.NodeKey()] = append(
-			mustNodes[a.NodeKey()], a,
-		)
+		mustNodes[key] = append(mustNodes[key], a)
 	}
 	if bf.getFilterCtx() {
-		filterNodes[a.NodeKey()] = append(
-			filterNodes[a.NodeKey()], b,
-		)
+		filterNodes[key] = append(filterNodes[key], b)
 	} else {
-		mustNodes[a.NodeKey()] = append(
-			mustNodes[a.NodeKey()], b,
-		)
+		mustNodes[key] = append(mustNodes[key], b)
 	}
 
 	var andNode = newDefaultBoolNode(AND)
-	if len(mustNodes[a.NodeKey()]) != 0 {
+	if len(mustNodes[key]) != 0 {
 		andNode.Must = mustNodes
 	}
-	if len(filterNodes[a.NodeKey()]) != 0 {
+	if len(filterNodes[key]) != 0 {
 		andNode.Filter = filterNodes
 	}
 	return andNode, nil
 }
 
-func flattenNodes(nodesMap map[string][]AstNode) interface{} {
-	var dslRes = []DSL{}
-	for _, nodes := range nodesMap {
-		for _, node := range nodes {
-			dslRes = append(dslRes, node.ToDSL())
+func flattenNodes(nodesMap map[string][]AstNode) []AstNode {
+	var nodes = []AstNode{}
+	for _, nodeList := range nodesMap {
+		nodes = append(nodes, nodeList...)
+	}
+	return nodes
+}
+
+func ReduceAstNode(x AstNode) AstNode {
+	if x.AstType() == OP_NODE_TYPE {
+		n := x.(*BoolNode)
+		switch n.opType {
+		case AND:
+			if len(n.Must) == 1 && len(n.Filter) == 0 {
+				nodes := flattenNodes(n.Must)
+				if len(nodes) == 1 {
+					return nodes[0]
+				}
+			}
+			return n
+		case OR:
+			if len(n.Should) == 1 {
+				nodes := flattenNodes(n.Should)
+				if len(nodes) == 1 {
+					return nodes[0]
+				}
+			}
+			return n
+		default:
+			return n
 		}
-	}
-	if len(dslRes) == 0 {
-		return nil
-	} else if len(dslRes) == 1 {
-		return dslRes[0]
 	} else {
-		return dslRes
+		return x
 	}
+}
+
+func reduceAstNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc MergeMethodFunc) ([]AstNode, error) {
+	for before, first := nodes, true; ; first = false {
+		rest := before[:len(before)-1]
+		node := before[len(before)-1]
+		errs := []error{}
+		join := false
+
+		for i, n1 := range rest {
+			if n2, err := mergeMethodFunc(n1, node); err == nil {
+				if n2.AstType() != OP_NODE_TYPE { // merge two nodes into a single node as soon as possible
+					rest[i] = n2
+					join = true
+					break
+				}
+			} else {
+				errs = append(errs, err)
+			}
+		}
+
+		if !join {
+			if first {
+				if len(errs) == len(rest) && len(errs) > 0 { // all error for nodes merge with n0
+					return nil, fmt.Errorf("failed to %s node: %+v, errs: %+v", mergeMethodName, node, errs)
+				} else {
+					rest = append(rest, node)
+				}
+			} else {
+				rest = append(rest, node)
+			}
+			return rest, nil
+		}
+
+		before = rest // loop find any other node which can be merge with n0
+	}
+}
+
+func nodesToDSLList(nodes []AstNode) []DSL {
+	var dslList = []DSL{}
+	for _, node := range nodes {
+		dslList = append(dslList, node.ToDSL())
+	}
+	return dslList
+}
+
+func reduceDSLList(dslList []DSL) interface{} {
+	if len(dslList) == 0 {
+		return nil
+	} else if len(dslList) == 1 {
+		return dslList[0]
+	} else {
+		return dslList
+	}
+}
+
+func inverseNode(node AstNode) AstNode {
+	var boolNode = newDefaultBoolNode(NOT)
+	boolNode.MustNot = map[string][]AstNode{
+		node.NodeKey(): {node},
+	}
+	return boolNode
 }
 
 func minEditDistance(termWord1, termWord2 string) int {
@@ -473,7 +541,7 @@ func patternNodeUnionJoinTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	if n.Match([]byte(o.value.(string))) {
 		return n.(AstNode), nil
 	} else {
-		return lfNodeUnionJoinLfNode(n.(AstNode), o)
+		return lfNodeUnionJoinLfNode(o.NodeKey(), n.(AstNode), o)
 	}
 }
 
@@ -481,7 +549,7 @@ func patternNodeIntersectTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	if n.Match([]byte(o.value.(string))) {
 		return o, nil
 	} else if n.(ArrayTypeNode).isArrayType() {
-		return lfNodeIntersectLfNode(n.(AstNode), o)
+		return lfNodeIntersectLfNode(o.NodeKey(), n.(AstNode), o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())
 	}
@@ -493,7 +561,7 @@ func valueNodeUnionJoinValueNode(n, o AstNode) (AstNode, error) {
 	if CompareAny(nn.getValue(), on.getValue(), nn.getVType().mType) == 0 {
 		return n, nil
 	} else {
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -503,7 +571,7 @@ func valueNodeIntersectValueNode(n, o AstNode) (AstNode, error) {
 	if CompareAny(nn.getValue(), on.getValue(), nn.getVType().mType) == 0 {
 		return n, nil
 	} else if nn.getVType().aType {
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
 	}

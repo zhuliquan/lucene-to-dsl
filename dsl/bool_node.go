@@ -1,7 +1,5 @@
 package dsl
 
-import "fmt"
-
 // bool node
 // must = [a, b]
 // must_not = [c, d]
@@ -16,27 +14,27 @@ type BoolNode struct {
 	Filter  map[string][]AstNode // filter
 	Should  map[string][]AstNode // should
 
-	MinimumShouldMatch int
+	minimumShouldMatch int
+}
+
+func getMinimumShouldMatch(opType OpType) int {
+	if opType|OR == OR {
+		return 1
+	} else {
+		return 0
+	}
 }
 
 func newDefaultBoolNode(opType OpType) *BoolNode {
-	minimumShouldMatch := 0
-	if opType == OR {
-		minimumShouldMatch = 1
-	}
 	return &BoolNode{
 		opNode: opNode{opType: opType},
 
-		MinimumShouldMatch: minimumShouldMatch,
+		minimumShouldMatch: getMinimumShouldMatch(opType),
 	}
 }
 
-func NewBoolNode(node AstNode, opType OpType, opts ...func(AstNode)) AstNode {
+func NewBoolNode(node AstNode, opType OpType) AstNode {
 	boolNode := newDefaultBoolNode(opType)
-
-	for _, opt := range opts {
-		opt(boolNode)
-	}
 	switch opType {
 	case AND:
 		if filterCtxNode, ok := node.(FilterCtxNode); ok && filterCtxNode.getFilterCtx() {
@@ -108,13 +106,13 @@ func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 		n.Should = make(map[string][]AstNode, 0)
 	}
 	key := x.NodeKey()
-	if nodes, err := reduceNodes(append(n.Should[key], x), UNION_JOIN, UnionJoin); err != nil {
+	if nodes, err := reduceAstNodes(append(n.Should[key], x), UNION_JOIN, UnionJoin); err != nil {
 		return nil, err
 	} else {
 		n.Should[key] = nodes
-		n.MinimumShouldMatch = 1
+		n.minimumShouldMatch = 1
 	}
-	return n, nil
+	return ReduceAstNode(n), nil
 }
 
 func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
@@ -208,7 +206,7 @@ func boolNodeIntersectFilterLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 		n.Filter = make(map[string][]AstNode, 0)
 	}
 	key := x.NodeKey()
-	if nodes, err := reduceNodes(append(n.Filter[key], x), INTERSECT, Intersect); err != nil {
+	if nodes, err := reduceAstNodes(append(n.Filter[key], x), INTERSECT, Intersect); err != nil {
 		return nil, err
 	} else {
 		n.Filter[key] = nodes
@@ -221,90 +219,123 @@ func boolNodeIntersectMustLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 		n.Must = make(map[string][]AstNode, 0)
 	}
 	key := x.NodeKey()
-	if nodes, err := reduceNodes(append(n.Must[key], x), INTERSECT, Intersect); err != nil {
+	if nodes, err := reduceAstNodes(append(n.Must[key], x), INTERSECT, Intersect); err != nil {
 		return nil, err
 	} else {
 		n.Must[key] = nodes
 	}
-	return n, nil
+	return ReduceAstNode(n), nil
 }
 
-func reduceNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc MergeMethodFunc) ([]AstNode, error) {
-	for before, first := nodes, true; ; first = false {
-		rest := before[:len(before)-1]
-		node := before[len(before)-1]
-		errs := []error{}
-		join := false
-
-		for i, n1 := range rest {
-			if n2, err := mergeMethodFunc(n1, node); err == nil {
-				if n2.AstType() != OP_NODE_TYPE { // merge two nodes into a single node as soon as possible
-					rest[i] = n2
-					join = true
-					break
-				}
-			} else {
-				errs = append(errs, err)
-			}
-		}
-
-		if !join {
-			if first {
-				if len(errs) == len(rest) && len(errs) > 0 { // all error for nodes merge with n0
-					return nil, fmt.Errorf("failed to %s node: %+v, errs: %+v", mergeMethodName, node, errs)
-				} else {
-					rest = append(rest, node)
-				}
-			} else {
-				rest = append(rest, node)
-			}
-			return rest, nil
-		}
-
-		before = rest // loop find any other node which can be merge with n0
-	}
-}
-
-// not 全部都不是的反例是至少有一个:
 func (n *BoolNode) Inverse() (AstNode, error) {
-	// var resNodes = make(map[string][]AstNode)
-	// for key, nodes := range n.MustNodes {
-	// 	resNodes[key] = nodes
-	// }
-	// for key, nodes := range n.FilterNodes {
-	// 	resNodes[key] = nodes
-	// }
-	// return &OrNode{Nodes: resNodes, MinimumShouldMatch: -1}, nil
-	return nil, nil
+	// rule1: make must_not clause fewer
+	switch n.opType {
+	case AND:
+		// not (x1 and x2) => #*:* -(#x1 #x2)
+		return inverseNode(n), nil
+	case OR:
+		//    not (x1 or x2)
+		// => not x1 and not x2
+		// => #*:* -x1 -x2 => must_not clause query
+		return &BoolNode{
+			opNode:  opNode{opType: NOT},
+			MustNot: n.Should,
+		}, nil
+	case NOT:
+		// case1: not (not x1 and not x2)
+		//     => not not x1 or not not x2
+		//     => x or y => should clause query
+		// not (not x1) => x1
+		return ReduceAstNode(&BoolNode{
+			opNode:             opNode{opType: OR},
+			Should:             n.MustNot,
+			minimumShouldMatch: 1,
+		}), nil
+	case AND | NOT:
+		//    not (x1 and x2 and not x3 and not x4)
+		// => not (x1 and x2 and not (x3 or x4))
+		// => not x1 or not x2 or x3 or x4
+		// => not (x1 and x2) or x3 or x4
+		notNode, _ := (&BoolNode{
+			opNode: opNode{opType: AND},
+			Must:   n.Must,
+			Filter: n.Filter,
+		}).Inverse()
+		notNode = ReduceAstNode(notNode)
+		orNode := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: n.Should,
+
+			minimumShouldMatch: 1,
+		}
+		orNode.Should[notNode.NodeKey()] = append(orNode.Should[notNode.NodeKey()], notNode)
+		return orNode, nil
+	case AND | OR:
+		return inverseNode(n), nil
+	case OR | NOT:
+		//    not ((x1 or x2) and not x3 and not x4)
+		// => not ((x1 or x2) and not (x3 or x4))
+		// => not (x1 or x2) or (x3 or x4)
+		// => not (x1 or x2) or x3 or x4
+		notNode, _ := (&BoolNode{
+			opNode:             opNode{opType: OR},
+			Should:             n.Should,
+			minimumShouldMatch: 1,
+		}).Inverse()
+		notNode = ReduceAstNode(notNode)
+		orNode := &BoolNode{
+			opNode:             opNode{opType: OR},
+			Should:             n.MustNot,
+			minimumShouldMatch: 1,
+		}
+		orNode.Should[notNode.NodeKey()] = append(orNode.Should[notNode.NodeKey()], notNode)
+		return orNode, nil
+	case AND | OR | NOT:
+		//    not ((x1 and x2) and (x3 or x4) and not x5 and not x6)
+		// => not (x1 and x2 and (x3 or x4) and not (x3 or x6))
+		// => not (x1 and x2) or not (x3 or x4) or x3 or x6
+		notNode1, _ := (&BoolNode{
+			opNode: opNode{opType: AND},
+			Must:   n.Must,
+			Filter: n.Filter,
+		}).Inverse()
+		notNode1 = ReduceAstNode(notNode1)
+		notNode2, _ := (&BoolNode{
+			opNode:             opNode{opType: OR},
+			Should:             n.Should,
+			minimumShouldMatch: 1,
+		}).Inverse()
+		notNode2 = ReduceAstNode(notNode2)
+		orNode := &BoolNode{
+			opNode:             opNode{opType: OR},
+			Should:             n.MustNot,
+			minimumShouldMatch: 1,
+		}
+		orNode.Should[notNode1.NodeKey()] = append(orNode.Should[notNode1.NodeKey()], notNode1)
+		orNode.Should[notNode2.NodeKey()] = append(orNode.Should[notNode2.NodeKey()], notNode2)
+		return orNode, nil
+	default:
+		return nil, ErrInverseNilNode
+	}
 }
 
 func (n *BoolNode) ToDSL() DSL {
 	var res = DSL{}
-	if nodes := flattenNodes(n.Must); nodes != nil {
-		res[MUST_KEY] = nodes
+	if nodes := flattenNodes(n.Must); len(nodes) != 0 {
+		res[MUST_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
-	var onlyMust = true
-	if nodes := flattenNodes(n.Filter); nodes != nil {
-		res[FILTER_KEY] = nodes
-		if _, ok := nodes.([]DSL); ok {
-			onlyMust = false
-		}
+	if nodes := flattenNodes(n.Filter); len(nodes) != 0 {
+		res[FILTER_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
-	if nodes := flattenNodes(n.Should); nodes != nil {
-		res[SHOULD_KEY] = nodes
-		onlyMust = false
+	if nodes := flattenNodes(n.Should); len(nodes) != 0 {
+		res[SHOULD_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
-	if nodes := flattenNodes(n.MustNot); nodes != nil {
-		res[MUST_NOT_KEY] = nodes
-		onlyMust = false
+	if nodes := flattenNodes(n.MustNot); len(nodes) != 0 {
+		res[MUST_NOT_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
 	if len(res) == 0 {
 		return EmptyDSL
 	}
-	if onlyMust {
-		return res[FILTER_KEY].(DSL)
-	} else {
-		addValueForDSL(res, MINIMUM_SHOULD_MATCH_KEY, n.MinimumShouldMatch)
-		return DSL{BOOL_KEY: res}
-	}
+	res[MINIMUM_SHOULD_MATCH_KEY] = n.minimumShouldMatch
+	return DSL{BOOL_KEY: res}
 }

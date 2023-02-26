@@ -62,7 +62,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n1)
 
 	x2 := &RangeNode{
@@ -131,7 +131,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n3)
 
 	x4 := &TermNode{
@@ -182,7 +182,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n4)
 
 	x5 := &RangeNode{
@@ -225,7 +225,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n5)
 
 }
@@ -246,7 +246,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}
 
 	x1 := &TermNode{
@@ -287,7 +287,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n1)
 
 	x2 := &RangeNode{
@@ -344,7 +344,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n3)
 
 	n = &BoolNode{
@@ -362,7 +362,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}
 
 	x1 = &TermNode{
@@ -403,7 +403,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n1)
 
 	x2 = &RangeNode{
@@ -455,7 +455,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n2)
 
 	x3 = &RangeNode{
@@ -507,7 +507,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n3)
 
 	x4 := &RangeNode{
@@ -559,7 +559,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n4)
 }
 
@@ -579,7 +579,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}
 
 	x1 := &TermNode{
@@ -621,7 +621,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n1)
 
 	x2 := &RangeNode{
@@ -679,7 +679,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n3)
 
 	n = &BoolNode{
@@ -697,7 +697,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}
 
 	x1 = &TermNode{
@@ -739,7 +739,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n1)
 
 	x2 = &RangeNode{
@@ -792,7 +792,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n2)
 
 	x3 = &RangeNode{
@@ -845,7 +845,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n3)
 
 	x4 := &RangeNode{
@@ -897,7 +897,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, n4)
 }
 

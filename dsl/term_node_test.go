@@ -49,7 +49,7 @@ func TestTermNodeMergeTermNode(t *testing.T) {
 			"foo": {node1, node3},
 		},
 
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, node8)
 
 	node8, err = node4.InterSect(node5)
@@ -77,7 +77,7 @@ func TestTermNodeMergeTermNode(t *testing.T) {
 			"foo": {node4, node6},
 		},
 
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, node8)
 }
 

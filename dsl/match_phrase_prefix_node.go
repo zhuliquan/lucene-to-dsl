@@ -35,7 +35,7 @@ func (n *MatchPhrasePrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 			}
 		}
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -49,12 +49,12 @@ func (n *MatchPhrasePrefixNode) InterSect(o AstNode) (AstNode, error) {
 				return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
 			}
 		}
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *MatchPhrasePrefixNode) Inverse() (AstNode, error) {
-	return NewBoolNode(n, NOT), nil
+	return inverseNode(n), nil
 }
 
 func (n *MatchPhrasePrefixNode) DslType() DslType {

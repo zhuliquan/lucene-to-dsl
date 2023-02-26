@@ -25,7 +25,7 @@ func (n *ExistsNode) InterSect(o AstNode) (AstNode, error) {
 }
 
 func (n *ExistsNode) Inverse() (AstNode, error) {
-	return NewBoolNode(n, NOT), nil
+	return inverseNode(n), nil
 }
 
 func (n *ExistsNode) ToDSL() DSL {

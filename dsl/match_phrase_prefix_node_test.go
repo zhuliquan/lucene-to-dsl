@@ -65,7 +65,7 @@ func TestMatchPhrasePrefixNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {node1, node3},
 		},
-		MinimumShouldMatch: 1,
+		minimumShouldMatch: 1,
 	}, node5)
 
 	node5, err = node1.UnionJoin(node4)

@@ -814,14 +814,14 @@ func TestNodeOrMergeNode(t *testing.T) {
 						},
 					},
 				},
-				MinimumShouldMatch: 1,
+				minimumShouldMatch: 1,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := lfNodeUnionJoinLfNode(tt.args.a, tt.args.b)
+			got, err := lfNodeUnionJoinLfNode(tt.args.a.NodeKey(), tt.args.a, tt.args.b)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("nodeOrMergeNode() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1003,7 +1003,7 @@ func TestNodeAndMergeNode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := lfNodeIntersectLfNode(tt.args.a, tt.args.b)
+			got, err := lfNodeIntersectLfNode(tt.args.a.NodeKey(), tt.args.a, tt.args.b)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("nodeAndMergeNode() error = %v, wantErr %v", err, tt.wantErr)
 				return

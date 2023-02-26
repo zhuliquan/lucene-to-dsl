@@ -517,9 +517,9 @@ func TestConvertToGroup(t *testing.T) {
 				},
 			},
 			// {*, 50} {78, 100} {178,*}
-			want: &dsl.OrNode{
+			want: &dsl.BoolNode{
 				MinimumShouldMatch: 1,
-				Nodes: map[string][]dsl.AstNode{
+				Should: map[string][]dsl.AstNode{
 					"x": {
 						dsl.NewRangeNode(
 							dsl.NewRgNode(

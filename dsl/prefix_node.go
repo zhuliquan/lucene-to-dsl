@@ -38,7 +38,7 @@ func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 	case PREFIX_DSL_TYPE:
 		return prefixNodeUnionJoinPrefixNode(n, o.(*PrefixNode))
 	default:
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -51,12 +51,12 @@ func (n *PrefixNode) InterSect(o AstNode) (AstNode, error) {
 	case PREFIX_DSL_TYPE:
 		return prefixNodeIntersectPrefixNode(n, o.(*PrefixNode))
 	default:
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *PrefixNode) Inverse() (AstNode, error) {
-	return NewBoolNode(n, NOT), nil
+	return inverseNode(n), nil
 }
 
 func (n *PrefixNode) ToDSL() DSL {
@@ -78,7 +78,7 @@ func prefixNodeUnionJoinPrefixNode(n, o *PrefixNode) (AstNode, error) {
 	} else if strings.HasPrefix(prefixO, prefixN) {
 		return n, nil
 	} else {
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -90,7 +90,7 @@ func prefixNodeIntersectPrefixNode(n, o *PrefixNode) (AstNode, error) {
 	} else if strings.HasPrefix(prefixO, prefixN) {
 		return o, nil
 	} else if n.isArrayType() {
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: prefix value is conflict", n.ToDSL(), o.ToDSL())
 	}

@@ -21,6 +21,10 @@ const (
 type OpType uint32
 
 const (
+	OP_KEY = "OP"
+)
+
+const (
 	AND OpType = 1 << iota
 	OR
 	NOT
@@ -44,13 +48,6 @@ const (
 	MATCH_PHRASE_DSL_TYPE
 	QUERY_STRING_DSL_TYPE
 	MATCH_PHRASE_PREFIX_DSL_TYPE
-)
-
-const (
-	OP_KEY = "OP"
-	// OR_OP_KEY  = "OP:OR"
-	// AND_OP_KEY = "OP:AND"
-	// NOT_OP_KEY = "OP:NOT"
 )
 
 var (

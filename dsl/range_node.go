@@ -65,7 +65,7 @@ func (n *RangeNode) DslType() DslType {
 func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return lfNodeUnionJoinLfNode(n, o) // 不可以合并boost 不相同的数据
+			return lfNodeUnionJoinLfNode(n.NodeKey(), n, o) // 不可以合并boost 不相同的数据
 		}
 	}
 	switch o.DslType() {
@@ -76,14 +76,14 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 	case RANGE_DSL_TYPE:
 		return rangeNodeUnionJoinRangeNode(n, o.(*RangeNode))
 	default:
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return lfNodeIntersectLfNode(n, o) // 不可以合并boost不同的数据
+			return lfNodeIntersectLfNode(n.NodeKey(), n, o) // 不可以合并boost不同的数据
 		}
 	}
 	switch o.DslType() {
@@ -94,7 +94,7 @@ func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 	case RANGE_DSL_TYPE:
 		return rangeNodeIntersectRangeNode(n, o.(*RangeNode))
 	default:
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -146,7 +146,7 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 			Should: map[string][]AstNode{
 				n.NodeKey(): {leftNode, rightNode},
 			},
-			MinimumShouldMatch: 1,
+			minimumShouldMatch: 1,
 		}, nil
 	} else if !isLeftInf {
 		return leftNode, nil
@@ -203,7 +203,7 @@ func rangeNodeUnionJoinTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 				boostNode: n.boostNode,
 			}, nil
 		}
-		return lfNodeUnionJoinLfNode(n, t)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, t)
 	} else {
 		return n, nil
 	}
@@ -217,7 +217,7 @@ func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 			Should: map[string][]AstNode{
 				n.NodeKey(): {n, t},
 			},
-			MinimumShouldMatch: 1,
+			minimumShouldMatch: 1,
 		}, nil
 	}
 	// compare left value of n and t, and get lower value, and cmp symbol is associate with lower value
@@ -277,7 +277,7 @@ func rangeNodeIntersectTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 	if checkRangeInclude(n, t.value) {
 		return t, nil
 	} else if n.isArrayType() {
-		return lfNodeIntersectLfNode(n, t)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, t)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), t.ToDSL())
 	}
@@ -287,7 +287,7 @@ func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {
 	// first check have range overlap zone
 	if !checkRangeOverlap(n, t) {
 		if n.isArrayType() {
-			return lfNodeIntersectLfNode(n, t)
+			return lfNodeIntersectLfNode(n.NodeKey(), n, t)
 		} else {
 			return nil, fmt.Errorf("range node: %s can't intersect with range node: %s, no overlap between two range", n.ToDSL(), t.ToDSL())
 		}

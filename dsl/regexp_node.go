@@ -47,7 +47,7 @@ func (n *RegexpNode) UnionJoin(o AstNode) (AstNode, error) {
 	case REGEXP_DSL_TYPE:
 		return valueNodeUnionJoinValueNode(n, o)
 	default:
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -60,12 +60,12 @@ func (n *RegexpNode) InterSect(o AstNode) (AstNode, error) {
 	case REGEXP_DSL_TYPE:
 		return valueNodeIntersectValueNode(n, o)
 	default:
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *RegexpNode) Inverse() (AstNode, error) {
-	return NewBoolNode(n, NOT), nil
+	return inverseNode(n), nil
 }
 
 func (n *RegexpNode) ToDSL() DSL {

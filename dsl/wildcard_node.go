@@ -44,7 +44,7 @@ func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
 	case WILDCARD_DSL_TYPE:
 		return valueNodeUnionJoinValueNode(n, o)
 	default:
-		return lfNodeUnionJoinLfNode(n, o)
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
@@ -63,12 +63,12 @@ func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
 	case WILDCARD_DSL_TYPE:
 		return valueNodeIntersectValueNode(n, o)
 	default:
-		return lfNodeIntersectLfNode(n, o)
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *WildCardNode) Inverse() (AstNode, error) {
-	return NewBoolNode(n, NOT), nil
+	return inverseNode(n), nil
 }
 
 func (n *WildCardNode) ToDSL() DSL {
