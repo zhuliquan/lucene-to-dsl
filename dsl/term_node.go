@@ -23,42 +23,42 @@ func (n *TermNode) DslType() DslType {
 }
 
 func (n *TermNode) UnionJoin(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
+	}
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 		}
 	}
 	switch o.DslType() {
 	case TERM_DSL_TYPE:
 		return termNodeUnionJoinTermNode(n, o.(*TermNode))
-	case EXISTS_DSL_TYPE, RANGE_DSL_TYPE, PREFIX_DSL_TYPE, REGEXP_DSL_TYPE:
-		return o.UnionJoin(n)
-	case IDS_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
-		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
-	case BOOL_DSL_TYPE:
+	case RANGE_DSL_TYPE, PREFIX_DSL_TYPE, REGEXP_DSL_TYPE, WILDCARD_DSL_TYPE, IDS_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
-		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+		return o.InterSect(n)
+	}
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 		}
 	}
 	switch o.DslType() {
 	case TERM_DSL_TYPE:
 		return termNodeIntersectTermNode(n, o.(*TermNode))
-	case EXISTS_DSL_TYPE, RANGE_DSL_TYPE, PREFIX_DSL_TYPE, REGEXP_DSL_TYPE:
-		return o.InterSect(n)
-	case IDS_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
-		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
-	case BOOL_DSL_TYPE:
+	case RANGE_DSL_TYPE, PREFIX_DSL_TYPE, REGEXP_DSL_TYPE, WILDCARD_DSL_TYPE, IDS_DSL_TYPE:
 		return o.InterSect(n)
 	default:
-		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }
 

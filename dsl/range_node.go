@@ -63,40 +63,40 @@ func (n *RangeNode) DslType() DslType {
 }
 
 func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
+	}
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return lfNodeUnionJoinLfNode(n.NodeKey(), n, o) // 不可以合并boost 不相同的数据
+			return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 		}
 	}
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		return rangeNodeUnionJoinTermNode(n, o.(*TermNode))
 	case RANGE_DSL_TYPE:
 		return rangeNodeUnionJoinRangeNode(n, o.(*RangeNode))
-	case BOOL_DSL_TYPE:
-		return o.UnionJoin(n)
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+		return o.InterSect(n)
+	}
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return lfNodeIntersectLfNode(n.NodeKey(), n, o) // 不可以合并boost不同的数据
+			return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 		}
 	}
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.InterSect(n)
 	case TERM_DSL_TYPE:
 		return rangeNodeIntersectTermNode(n, o.(*TermNode))
 	case RANGE_DSL_TYPE:
 		return rangeNodeIntersectRangeNode(n, o.(*RangeNode))
-	case BOOL_DSL_TYPE:
-		return o.InterSect(n)
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}

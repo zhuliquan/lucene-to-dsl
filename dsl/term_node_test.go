@@ -13,11 +13,24 @@ func TestTermNode(t *testing.T) {
 	assert.Equal(t, DSL{"term": DSL{"foo": DSL{"value": "bar3", "boost": 1.0}}}, node0.ToDSL())
 	var node1 = NewTermNode(NewKVNode(NewFieldNode(NewLfNode(), "foo"), NewValueNode("bar1", NewValueType(mapping.KEYWORD_FIELD_TYPE, false))), WithBoost(1.2))
 	var node2 = NewTermNode(NewKVNode(NewFieldNode(NewLfNode(), "foo"), NewValueNode("bar2", NewValueType(mapping.KEYWORD_FIELD_TYPE, false))), WithBoost(1.1))
-	_, err := node1.InterSect(node2)
-	assert.NotNil(t, err)
+	node, err := node1.InterSect(node2)
+	assert.Nil(t, err)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
+			"foo": {node1, node2},
+		},
+	}, node)
 
-	_, err = node1.UnionJoin(node2)
-	assert.NotNil(t, err)
+	node, err = node1.UnionJoin(node2)
+	assert.Nil(t, err)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
+			"foo": {node1, node2},
+		},
+		minimumShouldMatch: 1,
+	}, node)
 
 }
 func TestTermNodeMergeTermNode(t *testing.T) {

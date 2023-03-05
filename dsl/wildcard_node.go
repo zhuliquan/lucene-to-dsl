@@ -1,8 +1,6 @@
 package dsl
 
 import (
-	"fmt"
-
 	"github.com/zhuliquan/lucene-to-dsl/utils"
 )
 
@@ -31,41 +29,40 @@ func (n *WildCardNode) DslType() DslType {
 }
 
 func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
+	}
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 		}
 	}
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
 	case TERM_DSL_TYPE:
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
 	case WILDCARD_DSL_TYPE:
 		return valueNodeUnionJoinValueNode(n, o)
-	case BOOL_DSL_TYPE:
-		return o.UnionJoin(n)
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
+	switch o.DslType() {
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+		return o.InterSect(n)
+	}
 	if b, ok := o.(BoostNode); ok {
 		if compareBoost(n, b) != 0 {
-			return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
+			return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 		}
 	}
-
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.InterSect(n)
 	case TERM_DSL_TYPE:
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
 	case WILDCARD_DSL_TYPE:
 		return valueNodeIntersectValueNode(n, o)
-	case BOOL_DSL_TYPE:
-		return o.InterSect(n)
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}

@@ -1,7 +1,5 @@
 package dsl
 
-import "fmt"
-
 // match_phrase node
 type MatchPhrasePrefixNode struct {
 	kvNode
@@ -27,32 +25,18 @@ func NewMatchPhrasePrefixNode(kvNode *kvNode, opts ...func(AstNode)) *MatchPhras
 
 func (n *MatchPhrasePrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.UnionJoin(n)
-	case BOOL_DSL_TYPE:
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
 		return o.UnionJoin(n)
 	default:
-		if b, ok := o.(BoostNode); ok {
-			if compareBoost(n, b) != 0 {
-				return nil, fmt.Errorf("failed to union join %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
-			}
-		}
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *MatchPhrasePrefixNode) InterSect(o AstNode) (AstNode, error) {
 	switch o.DslType() {
-	case EXISTS_DSL_TYPE:
-		return o.InterSect(n)
-	case BOOL_DSL_TYPE:
+	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
 		return o.InterSect(n)
 	default:
-		if b, ok := o.(BoostNode); ok {
-			if compareBoost(n, b) != 0 {
-				return nil, fmt.Errorf("failed to intersect %s and %s, err: boost is conflict", n.ToDSL(), o.ToDSL())
-			}
-		}
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 }

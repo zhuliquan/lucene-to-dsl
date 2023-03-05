@@ -67,24 +67,6 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 		minimumShouldMatch: 1,
 	}, n1)
 
-	// test node union join leaf node return error
-	x2 := &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-			rValue:    "bar3",
-			lValue:    "bar0",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-		boostNode: boostNode{
-			boost: 1.6,
-		},
-	}
-	n2, err := n.UnionJoin(x2)
-	assert.NotNil(t, err)
-	assert.Nil(t, n2)
-
 	// test node union join leaf node and compact
 	x3 := &RangeNode{
 		rgNode: rgNode{

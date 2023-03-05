@@ -32,11 +32,24 @@ func TestWildcardNode(t *testing.T) {
 			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false))),
 		pattern, WithBoost(1.5),
 	)
-	_, err := node1.InterSect(node3)
-	assert.NotNil(t, err)
+	node, err := node1.InterSect(node3)
+	assert.Nil(t, err)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: AND},
+		Must: map[string][]AstNode{
+			"foo": {node1, node3},
+		},
+	}, node)
 
-	_, err = node1.UnionJoin(node3)
-	assert.NotNil(t, err)
+	node, err = node1.UnionJoin(node3)
+	assert.Nil(t, err)
+	assert.Equal(t, &BoolNode{
+		opNode: opNode{opType: OR},
+		Should: map[string][]AstNode{
+			"foo": {node1, node3},
+		},
+		minimumShouldMatch: 1,
+	}, node)
 
 }
 
