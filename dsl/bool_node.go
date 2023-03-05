@@ -73,25 +73,36 @@ func (n *BoolNode) UnionJoin(x AstNode) (AstNode, error) {
 // 1、 (x3 or x4) or (y3 or y4)
 // 2、 (not x5 and not x6) or (not y5 and not y6) => not (x5 or x6) or not (y5 or y6) => not ((x5 or x6) and (y5 or y6))
 func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
-	if n.opType == o.opType && n.opType == OR {
-		var t AstNode = n
+	if n.opType == OR && o.opType == OR {
+		var tmp AstNode = n
 		var err error
 		for _, node := range flattenNodes(o.Should) {
-			t, err = t.UnionJoin(node)
+			tmp, err = tmp.UnionJoin(node)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return t, nil
+		return tmp, nil
 	}
-	if n.opType == o.opType && n.opType == NOT {
+	if n.opType == OR {
+		n.Should[o.NodeKey()] = append(n.Should[o.NodeKey()], o)
+		return n, nil
+	}
+	if o.opType == OR {
+		o.Should[n.NodeKey()] = append(o.Should[n.NodeKey()], n)
+		return o, nil
+	}
+
+	if n.opType == NOT && o.opType == NOT {
 		orNode1 := &BoolNode{
-			opNode: opNode{opType: OR},
-			Should: n.MustNot,
+			opNode:             opNode{opType: OR},
+			Should:             n.MustNot,
+			minimumShouldMatch: 1,
 		}
 		orNode2 := &BoolNode{
-			opNode: opNode{opType: OR},
-			Should: o.MustNot,
+			opNode:             opNode{opType: OR},
+			Should:             o.MustNot,
+			minimumShouldMatch: 1,
 		}
 		andNode, err := orNode1.InterSect(orNode2)
 		if err != nil {
@@ -99,12 +110,15 @@ func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
 		}
 		return andNode.Inverse()
 	}
+
 	return &BoolNode{
 		opNode: opNode{opType: OR},
 		Should: map[string][]AstNode{
 			OP_KEY: {n, o},
 		},
+		minimumShouldMatch: 1,
 	}, nil
+
 }
 
 func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
@@ -138,96 +152,126 @@ func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
 // => and not x5 and not x6 and not y5 and not y6
 func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 	var err error
+	var res AstNode = n
 	if o.opType|AND == AND {
-		if n, err = boolNodeIntersectAndNode(n, o); err != nil {
+		if res, err = boolNodeIntersectAndNode(n, o); err != nil {
 			return nil, err
 		}
+		if res.AstType() == LEAF_NODE_TYPE {
+			res = NewBoolNode(res, AND).(*BoolNode)
+		}
 	}
-	if n.opType|NOT == NOT {
-		if n, err = boolNodeIntersectNotNode(n, o); err != nil {
+	n = res.(*BoolNode)
+	if o.opType|NOT == NOT {
+		if res, err = boolNodeIntersectNotNode(n, o); err != nil {
 			return nil, err
+		}
+		if res.AstType() == LEAF_NODE_TYPE {
+			res = NewBoolNode(res, AND).(*BoolNode)
 		}
 	}
 
-	if n.opType|OR == OR {
-		if n, err = boolNodeIntersectOrNode(n, o); err != nil {
+	n = res.(*BoolNode)
+	if o.opType|OR == OR {
+		if res, err = boolNodeIntersectOrNode(n, o); err != nil {
 			return nil, err
 		}
+		if res.AstType() == LEAF_NODE_TYPE {
+			res = NewBoolNode(res, AND).(*BoolNode)
+		}
 	}
-	return n, nil
+	return ReduceAstNode(res), nil
 }
 
 // (x1 and x2 and y1 and y2)
-func boolNodeIntersectAndNode(n, o *BoolNode) (*BoolNode, error) {
-	var err error
-	if len(o.Must) > 0 && len(n.Must) > 0 {
-		var t AstNode = n
-		for _, node := range flattenNodes(o.Must) {
-			t, err = t.InterSect(node)
+func boolNodeIntersectAndNode(n, o *BoolNode) (AstNode, error) {
+	if len(o.Must) > 0 {
+		if len(n.Must) == 0 {
+			n.Must = o.Must
+		} else {
+			tmp, err := boolNodeIntersectAndNodes(n, o.Must)
 			if err != nil {
 				return nil, err
 			}
+			if tmp.AstType() == LEAF_NODE_TYPE {
+				n = NewBoolNode(tmp, AND).(*BoolNode)
+			}
 		}
-		n = t.(*BoolNode)
 	}
-	if len(o.Must) > 0 && len(n.Must) == 0 {
-		n.Must = o.Must
-	}
-	if len(o.Filter) > 0 && len(n.Filter) > 0 {
-		var t AstNode = n
-		for _, node := range flattenNodes(o.Filter) {
-			t, err = t.InterSect(node)
+	if len(o.Filter) > 0 {
+		if len(n.Filter) == 0 {
+			n.Filter = o.Filter
+		} else {
+			tmp, err := boolNodeIntersectAndNodes(n, o.Filter)
 			if err != nil {
 				return nil, err
 			}
+			if tmp.AstType() == LEAF_NODE_TYPE {
+				n = NewBoolNode(tmp, AND).(*BoolNode)
+			}
 		}
-		n = t.(*BoolNode)
 	}
-	if len(o.Filter) > 0 && len(n.Filter) == 0 {
-		n.Filter = o.Filter
-	}
+
 	n.opType |= AND
 	return n, nil
 }
 
+func boolNodeIntersectAndNodes(n *BoolNode, nodesMap map[string][]AstNode) (AstNode, error) {
+	var tmp AstNode = n
+	var err error
+	for _, node := range flattenNodes(nodesMap) {
+		tmp, err = tmp.InterSect(node)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tmp, nil
+}
+
 // and not x1 and not x2 and not y1 and not y2
-func boolNodeIntersectNotNode(n, o *BoolNode) (*BoolNode, error) {
+func boolNodeIntersectNotNode(n, o *BoolNode) (AstNode, error) {
 	if n.opType|NOT != NOT {
 		n.MustNot = o.MustNot
 		n.opType |= NOT
 		return n, nil
 	} else {
 		orNode1 := &BoolNode{
-			opNode: opNode{opType: OR},
-			Should: n.MustNot,
+			opNode:             opNode{opType: OR},
+			Should:             n.MustNot,
+			minimumShouldMatch: 1,
 		}
 		orNode2 := &BoolNode{
-			opNode: opNode{opType: OR},
-			Should: o.MustNot,
+			opNode:             opNode{opType: OR},
+			Should:             o.MustNot,
+			minimumShouldMatch: 1,
 		}
 		orNode, err := orNode1.UnionJoin(orNode2)
 		if err != nil {
 			return nil, err
 		}
-		n.MustNot = nil
-		n.opType ^= NOT
 		notNode, err := orNode.Inverse()
 		if err != nil {
 			return nil, err
 		}
-		x, err := n.InterSect(notNode)
-		if err != nil {
-			return nil, err
+		andNode := &BoolNode{
+			opNode: opNode{opType: n.opType ^ NOT | AND},
+			Must:   n.Must,
+			Filter: n.Filter,
+			Should: n.Should,
 		}
-		n = x.(*BoolNode)
-		return n, nil
+		if andNode.Must == nil {
+			andNode.Must = map[string][]AstNode{}
+		}
+		andNode.Must[andNode.NodeKey()] = append(andNode.Must[andNode.NodeKey()], notNode)
+		return andNode, nil
 	}
 }
 
-func boolNodeIntersectOrNode(n, o *BoolNode) (*BoolNode, error) {
+func boolNodeIntersectOrNode(n, o *BoolNode) (AstNode, error) {
 	if n.opType|OR != OR {
 		n.Should = o.Should
 		n.opType |= OR
+		n.minimumShouldMatch = 1
 		return n, nil
 	} else {
 		orNode1 := ReduceAstNode(&BoolNode{
@@ -238,7 +282,7 @@ func boolNodeIntersectOrNode(n, o *BoolNode) (*BoolNode, error) {
 		})
 		orNode2 := ReduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
-			Should: n.Should,
+			Should: o.Should,
 
 			minimumShouldMatch: 1,
 		})
@@ -248,8 +292,12 @@ func boolNodeIntersectOrNode(n, o *BoolNode) (*BoolNode, error) {
 			Filter:  n.Filter,
 			MustNot: n.MustNot,
 		}
+		if node.Must == nil {
+			node.Must = make(map[string][]AstNode)
+		}
 		node.Must[orNode1.NodeKey()] = append(node.Must[orNode1.NodeKey()], orNode1)
 		node.Must[orNode2.NodeKey()] = append(node.Must[orNode2.NodeKey()], orNode2)
+		node.opType |= AND
 		return node, nil
 	}
 }
@@ -292,8 +340,10 @@ func boolNodeIntersectMustLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 func (n *BoolNode) Inverse() (AstNode, error) {
 	// rule1: make must_not clause fewer
 	switch n.opType {
-	case AND:
+	case AND, AND | OR, AND | OR | NOT:
 		// not (x1 and x2) => #*:* -(#x1 #x2)
+		// not ((x1 and x2) and (x3 or x4)) => #*:* -(#x1 #x2 x3 x4)
+		// not ((x1 and x2) and (x3 or x4) and (not x5 and not x6)) => #*:* - (#1 #2 x3 x4 (#*:* -x5 -x6))
 		return inverseNode(n), nil
 	case OR:
 		//    not (x1 or x2)
@@ -304,10 +354,10 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 			MustNot: n.Should,
 		}, nil
 	case NOT:
-		// case1: not (not x1 and not x2)
-		//     => not not x1 or not not x2
-		//     => x or y => should clause query
-		// not (not x1) => x1
+		// case1:   not (not x1 and not x2)
+		//       => not not x1 or not not x2
+		//       => x or y => should clause query
+		// case2:   not (not x1) => x1
 		return ReduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,
@@ -319,34 +369,37 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 		// => not (x1 and x2 and not (x3 or x4))
 		// => not x1 or not x2 or x3 or x4
 		// => not (x1 and x2) or x3 or x4
-		notNode, _ := (&BoolNode{
+		notNode, err := (&BoolNode{
 			opNode: opNode{opType: AND},
 			Must:   n.Must,
 			Filter: n.Filter,
 		}).Inverse()
+		if err != nil {
+			return nil, err
+		}
 		notNode = ReduceAstNode(notNode)
 
 		orNode := &BoolNode{
 			opNode: opNode{opType: OR},
-			Should: n.Should,
+			Should: n.MustNot,
 
 			minimumShouldMatch: 1,
 		}
-		orNode.Should[notNode.NodeKey()] = append(orNode.Should[notNode.NodeKey()], notNode)
-		return orNode, nil
-	case AND | OR:
-		return inverseNode(n), nil
+		return orNode.UnionJoin(notNode)
 	case OR | NOT:
 		//    not ((x1 or x2) and not x3 and not x4)
 		// => not ((x1 or x2) and not (x3 or x4))
 		// => not (x1 or x2) or (x3 or x4)
 		// => not (x1 or x2) or x3 or x4
-		notNode, _ := (&BoolNode{
+		notNode, err := (&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.Should,
 
 			minimumShouldMatch: 1,
 		}).Inverse()
+		if err != nil {
+			return nil, err
+		}
 		notNode = ReduceAstNode(notNode)
 		orNode := &BoolNode{
 			opNode: opNode{opType: OR},
@@ -354,34 +407,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 
 			minimumShouldMatch: 1,
 		}
-		orNode.Should[notNode.NodeKey()] = append(orNode.Should[notNode.NodeKey()], notNode)
-		return orNode, nil
-	case AND | OR | NOT:
-		//    not ((x1 and x2) and (x3 or x4) and not x5 and not x6)
-		// => not (x1 and x2 and (x3 or x4) and not (x3 or x6))
-		// => not (x1 and x2) or not (x3 or x4) or x3 or x6
-		notNode1, _ := (&BoolNode{
-			opNode: opNode{opType: AND},
-			Must:   n.Must,
-			Filter: n.Filter,
-		}).Inverse()
-		notNode1 = ReduceAstNode(notNode1)
-		notNode2, _ := (&BoolNode{
-			opNode: opNode{opType: OR},
-			Should: n.Should,
-
-			minimumShouldMatch: 1,
-		}).Inverse()
-		notNode2 = ReduceAstNode(notNode2)
-		orNode := &BoolNode{
-			opNode: opNode{opType: OR},
-			Should: n.MustNot,
-
-			minimumShouldMatch: 1,
-		}
-		orNode.Should[notNode1.NodeKey()] = append(orNode.Should[notNode1.NodeKey()], notNode1)
-		orNode.Should[notNode2.NodeKey()] = append(orNode.Should[notNode2.NodeKey()], notNode2)
-		return orNode, nil
+		return orNode.UnionJoin(notNode)
 	default:
 		return nil, ErrInverseNilNode
 	}
