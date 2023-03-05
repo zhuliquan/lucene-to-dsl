@@ -35,7 +35,8 @@ func (n *TermNode) UnionJoin(o AstNode) (AstNode, error) {
 		return o.UnionJoin(n)
 	case IDS_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
-
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		return nil, fmt.Errorf("failed to union join %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
 	}
@@ -54,6 +55,8 @@ func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
 		return o.InterSect(n)
 	case IDS_DSL_TYPE, WILDCARD_DSL_TYPE, FUZZY_DSL_TYPE, MATCH_DSL_TYPE, MATCH_PHRASE_DSL_TYPE, QUERY_STRING_DSL_TYPE:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is conflict", n.ToDSL(), o.ToDSL())
+	case BOOL_DSL_TYPE:
+		return o.InterSect(n)
 	default:
 		return nil, fmt.Errorf("failed to intersect %s and %s, err: term type is unknown", n.ToDSL(), o.ToDSL())
 	}

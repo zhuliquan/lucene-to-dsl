@@ -37,6 +37,8 @@ func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
 	case PREFIX_DSL_TYPE:
 		return prefixNodeUnionJoinPrefixNode(n, o.(*PrefixNode))
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
@@ -50,6 +52,8 @@ func (n *PrefixNode) InterSect(o AstNode) (AstNode, error) {
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
 	case PREFIX_DSL_TYPE:
 		return prefixNodeIntersectPrefixNode(n, o.(*PrefixNode))
+	case BOOL_DSL_TYPE:
+		return o.InterSect(n)
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}

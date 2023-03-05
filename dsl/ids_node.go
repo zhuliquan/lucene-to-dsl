@@ -22,7 +22,8 @@ func (n *IdsNode) DslType() DslType {
 }
 
 func (n *IdsNode) UnionJoin(o AstNode) (AstNode, error) {
-	if o.DslType() == IDS_DSL_TYPE {
+	switch o.DslType() {
+	case IDS_DSL_TYPE:
 		var t = o.(*IdsNode)
 		return &IdsNode{
 			ids: ValueLstToStrLst(
@@ -33,13 +34,16 @@ func (n *IdsNode) UnionJoin(o AstNode) (AstNode, error) {
 				),
 			),
 		}, nil
-	} else {
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
+	default:
 		return nil, fmt.Errorf("failed to union join %v and %v, err: id dsl only support union join with id dsl", n, o)
 	}
 }
 
 func (n *IdsNode) InterSect(o AstNode) (AstNode, error) {
-	if o.DslType() == IDS_DSL_TYPE {
+	switch o.DslType() {
+	case IDS_DSL_TYPE:
 		var t = o.(*IdsNode)
 		return &IdsNode{
 			ids: ValueLstToStrLst(
@@ -50,7 +54,9 @@ func (n *IdsNode) InterSect(o AstNode) (AstNode, error) {
 				),
 			),
 		}, nil
-	} else {
+	case BOOL_DSL_TYPE:
+		return o.InterSect(n)
+	default:
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: id dsl only support intersect with id dsl", n, o)
 	}
 }

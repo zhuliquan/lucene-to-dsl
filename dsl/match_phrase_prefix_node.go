@@ -29,6 +29,8 @@ func (n *MatchPhrasePrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		if b, ok := o.(BoostNode); ok {
 			if compareBoost(n, b) != 0 {
@@ -42,6 +44,8 @@ func (n *MatchPhrasePrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 func (n *MatchPhrasePrefixNode) InterSect(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
+		return o.InterSect(n)
+	case BOOL_DSL_TYPE:
 		return o.InterSect(n)
 	default:
 		if b, ok := o.(BoostNode); ok {

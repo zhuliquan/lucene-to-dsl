@@ -25,6 +25,8 @@ func (n *QueryStringNode) UnionJoin(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
@@ -34,6 +36,8 @@ func (n *QueryStringNode) InterSect(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
 		return o.InterSect(n)
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}

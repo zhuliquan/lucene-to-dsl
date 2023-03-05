@@ -17,11 +17,21 @@ func NewExistsNode(fieldNode *fieldNode) *ExistsNode {
 // if union same field node, you can return exist node, for example {"exists": {"field" : "x"}} union {"match": {"x": "foo bar"}}
 // "exists": {"field": "x"} > "match": {"x": "foo bar"}
 func (n *ExistsNode) UnionJoin(o AstNode) (AstNode, error) {
-	return n, nil
+	switch o.DslType() {
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
+	default:
+		return n, nil
+	}
 }
 
 func (n *ExistsNode) InterSect(o AstNode) (AstNode, error) {
-	return o, nil
+	switch o.DslType() {
+	case BOOL_DSL_TYPE:
+		return o.InterSect(n)
+	default:
+		return o, nil
+	}
 }
 
 func (n *ExistsNode) Inverse() (AstNode, error) {

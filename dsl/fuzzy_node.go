@@ -57,6 +57,8 @@ func (n *FuzzyNode) UnionJoin(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
 		return o.UnionJoin(n)
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
@@ -65,6 +67,8 @@ func (n *FuzzyNode) UnionJoin(o AstNode) (AstNode, error) {
 func (n *FuzzyNode) InterSect(o AstNode) (AstNode, error) {
 	switch o.DslType() {
 	case EXISTS_DSL_TYPE:
+		return o.InterSect(n)
+	case BOOL_DSL_TYPE:
 		return o.InterSect(n)
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)

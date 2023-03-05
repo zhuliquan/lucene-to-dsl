@@ -75,6 +75,8 @@ func (n *RangeNode) UnionJoin(o AstNode) (AstNode, error) {
 		return rangeNodeUnionJoinTermNode(n, o.(*TermNode))
 	case RANGE_DSL_TYPE:
 		return rangeNodeUnionJoinRangeNode(n, o.(*RangeNode))
+	case BOOL_DSL_TYPE:
+		return o.UnionJoin(n)
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
@@ -93,6 +95,8 @@ func (n *RangeNode) InterSect(o AstNode) (AstNode, error) {
 		return rangeNodeIntersectTermNode(n, o.(*TermNode))
 	case RANGE_DSL_TYPE:
 		return rangeNodeIntersectRangeNode(n, o.(*RangeNode))
+	case BOOL_DSL_TYPE:
+		return o.InterSect(n)
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
