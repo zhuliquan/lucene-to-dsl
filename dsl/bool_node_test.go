@@ -64,7 +64,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n1)
 
 	// test node union join leaf node and compact
@@ -117,7 +117,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n3)
 
 	// test node union join leaf node and compact
@@ -169,7 +169,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n4)
 
 	// test node union join leaf node and compact
@@ -213,7 +213,7 @@ func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n5)
 
 }
@@ -234,7 +234,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	// test bool node intersect new leaf node
@@ -276,7 +276,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n1)
 
 	// test bool node intersect leaf node and error return
@@ -334,7 +334,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n3)
 
 	// test bool node intersect leaf node and compact
@@ -353,7 +353,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	x1 = &TermNode{
@@ -394,7 +394,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n1)
 
 	x2 = &RangeNode{
@@ -446,7 +446,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n2)
 
 	x3 = &RangeNode{
@@ -498,7 +498,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n3)
 
 	x4 := &RangeNode{
@@ -550,7 +550,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n4)
 }
 
@@ -570,7 +570,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	x1 := &TermNode{
@@ -612,7 +612,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n1)
 
 	x2 := &RangeNode{
@@ -670,7 +670,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n3)
 
 	n = &BoolNode{
@@ -688,7 +688,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	x1 = &TermNode{
@@ -730,7 +730,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n1)
 
 	x2 = &RangeNode{
@@ -783,7 +783,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n2)
 
 	x3 = &RangeNode{
@@ -836,7 +836,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n3)
 
 	x4 := &RangeNode{
@@ -888,7 +888,7 @@ func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n4)
 }
 
@@ -973,7 +973,7 @@ func TestBoolNodeInverse(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	tmp, err = node2.Inverse()
 	assert.Nil(t, err)
@@ -1001,7 +1001,7 @@ func TestBoolNodeInverse(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, tmp)
 
 	node4 := &BoolNode{
@@ -1025,7 +1025,7 @@ func TestBoolNodeInverse(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	tmp, err = node5.Inverse()
 	assert.Nil(t, err)
@@ -1042,7 +1042,7 @@ func TestBoolNodeInverse(t *testing.T) {
 					"foo3": {child3},
 					"foo4": {child4},
 				},
-				minimumShouldMatch: 1,
+				MinimumShouldMatch: 1,
 			}},
 		},
 	}, tmp)
@@ -1058,7 +1058,7 @@ func TestBoolNodeInverse(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	tmp, err = node6.Inverse()
 	assert.Nil(t, err)
@@ -1077,7 +1077,7 @@ func TestBoolNodeInverse(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, tmp)
 
 	// inverse `and not` node
@@ -1116,7 +1116,7 @@ func TestBoolNodeInverse(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, tmp)
 
 	// inverse `and or not` node
@@ -1206,7 +1206,7 @@ func TestBoolNodeToDSL(t *testing.T) {
 		MustNot: map[string][]AstNode{
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	assert.Equal(t, DSL{
 		"bool": DSL{
@@ -1279,7 +1279,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	node2 := &BoolNode{
 		opNode: opNode{opType: OR},
@@ -1287,7 +1287,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	node3, err := node1.UnionJoin(node2)
@@ -1300,7 +1300,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node3)
 
 	// test or union join and
@@ -1310,7 +1310,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	node2 = &BoolNode{
 		opNode: opNode{opType: AND},
@@ -1335,7 +1335,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 				},
 			}},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node3)
 
 	// test and union join or
@@ -1352,7 +1352,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	node3, err = node1.UnionJoin(node2)
@@ -1370,7 +1370,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 				},
 			}},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node3)
 
 	// test and union join or
@@ -1387,7 +1387,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 
 	node3, err = node1.UnionJoin(node2)
@@ -1405,7 +1405,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 				},
 			}},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node3)
 
 	// test not node union join not node
@@ -1440,7 +1440,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 									"foo1": {child1},
 									"foo2": {child2},
 								},
-								minimumShouldMatch: 1,
+								MinimumShouldMatch: 1,
 							},
 							&BoolNode{
 								opNode: opNode{opType: OR},
@@ -1448,7 +1448,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 									"foo3": {child3},
 									"foo4": {child4},
 								},
-								minimumShouldMatch: 1,
+								MinimumShouldMatch: 1,
 							},
 						},
 					},
@@ -1495,7 +1495,7 @@ func TestBoolNodeUnionJoinBoolNode(t *testing.T) {
 				},
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node3)
 }
 
@@ -1580,7 +1580,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	mustNode := &BoolNode{
 		opNode: opNode{opType: AND},
@@ -1601,7 +1601,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, res)
 
 	// or node intersect filter node
@@ -1611,7 +1611,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	filterNode := &BoolNode{
 		opNode: opNode{opType: AND},
@@ -1632,7 +1632,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, res)
 
 	// must node intersect must node
@@ -1841,7 +1841,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	res, err = mustNode.InterSect(orNode)
 	assert.Nil(t, err)
@@ -1855,7 +1855,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, res)
 
 	// or node intersect or node
@@ -1865,7 +1865,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	orNode2 := &BoolNode{
 		opNode: opNode{opType: OR},
@@ -1873,7 +1873,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	res, err = orNode1.InterSect(orNode2)
 	assert.Nil(t, err)
@@ -1887,7 +1887,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 						"foo1": {child1},
 						"foo2": {child2},
 					},
-					minimumShouldMatch: 1,
+					MinimumShouldMatch: 1,
 				},
 				&BoolNode{
 					opNode: opNode{opType: OR},
@@ -1895,7 +1895,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 						"foo3": {child3},
 						"foo4": {child4},
 					},
-					minimumShouldMatch: 1,
+					MinimumShouldMatch: 1,
 				},
 			},
 		},
@@ -1908,7 +1908,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	notNode := &BoolNode{
 		opNode: opNode{opType: NOT},
@@ -1929,7 +1929,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo3": {child3},
 			"foo4": {child4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, res)
 
 	// not node intersect not node
@@ -1939,7 +1939,7 @@ func TestBoolNodeIntersectBoolNode(t *testing.T) {
 			"foo1": {child1},
 			"foo2": {child2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}
 	notNode2 := &BoolNode{
 		opNode: opNode{opType: NOT},

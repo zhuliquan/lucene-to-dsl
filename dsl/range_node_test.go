@@ -68,7 +68,7 @@ func TestRangeNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n3, n4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n5)
 	n6, err := n3.InterSect(n4)
 	assert.Nil(t, err)
@@ -120,7 +120,7 @@ func TestRangeInverse(t *testing.T) {
 				),
 			},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n2)
 
 	n1 = NewRangeNode(
@@ -405,7 +405,7 @@ func TestRangeNodeUnionJoinRangeNode(t *testing.T) {
 						},
 					},
 				},
-				minimumShouldMatch: 1,
+				MinimumShouldMatch: 1,
 			},
 		},
 		{
@@ -1013,7 +1013,7 @@ func TestRangeNodeUnionJoinTermNode(t *testing.T) {
 						},
 					},
 				},
-				minimumShouldMatch: 1,
+				MinimumShouldMatch: 1,
 			},
 		},
 		{

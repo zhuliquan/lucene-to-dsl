@@ -14,28 +14,36 @@ import (
 	term "github.com/zhuliquan/lucene_parser/term"
 )
 
-var convertMapping *mapping.PropertyMapping
-
-func Init(pm *mapping.PropertyMapping) {
-	convertMapping = pm
+type Converter interface {
+	LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error)
 }
 
-func LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
-	return luceneToAstNode(q)
+func NewConverter(mp *mapping.PropertyMapping) Converter {
+	return &converter{
+		mp: mp,
+	}
 }
 
-func luceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
+type converter struct {
+	mp *mapping.PropertyMapping
+}
+
+func (c *converter) LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
+	return c.luceneToAstNode(q)
+}
+
+func (c *converter) luceneToAstNode(q *lucene.Lucene, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
 
-	if preNode, err := orQueryToAstNode(q.OrQuery); err != nil {
+	if preNode, err := c.orQueryToAstNode(q.OrQuery, pp...); err != nil {
 		return nil, err
 	} else {
 		var curNode dsl.AstNode
 		var convertErr, unionErr error
 		for _, osQuery := range q.OSQuery {
-			if curNode, convertErr = osQueryToAstNode(osQuery); convertErr != nil {
+			if curNode, convertErr = c.osQueryToAstNode(osQuery, pp...); convertErr != nil {
 				return nil, convertErr
 			} else if preNode, unionErr = preNode.UnionJoin(curNode); unionErr != nil {
 				return nil, unionErr
@@ -45,17 +53,17 @@ func luceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
 	}
 }
 
-func orQueryToAstNode(q *lucene.OrQuery) (dsl.AstNode, error) {
+func (c *converter) orQueryToAstNode(q *lucene.OrQuery, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyOrQuery
 	}
-	if preNode, err := andQueryToAstNode(q.AndQuery); err != nil {
+	if preNode, err := c.andQueryToAstNode(q.AndQuery, pp...); err != nil {
 		return nil, err
 	} else {
 		var curNode dsl.AstNode
 		var convertErr, unionErr error
 		for _, ansQuery := range q.AnSQuery {
-			if curNode, convertErr = ansQueryToAstNode(ansQuery); convertErr != nil {
+			if curNode, convertErr = c.ansQueryToAstNode(ansQuery, pp...); convertErr != nil {
 				return nil, convertErr
 			} else if preNode, unionErr = preNode.InterSect(curNode); unionErr != nil {
 				return nil, unionErr
@@ -65,14 +73,14 @@ func orQueryToAstNode(q *lucene.OrQuery) (dsl.AstNode, error) {
 	}
 }
 
-func osQueryToAstNode(q *lucene.OSQuery) (dsl.AstNode, error) {
+func (c *converter) osQueryToAstNode(q *lucene.OSQuery, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyOrQuery
 	}
-	return orQueryToAstNode(q.OrQuery)
+	return c.orQueryToAstNode(q.OrQuery, pp...)
 }
 
-func andQueryToAstNode(q *lucene.AndQuery) (dsl.AstNode, error) {
+func (c *converter) andQueryToAstNode(q *lucene.AndQuery, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
@@ -81,11 +89,11 @@ func andQueryToAstNode(q *lucene.AndQuery) (dsl.AstNode, error) {
 		err  error
 	)
 	if q.FieldQuery != nil {
-		if node, err = fieldQueryToAstNode(q.FieldQuery); err != nil {
+		if node, err = c.fieldQueryToAstNode(q.FieldQuery, pp...); err != nil {
 			return nil, err
 		}
 	} else if q.ParenQuery != nil {
-		if node, err = parenQueryToAstNode(q.ParenQuery); err != nil {
+		if node, err = c.parenQueryToAstNode(q.ParenQuery, pp...); err != nil {
 			return nil, err
 		}
 	} else {
@@ -99,61 +107,67 @@ func andQueryToAstNode(q *lucene.AndQuery) (dsl.AstNode, error) {
 	}
 }
 
-func ansQueryToAstNode(q *lucene.AnSQuery) (dsl.AstNode, error) {
+func (c *converter) ansQueryToAstNode(q *lucene.AnSQuery, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
 	}
-	return andQueryToAstNode(q.AndQuery)
+	return c.andQueryToAstNode(q.AndQuery, pp...)
 }
 
-func parenQueryToAstNode(q *lucene.ParenQuery) (dsl.AstNode, error) {
+func (c *converter) parenQueryToAstNode(q *lucene.ParenQuery, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyParenQuery
 	}
-	return luceneToAstNode(q.SubQuery)
+	return c.luceneToAstNode(q.SubQuery, pp...)
 }
 
-func fieldQueryToAstNode(q *lucene.FieldQuery) (dsl.AstNode, error) {
+func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyFieldQuery
 	} else if q.Field == nil || q.Term == nil {
 		return nil, ErrEmptyFieldQuery
 	}
-	if props := convertMapping.GetProperty(q.Field.String()); len(props) == 0 {
-		return nil, fmt.Errorf("field: %s don't match any es mapping", q.Field.String())
+	var props []*mapping.Property
+	if len(pp) == 0 {
+		props := c.mp.GetProperty(q.Field.String())
+		if len(props) == 0 {
+			return nil, fmt.Errorf("field: %s don't match any es mapping", q.Field.String())
+		}
 	} else {
-		// orNode := dsl.OrNode{}
-		// for _, prop := range props {
-		// 	if node, err := fieldQueryToAstNodeByProp(q, prop); err != nil {
-		// 		if len(props) == 1 {
-		// 			return nil, err
-		// 		} else {
-		// 			log.Printf("failed to convert field query: `%s` to ast node, err: %s", q.String(), err)
-		// 		}
-		// 	}
-		// }
-		return nil, nil
+		props = append(props, pp...)
 	}
+
+	var res dsl.AstNode = &dsl.EmptyNode{}
+	for _, prop := range props {
+		if node, err := c.fieldQueryToAstNodeByProp(q, prop); err != nil {
+			return nil, err
+		} else {
+			if res, err = res.UnionJoin(node); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return res, nil
 }
 
-func fieldQueryToAstNodeByProp(q *lucene.FieldQuery, property *mapping.Property) (dsl.AstNode, error) {
+func (c *converter) fieldQueryToAstNodeByProp(q *lucene.FieldQuery, property *mapping.Property) (dsl.AstNode, error) {
 	var termType = q.Term.GetTermType()
 	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
-		return convertToRange(q.Field, q.Term, property)
+		return c.convertToRange(q.Field, q.Term, property)
 	} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
-		return convertToSingle(q.Field, q.Term, property)
+		return c.convertToSingle(q.Field, q.Term, property)
 	} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
-		return convertToPhrase(q.Field, q.Term, property)
+		return c.convertToPhrase(q.Field, q.Term, property)
 	} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
-		return convertToGroup(q.Field, q.Term, property)
+		return c.convertToGroup(q.Field, q.Term, property)
 	} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
-		return convertToRegexp(q.Field, q.Term, property)
+		return c.convertToRegexp(q.Field, q.Term, property)
 	} else {
 		return nil, fmt.Errorf("con't convert term query: %s", q.String())
 	}
 }
 
-func convertToRange(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+func (c *converter) convertToRange(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	var (
 		bound      = termV.GetBound()
 		leftValue  dsl.LeafValue
@@ -202,7 +216,7 @@ func convertToRange(field *term.Field, termV *term.Term, property *mapping.Prope
 	}
 }
 
-func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+func (c *converter) convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
 	if strVal.(string) == "*" {
 		return dsl.NewExistsNode(
@@ -214,15 +228,15 @@ func convertToSingle(field *term.Field, termV *term.Term, property *mapping.Prop
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 		).Inverse()
 	}
-	return convertToNormal(field, termV, property, strVal.(string))
+	return c.convertToNormal(field, termV, property, strVal.(string))
 }
 
-func convertToPhrase(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+func (c *converter) convertToPhrase(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
-	return convertToNormal(field, termV, property, strVal.(string))
+	return c.convertToNormal(field, termV, property, strVal.(string))
 }
 
-func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Property, strVal string) (dsl.AstNode, error) {
+func (c *converter) convertToNormal(field *term.Field, termV *term.Term, property *mapping.Property, strVal string) (dsl.AstNode, error) {
 	// trick for id
 	if field.String() == "_id" {
 		if strLst, err := termV.Value(toStrLst); err != nil {
@@ -301,7 +315,7 @@ func convertToNormal(field *term.Field, termV *term.Term, property *mapping.Prop
 	}
 }
 
-func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+func (c *converter) convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	if !mapping.CheckStringType(property.Type) {
 		return nil, fmt.Errorf("type: %s, don't support regex query, expect text", property.Type)
 	}
@@ -320,8 +334,8 @@ func convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Prop
 
 }
 
-func convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
-	return luceneToAstNode(convertTermGroupToLucene(field, termV.TermGroup))
+func (c *converter) convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+	return c.luceneToAstNode(convertTermGroupToLucene(field, termV.TermGroup), property)
 }
 
 func convertTermGroupToLucene(field *term.Field, termGroup *term.TermGroup) *lucene.Lucene {

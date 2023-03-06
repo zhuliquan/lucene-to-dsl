@@ -814,7 +814,7 @@ func TestNodeOrMergeNode(t *testing.T) {
 						},
 					},
 				},
-				minimumShouldMatch: 1,
+				MinimumShouldMatch: 1,
 			},
 			wantErr: false,
 		},

@@ -39,8 +39,8 @@ func checkRestPathFlattenOk(path []string) bool {
 func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath []string, wildcard bool) map[string]*Property {
 	res := map[string]*Property{}
 	for cf, cp := range mpp {
-		
-		if !wildcard && len(res) > 0 { // normal field (no wildcard) find property need return 
+
+		if !wildcard && len(res) > 0 { // normal field (no wildcard) find property need return
 			break
 		}
 
@@ -79,6 +79,11 @@ func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath 
 			for p, subRes := range _getProperty(subProperties, index+idxInc, matchingPath, patternPath, wildcard) {
 				res[p] = subRes
 			}
+		}
+
+		if cp.Type == OBJECT_FIELD_TYPE || cp.Type == NESTED_FIELD_TYPE {
+			// object / nested
+			res[strings.Join(patternPath, ".")] = cp
 		}
 	}
 	return res

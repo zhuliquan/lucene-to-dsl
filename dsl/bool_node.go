@@ -14,7 +14,7 @@ type BoolNode struct {
 	Filter  map[string][]AstNode // filter
 	Should  map[string][]AstNode // should
 
-	minimumShouldMatch int
+	MinimumShouldMatch int
 }
 
 func getMinimumShouldMatch(opType OpType) int {
@@ -29,7 +29,7 @@ func newDefaultBoolNode(opType OpType) *BoolNode {
 	return &BoolNode{
 		opNode: opNode{opType: opType},
 
-		minimumShouldMatch: getMinimumShouldMatch(opType),
+		MinimumShouldMatch: getMinimumShouldMatch(opType),
 	}
 }
 
@@ -97,12 +97,12 @@ func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
 		orNode1 := &BoolNode{
 			opNode:             opNode{opType: OR},
 			Should:             n.MustNot,
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}
 		orNode2 := &BoolNode{
 			opNode:             opNode{opType: OR},
 			Should:             o.MustNot,
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}
 		andNode, err := orNode1.InterSect(orNode2)
 		if err != nil {
@@ -116,7 +116,7 @@ func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
 		Should: map[string][]AstNode{
 			OP_KEY: {n, o},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, nil
 
 }
@@ -131,7 +131,7 @@ func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 		return nil, err
 	} else {
 		n.Should[key] = nodes
-		n.minimumShouldMatch = 1
+		n.MinimumShouldMatch = 1
 	}
 	return ReduceAstNode(n), nil
 }
@@ -238,12 +238,12 @@ func boolNodeIntersectNotNode(n, o *BoolNode) (AstNode, error) {
 		orNode1 := &BoolNode{
 			opNode:             opNode{opType: OR},
 			Should:             n.MustNot,
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}
 		orNode2 := &BoolNode{
 			opNode:             opNode{opType: OR},
 			Should:             o.MustNot,
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}
 		orNode, err := orNode1.UnionJoin(orNode2)
 		if err != nil {
@@ -271,20 +271,20 @@ func boolNodeIntersectOrNode(n, o *BoolNode) (AstNode, error) {
 	if n.opType|OR != OR {
 		n.Should = o.Should
 		n.opType |= OR
-		n.minimumShouldMatch = 1
+		n.MinimumShouldMatch = 1
 		return n, nil
 	} else {
 		orNode1 := ReduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.Should,
 
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		})
 		orNode2 := ReduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: o.Should,
 
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		})
 		node := &BoolNode{
 			opNode:  opNode{opType: n.opType ^ OR},
@@ -362,7 +362,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,
 
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}), nil
 	case AND | NOT:
 		//    not (x1 and x2 and not x3 and not x4)
@@ -383,7 +383,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,
 
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}
 		return orNode.UnionJoin(notNode)
 	case OR | NOT:
@@ -395,7 +395,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 			opNode: opNode{opType: OR},
 			Should: n.Should,
 
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}).Inverse()
 		if err != nil {
 			return nil, err
@@ -405,7 +405,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,
 
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}
 		return orNode.UnionJoin(notNode)
 	default:
@@ -430,6 +430,6 @@ func (n *BoolNode) ToDSL() DSL {
 	if len(res) == 0 {
 		return EmptyDSL
 	}
-	res[MINIMUM_SHOULD_MATCH_KEY] = n.minimumShouldMatch
+	res[MINIMUM_SHOULD_MATCH_KEY] = n.MinimumShouldMatch
 	return DSL{BOOL_KEY: res}
 }

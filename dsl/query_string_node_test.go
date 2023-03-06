@@ -63,7 +63,7 @@ func TestQueryStringNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {node1, node3},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node5)
 
 	node5, err = node1.UnionJoin(node4)

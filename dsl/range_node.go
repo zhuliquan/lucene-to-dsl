@@ -150,7 +150,7 @@ func (n *RangeNode) Inverse() (AstNode, error) {
 			Should: map[string][]AstNode{
 				n.NodeKey(): {leftNode, rightNode},
 			},
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}, nil
 	} else if !isLeftInf {
 		return leftNode, nil
@@ -221,7 +221,7 @@ func rangeNodeUnionJoinRangeNode(n, t *RangeNode) (AstNode, error) {
 			Should: map[string][]AstNode{
 				n.NodeKey(): {n, t},
 			},
-			minimumShouldMatch: 1,
+			MinimumShouldMatch: 1,
 		}, nil
 	}
 	// compare left value of n and t, and get lower value, and cmp symbol is associate with lower value

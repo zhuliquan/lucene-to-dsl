@@ -77,7 +77,7 @@ func TestPrefixNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n3},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n7)
 
 	n7, err = n1.UnionJoin(n4)
@@ -99,7 +99,7 @@ func TestPrefixNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n2, n5},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n7)
 
 	n7, err = n2.UnionJoin(n6)
@@ -151,7 +151,7 @@ func TestPrefixNodeIntersectPrefixNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n3},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n4)
 
 	n4, err = n1.InterSect(n2)
@@ -169,7 +169,7 @@ func TestPrefixNodeIntersectPrefixNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n3},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n4)
 
 	var n5 = NewPrefixNode(NewKVNode(

@@ -48,7 +48,7 @@ func TestWildcardNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {node1, node3},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, node)
 
 }
@@ -92,7 +92,7 @@ func TestWildcardNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n3},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n7)
 
 	n7, err = n1.UnionJoin(n4)
@@ -114,7 +114,7 @@ func TestWildcardNodeMergeTermNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n2, n5},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n7)
 
 	n7, err = n2.UnionJoin(n6)
@@ -169,7 +169,7 @@ func TestWildcardNodeMergeWildcardNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n1, n2},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n5)
 
 	n5, err = n1.InterSect(n1)
@@ -191,7 +191,7 @@ func TestWildcardNodeMergeWildcardNode(t *testing.T) {
 		Should: map[string][]AstNode{
 			"foo": {n3, n4},
 		},
-		minimumShouldMatch: 1,
+		MinimumShouldMatch: 1,
 	}, n5)
 
 	n5, err = n3.InterSect(n3)

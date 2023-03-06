@@ -14,6 +14,7 @@ var (
 	mappingPath string
 	customFuncs map[string]mapping.ConvertFunc
 	onceInit    sync.Once
+	converter   convert.Converter
 )
 
 func LoadMappingPath(path string) {
@@ -30,7 +31,7 @@ func LuceneToDSL(luceneQuery string) (dsl.DSL, error) {
 			if pm, err := mapping.LoadMappingFile(mappingPath, customFuncs); err != nil {
 				panic(err)
 			} else {
-				convert.Init(pm)
+				converter = convert.NewConverter(pm)
 			}
 		},
 	)
@@ -49,7 +50,7 @@ func LuceneToDSL(luceneQuery string) (dsl.DSL, error) {
 		return nil, err
 	}
 
-	if nod, err = convert.LuceneToAstNode(qry); err != nil {
+	if nod, err = converter.LuceneToAstNode(qry); err != nil {
 		return nil, err
 	}
 

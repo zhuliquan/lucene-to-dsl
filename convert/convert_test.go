@@ -553,7 +553,8 @@ func TestConvertToGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := convertToGroup(tt.args.field, &term.Term{TermGroup: tt.args.termGroup}, tt.args.property)
+			cc := &converter{}
+			got, err := cc.convertToGroup(tt.args.field, &term.Term{TermGroup: tt.args.termGroup}, tt.args.property)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, (err != nil))
 		})
