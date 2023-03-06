@@ -18,7 +18,7 @@ type BoolNode struct {
 }
 
 func getMinimumShouldMatch(opType OpType) int {
-	if opType|OR == OR {
+	if opType&OR == OR {
 		return 1
 	} else {
 		return 0
@@ -153,7 +153,7 @@ func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
 func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 	var err error
 	var res AstNode = n
-	if o.opType|AND == AND {
+	if o.opType&AND == AND {
 		if res, err = boolNodeIntersectAndNode(n, o); err != nil {
 			return nil, err
 		}
@@ -162,7 +162,7 @@ func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 		}
 	}
 	n = res.(*BoolNode)
-	if o.opType|NOT == NOT {
+	if o.opType&NOT == NOT {
 		if res, err = boolNodeIntersectNotNode(n, o); err != nil {
 			return nil, err
 		}
@@ -172,7 +172,7 @@ func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 	}
 
 	n = res.(*BoolNode)
-	if o.opType|OR == OR {
+	if o.opType&OR == OR {
 		if res, err = boolNodeIntersectOrNode(n, o); err != nil {
 			return nil, err
 		}
@@ -230,7 +230,7 @@ func boolNodeIntersectAndNodes(n *BoolNode, nodesMap map[string][]AstNode) (AstN
 
 // and not x1 and not x2 and not y1 and not y2
 func boolNodeIntersectNotNode(n, o *BoolNode) (AstNode, error) {
-	if n.opType|NOT != NOT {
+	if n.opType&NOT != NOT {
 		n.MustNot = o.MustNot
 		n.opType |= NOT
 		return n, nil
@@ -254,7 +254,7 @@ func boolNodeIntersectNotNode(n, o *BoolNode) (AstNode, error) {
 			return nil, err
 		}
 		andNode := &BoolNode{
-			opNode: opNode{opType: n.opType ^ NOT | AND},
+			opNode: opNode{opType: n.opType & ^NOT | AND},
 			Must:   n.Must,
 			Filter: n.Filter,
 			Should: n.Should,
@@ -268,7 +268,7 @@ func boolNodeIntersectNotNode(n, o *BoolNode) (AstNode, error) {
 }
 
 func boolNodeIntersectOrNode(n, o *BoolNode) (AstNode, error) {
-	if n.opType|OR != OR {
+	if n.opType&OR != OR {
 		n.Should = o.Should
 		n.opType |= OR
 		n.MinimumShouldMatch = 1
@@ -287,7 +287,7 @@ func boolNodeIntersectOrNode(n, o *BoolNode) (AstNode, error) {
 			MinimumShouldMatch: 1,
 		})
 		node := &BoolNode{
-			opNode:  opNode{opType: n.opType ^ OR},
+			opNode:  opNode{opType: n.opType & ^OR},
 			Must:    n.Must,
 			Filter:  n.Filter,
 			MustNot: n.MustNot,

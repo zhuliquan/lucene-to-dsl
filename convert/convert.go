@@ -152,15 +152,15 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 
 func (c *converter) fieldQueryToAstNodeByProp(q *lucene.FieldQuery, property *mapping.Property) (dsl.AstNode, error) {
 	var termType = q.Term.GetTermType()
-	if termType|term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
+	if termType&term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
 		return c.convertToRange(q.Field, q.Term, property)
-	} else if termType|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
+	} else if termType&term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 		return c.convertToSingle(q.Field, q.Term, property)
-	} else if termType|term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
+	} else if termType&term.PHRASE_TERM_TYPE == term.PHRASE_TERM_TYPE {
 		return c.convertToPhrase(q.Field, q.Term, property)
-	} else if termType|term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
+	} else if termType&term.GROUP_TERM_TYPE == term.GROUP_TERM_TYPE {
 		return c.convertToGroup(q.Field, q.Term, property)
-	} else if termType|term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
+	} else if termType&term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
 		return c.convertToRegexp(q.Field, q.Term, property)
 	} else {
 		return nil, fmt.Errorf("con't convert term query: %s", q.String())
@@ -299,7 +299,7 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 			field, termV.String(), property.Type)
 
 	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
-		if termV.GetTermType()|term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
+		if termV.GetTermType()&term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 			return dsl.NewQueryStringNode(
 				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
 				dsl.WithBoost(termV.Boost()),
