@@ -15,7 +15,7 @@ func TestEmptyNode(t *testing.T) {
 	var otherNode2, _ = emptyNode.InterSect(emptyNode)
 	assert.Equal(t, emptyNode, otherNode2)
 	var otherNode3, _ = emptyNode.Inverse()
-	assert.Equal(t, emptyNode, otherNode3)
+	assert.Equal(t, &MatchAllNode{}, otherNode3)
 	assert.Equal(t, "", emptyNode.NodeKey())
 	assert.Equal(t, EmptyDSL, emptyNode.ToDSL())
 }
