@@ -576,3 +576,10 @@ func valueNodeIntersectValueNode(n, o AstNode) (AstNode, error) {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())
 	}
 }
+
+func checkCommonDslType(dslType DslType) bool {
+	return dslType == EXISTS_DSL_TYPE ||
+		dslType == BOOL_DSL_TYPE ||
+		dslType == MATCH_ALL_DSL_TYPE ||
+		dslType == EMPTY_DSL_TYPE
+}

@@ -30,9 +30,10 @@ func (n *PrefixNode) DslType() DslType {
 }
 
 func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.UnionJoin(n)
+	}
+	switch o.DslType() {
 	case TERM_DSL_TYPE:
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
 	case PREFIX_DSL_TYPE:
@@ -43,9 +44,10 @@ func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *PrefixNode) InterSect(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.InterSect(n)
+	}
+	switch o.DslType() {
 	case TERM_DSL_TYPE:
 		return patternNodeIntersectTermNode(n, o.(*TermNode))
 	case PREFIX_DSL_TYPE:

@@ -500,10 +500,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return false, nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToBool)
-			} else {
+			} else if termR.IsInf(1) {
 				return true, nil
+			} else {
+				return termR.Value(convertToBool)
 			}
 		} else {
 			return termV.Value(convertToBool)
@@ -515,10 +515,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinInt[bits], nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToInt(bits))
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxInt[bits], nil
+			} else {
+				return termR.Value(convertToInt(bits))
 			}
 		} else {
 			return termV.Value(convertToInt(bits))
@@ -528,10 +528,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinUint, nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToUInt(bits))
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxUint[bits], nil
+			} else {
+				return termR.Value(convertToUInt(bits))
 			}
 		} else {
 			return termV.Value(convertToUInt(bits))
@@ -543,10 +543,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinFloat[bits], nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToFloat(bits, property.ScalingFactor))
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxFloat[bits], nil
+			} else {
+				return termR.Value(convertToFloat(bits, property.ScalingFactor))
 			}
 		} else {
 			return termV.Value(convertToFloat(bits, property.ScalingFactor))
@@ -555,10 +555,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinIP, nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToIp)
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxIP, nil
+			} else {
+				return termR.Value(convertToIp)
 			}
 		} else {
 			return termV.Value(convertToIp)
@@ -568,10 +568,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinTime, nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToDate(dateParser))
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxTime, nil
+			} else {
+				return termR.Value(convertToDate(dateParser))
 			}
 		} else {
 			return termV.Value(convertToDate(dateParser))
@@ -580,10 +580,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinVersion, nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToVersion)
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxVersion, nil
+			} else {
+				return termR.Value(convertToVersion)
 			}
 		} else {
 			return termV.Value(convertToVersion)
@@ -592,10 +592,10 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinString, nil
-			} else if termR.IsInf(0) {
-				return termR.Value(convertToString)
-			} else {
+			} else if termR.IsInf(1) {
 				return dsl.MaxString, nil
+			} else {
+				return termR.Value(convertToString)
 			}
 		} else {
 			return termV.Value(convertToString)

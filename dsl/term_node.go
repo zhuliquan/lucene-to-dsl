@@ -23,8 +23,7 @@ func (n *TermNode) DslType() DslType {
 }
 
 func (n *TermNode) UnionJoin(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.UnionJoin(n)
 	}
 	if b, ok := o.(BoostNode); ok {
@@ -43,8 +42,7 @@ func (n *TermNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *TermNode) InterSect(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.InterSect(n)
 	}
 	if b, ok := o.(BoostNode); ok {

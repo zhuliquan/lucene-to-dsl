@@ -29,8 +29,7 @@ func (n *WildCardNode) DslType() DslType {
 }
 
 func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.UnionJoin(n)
 	}
 	if b, ok := o.(BoostNode); ok {
@@ -49,8 +48,7 @@ func (n *WildCardNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *WildCardNode) InterSect(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.InterSect(n)
 	}
 	if b, ok := o.(BoostNode); ok {

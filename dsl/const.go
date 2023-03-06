@@ -34,6 +34,7 @@ type DslType uint32
 
 const (
 	EMPTY_DSL_TYPE DslType = iota
+	MATCH_ALL_DSL_TYPE
 	BOOL_DSL_TYPE
 	IDS_DSL_TYPE
 	TERM_DSL_TYPE
@@ -238,6 +239,7 @@ const (
 	REGEXP_KEY = "regexp"
 
 	WILDCARD_KEY            = "wildcard"
+	MATCH_ALL_KEY           = "match_all"
 	QUERY_STRING_KEY        = "query_string"
 	MATCH_PHRASE_KEY        = "match_phrase"
 	MATCH_PHRASE_PREFIX_KEY = "match_phrase_prefix"

@@ -22,18 +22,20 @@ func NewQueryStringNode(kvNode *kvNode, opts ...func(AstNode)) *QueryStringNode 
 }
 
 func (n *QueryStringNode) UnionJoin(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.UnionJoin(n)
+	}
+	switch o.DslType() {
 	default:
 		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
 	}
 }
 
 func (n *QueryStringNode) InterSect(o AstNode) (AstNode, error) {
-	switch o.DslType() {
-	case EXISTS_DSL_TYPE, BOOL_DSL_TYPE:
+	if checkCommonDslType(o.DslType()) {
 		return o.InterSect(n)
+	}
+	switch o.DslType() {
 	default:
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
