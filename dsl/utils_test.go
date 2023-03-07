@@ -1054,3 +1054,57 @@ func TestMinEditDistance(t *testing.T) {
 		})
 	}
 }
+
+func TestRestAstNodes(t *testing.T) {
+	var n1 = &ExistsNode{fieldNode: fieldNode{field: "foo1"}}
+	var n2 = &ExistsNode{fieldNode: fieldNode{field: "foo2"}}
+	var n3 = &ExistsNode{fieldNode: fieldNode{field: "foo3"}}
+	type args struct {
+		nodes []AstNode
+		index int
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want1 AstNode
+		want2 []AstNode
+	}{
+		{
+			name:  "test_empty",
+			args:  args{nil, 1},
+			want1: nil,
+			want2: nil,
+		},
+		{
+			name:  "test_one",
+			args:  args{nodes: []AstNode{&EmptyNode{}}, index: 1},
+			want1: &EmptyNode{},
+			want2: []AstNode{},
+		},
+		{
+			name:  "test_three_nodes_get_first",
+			args:  args{nodes: []AstNode{n1, n2, n3}, index: 0},
+			want1: n1,
+			want2: []AstNode{n2, n3},
+		},
+		{
+			name:  "test_three_nodes_get_last",
+			args:  args{nodes: []AstNode{n1, n2, n3}, index: 2},
+			want1: n3,
+			want2: []AstNode{n1, n2},
+		},
+		{
+			name:  "test_three_nodes_get_mid",
+			args:  args{nodes: []AstNode{n1, n2, n3}, index: 1},
+			want1: n2,
+			want2: []AstNode{n1, n3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got1, got2 := restAstNodes(tt.args.nodes, tt.args.index)
+			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want2, got2)
+		})
+	}
+}

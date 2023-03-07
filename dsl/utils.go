@@ -416,38 +416,56 @@ func ReduceAstNode(x AstNode) AstNode {
 }
 
 func reduceAstNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc MergeMethodFunc) ([]AstNode, error) {
-	for before, first := nodes, true; ; first = false {
-		rest := before[:len(before)-1]
-		node := before[len(before)-1]
-		errs := []error{}
-		join := false
-
-		for i, n1 := range rest {
-			if n2, err := mergeMethodFunc(n1, node); err == nil {
-				if n2.AstType() != OP_NODE_TYPE { // merge two nodes into a single node as soon as possible
-					rest[i] = n2
-					join = true
-					break
-				}
-			} else {
-				errs = append(errs, err)
-			}
+	for before, first := nodes, true; ; {
+		var join bool
+		var node AstNode
+		var rest []AstNode
+		var lo, up = 0, len(before) - 1
+		if first {
+			lo = len(before) - 1
 		}
-
-		if !join {
-			if first {
-				if len(errs) == len(rest) && len(errs) > 0 { // all error for nodes merge with n0
-					return nil, fmt.Errorf("failed to %s node: %+v, errs: %+v", mergeMethodName, node, errs)
+		for k := up; k >= lo; k-- {
+			node, rest = restAstNodes(before, k)
+			for i, n1 := range rest {
+				if n2, err := mergeMethodFunc(n1, node); err == nil {
+					if n2.AstType() != OP_NODE_TYPE { // merge two nodes into a single node as soon as possible
+						rest[i] = n2
+						join = true
+						goto check
+					}
 				} else {
-					rest = append(rest, node)
+					return nil, fmt.Errorf("failed to %s node: %v, err: %+v", mergeMethodName, node, err)
 				}
-			} else {
-				rest = append(rest, node)
 			}
-			return rest, nil
 		}
+	check:
+		if !join {
+			return before, nil
+		} else {
+			first = false
+			before = rest // loop find any other node which can be merge with n0
+		}
+	}
+}
 
-		before = rest // loop find any other node which can be merge with n0
+// split node[i] from nodes
+func restAstNodes(nodes []AstNode, index int) (AstNode, []AstNode) {
+	if len(nodes) == 0 {
+		return nil, nil
+	}
+
+	var n = len(nodes)
+	if index < 0 {
+		return nodes[0], nodes[1:]
+	} else if index < n {
+		var res1 = nodes[index]
+		// NOTE: not use `append(nodes[:index],nodes[index+1:]...)`, because it can modify nodes
+		var res2 = make([]AstNode, 0, n-1)
+		res2 = append(res2, nodes[:index]...)
+		res2 = append(res2, nodes[index+1:]...)
+		return res1, res2
+	} else {
+		return nodes[n-1], nodes[:n-1]
 	}
 }
 
