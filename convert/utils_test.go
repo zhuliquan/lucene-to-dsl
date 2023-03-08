@@ -205,7 +205,7 @@ func TestConvertToFloat(t *testing.T) {
 
 func TestConvertToDate(t *testing.T) {
 	type args struct {
-		floatValue string
+		timeValue string
 	}
 	tests := []struct {
 		name    string
@@ -234,8 +234,11 @@ func TestConvertToDate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var f = convertToDate(&datemath_parser.DateMathParser{})
-			got, err := f(tt.args.floatValue)
+			property := &mapping.Property{
+				Format: "yyyy-MM-dd'T'HH:mm:ss'Z'",
+			}
+			var f = convertToDate(property)
+			got, err := f(tt.args.timeValue)
 			assert.Equal(t, tt.wantErr, (err != nil))
 			assert.Equal(t, tt.want, got)
 		})
@@ -634,55 +637,55 @@ func TestGetDateRange(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  args
-		want  time.Time
 		want1 time.Time
+		want2 time.Time
 	}{
 		{
 			name: "split_date_01",
 			args: args{
 				t: time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
 			},
-			want:  time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
 			want1: time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
+			want2: time.Date(1900, time.February, 2, 2, 2, 2, 2, time.UTC),
 		},
 		{
 			name: "split_date_02",
 			args: args{
 				t: time.Date(1900, time.February, 2, 2, 2, 2, 0, time.UTC),
 			},
-			want:  time.Date(1900, time.February, 2, 2, 2, 2, 0, time.UTC),
-			want1: time.Date(1900, time.February, 2, 2, 2, 2, 999999999, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 2, 2, 0, time.UTC),
+			want2: time.Date(1900, time.February, 2, 2, 2, 2, 999999999, time.UTC),
 		},
 		{
 			name: "split_date_03",
 			args: args{
 				t: time.Date(1900, time.February, 2, 2, 2, 0, 0, time.UTC),
 			},
-			want:  time.Date(1900, time.February, 2, 2, 2, 0, 0, time.UTC),
-			want1: time.Date(1900, time.February, 2, 2, 2, 59, 999999999, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 2, 0, 0, time.UTC),
+			want2: time.Date(1900, time.February, 2, 2, 2, 59, 999999999, time.UTC),
 		},
 		{
 			name: "split_date_04",
 			args: args{
 				t: time.Date(1900, time.February, 2, 2, 0, 0, 0, time.UTC),
 			},
-			want:  time.Date(1900, time.February, 2, 2, 0, 0, 0, time.UTC),
-			want1: time.Date(1900, time.February, 2, 2, 59, 59, 999999999, time.UTC),
+			want1: time.Date(1900, time.February, 2, 2, 0, 0, 0, time.UTC),
+			want2: time.Date(1900, time.February, 2, 2, 59, 59, 999999999, time.UTC),
 		},
 		{
 			name: "split_date_05",
 			args: args{
 				t: time.Date(1900, time.February, 2, 0, 0, 0, 0, time.UTC),
 			},
-			want:  time.Date(1900, time.February, 2, 0, 0, 0, 0, time.UTC),
-			want1: time.Date(1900, time.February, 2, 23, 59, 59, 999999999, time.UTC),
+			want1: time.Date(1900, time.February, 2, 0, 0, 0, 0, time.UTC),
+			want2: time.Date(1900, time.February, 2, 23, 59, 59, 999999999, time.UTC),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := getDateRange(tt.args.t)
-			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, got)
+			assert.Equal(t, tt.want2, got1)
 		})
 	}
 
@@ -710,6 +713,7 @@ func TestGetDateParserFromMapping(t *testing.T) {
 				Formats: []string{
 					"yyyy-MM-ddTHH:mm:ss.SSSSSSZ", "yyyy-MM-dd", "epoch_millis",
 				},
+				TimeZone: time.UTC,
 			},
 		},
 		{
@@ -723,6 +727,7 @@ func TestGetDateParserFromMapping(t *testing.T) {
 				Formats: []string{
 					"yyyy-MM-ddTHH:mm:ss.SSSZ", "yyyy-MM-dd", "epoch_millis",
 				},
+				TimeZone: time.UTC,
 			},
 		},
 		{
@@ -737,6 +742,7 @@ func TestGetDateParserFromMapping(t *testing.T) {
 				Formats: []string{
 					"yyyy-MM-dd", "xxxx-DDD", "epoch_millis",
 				},
+				TimeZone: time.UTC,
 			},
 		},
 	}

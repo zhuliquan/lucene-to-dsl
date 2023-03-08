@@ -73,9 +73,30 @@ func convertToFloat(bits int, scalingFactor float64) convertFunc {
 }
 
 // parse date math expr
-func convertToDate(parser *datemath_parser.DateMathParser) convertFunc {
+func convertToDate(property *mapping.Property) convertFunc {
 	return func(s string) (interface{}, error) {
+		var parser = getDateParserFromMapping(property)
 		return parser.Parse(s)
+	}
+}
+
+type dateRange struct {
+	from time.Time
+	to   time.Time
+}
+
+// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
+func convertToDateRange(property *mapping.Property) convertFunc {
+	return func(s string) (interface{}, error) {
+		var parser = getDateParserFromMapping(property)
+		d, err := parser.Parse(s)
+		if err != nil {
+			return nil, err
+		}
+		var from, to = getDateRange(d)
+		return &dateRange{
+			from: from, to: to,
+		}, nil
 	}
 }
 
@@ -159,9 +180,9 @@ func getDateRange(t time.Time) (time.Time, time.Time) {
 	if dateArr[3] != 0 {
 		return t, time.Date(dateArr[0], month, dateArr[2], dateArr[3], maxMinute, maxSecond, maxNano, location)
 	}
-	// if dateArr[2] != 1 {
-	// 	return t, time.Date(dateArr[0], month, getMonthDay(dateArr[0], month), maxHour, maxMinute, maxSecond, maxNano, location)
-	// }
+	if dateArr[2] != 1 {
+		return t, time.Date(dateArr[0], month, dateArr[2], maxHour, maxMinute, maxSecond, maxNano, location)
+	}
 	// if dateArr[1] != 1 {
 	// 	return t, time.Date(dateArr[0], time.December, getMonthDay(dateArr[0], time.December), maxHour, maxMinute, maxSecond, maxNano, location)
 	// }
