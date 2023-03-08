@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"net"
 	"regexp"
-	"time"
 
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
-
 	lucene "github.com/zhuliquan/lucene_parser"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
@@ -127,11 +125,15 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 	} else if q.Field == nil || q.Term == nil {
 		return nil, ErrEmptyFieldQuery
 	}
+	var field = q.Field.String()
+	if q.Field.String() == EXIST_FIELD {
+		field = q.Term.String()
+	}
 	var props []*mapping.Property
 	if len(pp) == 0 {
-		props := c.mp.GetProperty(q.Field.String())
+		props := c.mp.GetProperty(field)
 		if len(props) == 0 {
-			return nil, fmt.Errorf("field: %s don't match any es mapping", q.Field.String())
+			return nil, fmt.Errorf("field: %s don't match any es mapping", field)
 		}
 	} else {
 		props = append(props, pp...)
@@ -218,6 +220,9 @@ func (c *converter) convertToRange(field *term.Field, termV *term.Term, property
 
 func (c *converter) convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
+	if strVal.(string) == "*" && field.String() == "*" {
+		return &dsl.MatchAllNode{}, nil
+	}
 	if strVal.(string) == "*" {
 		return dsl.NewExistsNode(
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
@@ -247,6 +252,8 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 			), nil
 		}
 	}
+	// trick for _exist_
+
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE,
 		mapping.BYTE_FIELD_TYPE, mapping.SHORT_FIELD_TYPE,
@@ -266,17 +273,15 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 			), nil
 		}
 	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
-		var dateParser = getDateParserFromMapping(property)
-		if d, err := termV.Value(convertToDate(dateParser)); err != nil {
+		if dr, err := termV.Value(convertToDateRange(property)); err != nil {
 			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
 		} else {
-			// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
-			var lowerDate, upperDate = getDateRange(d.(time.Time))
+			var dateRange = dr.(*dateRange)
 			return dsl.NewRangeNode(
 				dsl.NewRgNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 					dsl.NewValueType(property.Type, true),
-					lowerDate, upperDate, dsl.GTE, dsl.LTE,
+					dateRange.from, dateRange.to, dsl.GTE, dsl.LTE,
 				),
 				dsl.WithBoost(termV.Boost()),
 			), nil
@@ -564,17 +569,16 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 			return termV.Value(convertToIp)
 		}
 	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
-		var dateParser = getDateParserFromMapping(property)
 		if termR, ok := termV.(rangeValue); ok {
 			if termR.IsInf(-1) {
 				return dsl.MinTime, nil
 			} else if termR.IsInf(1) {
 				return dsl.MaxTime, nil
 			} else {
-				return termR.Value(convertToDate(dateParser))
+				return termR.Value(convertToDate(property))
 			}
 		} else {
-			return termV.Value(convertToDate(dateParser))
+			return termV.Value(convertToDate(property))
 		}
 	case mapping.VERSION_FIELD_TYPE:
 		if termR, ok := termV.(rangeValue); ok {
