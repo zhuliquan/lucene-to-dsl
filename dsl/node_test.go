@@ -14,18 +14,18 @@ func TestOpNode(t *testing.T) {
 	assert.Equal(t, OP_NODE_TYPE, n.AstType())
 	assert.Equal(t, OR, n.OpType())
 	WithFilterCtx(true)(n)
-	assert.Equal(t, true, n.getFilterCtx())
+	assert.Equal(t, true, n.GetFilterCtx())
 	WithFilterCtx(false)(n)
-	assert.Equal(t, false, n.getFilterCtx())
+	assert.Equal(t, false, n.GetFilterCtx())
 }
 
 func TestLeafNode(t *testing.T) {
 	var n = NewLfNode()
 	assert.Equal(t, LEAF_NODE_TYPE, n.AstType())
 	WithFilterCtx(true)(n)
-	assert.Equal(t, true, n.getFilterCtx())
+	assert.Equal(t, true, n.GetFilterCtx())
 	WithFilterCtx(false)(n)
-	assert.Equal(t, false, n.getFilterCtx())
+	assert.Equal(t, false, n.GetFilterCtx())
 }
 
 func TestFieldNode(t *testing.T) {
@@ -36,9 +36,9 @@ func TestFieldNode(t *testing.T) {
 func TestValueNode(t *testing.T) {
 	var n = NewValueNode("12", NewValueType(mapping.KEYWORD_FIELD_TYPE, true))
 	assert.Equal(t, "12", n.toPrintValue())
-	assert.Equal(t, true, n.isArrayType())
+	assert.Equal(t, true, n.IsArrayType())
 	WithArrayType(false)(n)
-	assert.Equal(t, false, n.isArrayType())
+	assert.Equal(t, false, n.IsArrayType())
 
 	n = NewValueNode(net.IP([]byte{1, 1, 1, 1}), NewValueType(mapping.IP_FIELD_TYPE, true))
 	assert.Equal(t, "1.1.1.1", n.toPrintValue())

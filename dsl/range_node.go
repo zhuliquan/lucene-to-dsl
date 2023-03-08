@@ -278,7 +278,7 @@ func unionCmpRight(n, t, dst *RangeNode) {
 func rangeNodeIntersectTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 	if checkRangeInclude(n, t.value) {
 		return t, nil
-	} else if n.isArrayType() {
+	} else if n.IsArrayType() {
 		return lfNodeIntersectLfNode(n.NodeKey(), n, t)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), t.ToDSL())
@@ -288,7 +288,7 @@ func rangeNodeIntersectTermNode(n *RangeNode, t *TermNode) (AstNode, error) {
 func rangeNodeIntersectRangeNode(n, t *RangeNode) (AstNode, error) {
 	// first check have range overlap zone
 	if !checkRangeOverlap(n, t) {
-		if n.isArrayType() {
+		if n.IsArrayType() {
 			return lfNodeIntersectLfNode(n.NodeKey(), n, t)
 		} else {
 			return nil, fmt.Errorf("range node: %s can't intersect with range node: %s, no overlap between two range", n.ToDSL(), t.ToDSL())

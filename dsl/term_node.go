@@ -75,7 +75,7 @@ func termNodeUnionJoinTermNode(n, o *TermNode) (AstNode, error) {
 func termNodeIntersectTermNode(n, o *TermNode) (AstNode, error) {
 	if CompareAny(o.value, n.value, n.mType) == 0 {
 		return o, nil
-	} else if n.isArrayType() {
+	} else if n.IsArrayType() {
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.ToDSL(), o.ToDSL())

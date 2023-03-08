@@ -91,7 +91,7 @@ func prefixNodeIntersectPrefixNode(n, o *PrefixNode) (AstNode, error) {
 		return n, nil
 	} else if strings.HasPrefix(prefixO, prefixN) {
 		return o, nil
-	} else if n.isArrayType() {
+	} else if n.IsArrayType() {
 		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: prefix value is conflict", n.ToDSL(), o.ToDSL())

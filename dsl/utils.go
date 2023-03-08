@@ -358,12 +358,12 @@ func lfNodeIntersectLfNode(key string, a, b AstNode) (AstNode, error) {
 	bf := b.(FilterCtxNode)
 	var mustNodes = map[string][]AstNode{key: {}}
 	var filterNodes = map[string][]AstNode{key: {}}
-	if af.getFilterCtx() {
+	if af.GetFilterCtx() {
 		filterNodes[key] = append(filterNodes[key], a)
 	} else {
 		mustNodes[key] = append(mustNodes[key], a)
 	}
-	if bf.getFilterCtx() {
+	if bf.GetFilterCtx() {
 		filterNodes[key] = append(filterNodes[key], b)
 	} else {
 		mustNodes[key] = append(mustNodes[key], b)
@@ -566,7 +566,7 @@ func patternNodeUnionJoinTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 func patternNodeIntersectTermNode(n PatternNode, o *TermNode) (AstNode, error) {
 	if n.Match([]byte(o.value.(string))) {
 		return o, nil
-	} else if n.(ArrayTypeNode).isArrayType() {
+	} else if n.(ArrayTypeNode).IsArrayType() {
 		return lfNodeIntersectLfNode(o.NodeKey(), n.(AstNode), o)
 	} else {
 		return nil, fmt.Errorf("failed to intersect %v and %v, err: value is conflict", n.(AstNode).ToDSL(), o.ToDSL())

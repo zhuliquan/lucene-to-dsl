@@ -176,13 +176,13 @@ func (n *slopNode) setSlop(slop int) {
 
 // indicate whether does dsl query use filter context
 type FilterCtxNode interface {
-	setFilterCtx(filterCtx bool)
-	getFilterCtx() bool
+	SetFilterCtx(filterCtx bool)
+	GetFilterCtx() bool
 }
 
 func WithFilterCtx(filterCtx bool) func(FilterCtxNode) {
 	return func(n FilterCtxNode) {
-		n.setFilterCtx(filterCtx)
+		n.SetFilterCtx(filterCtx)
 	}
 }
 
@@ -190,12 +190,16 @@ type filterCtxNode struct {
 	filterCtx bool // whether node is filter ctx
 }
 
-func (n *filterCtxNode) getFilterCtx() bool {
+func (n *filterCtxNode) GetFilterCtx() bool {
 	return n.filterCtx
 }
 
-func (n *filterCtxNode) setFilterCtx(filterCtx bool) {
+func (n *filterCtxNode) SetFilterCtx(filterCtx bool) {
 	n.filterCtx = filterCtx
+}
+
+type OpNode interface {
+	OpType() OpType
 }
 
 type opNode struct {
@@ -238,6 +242,10 @@ func (n *lfNode) AstType() AstType {
 	return LEAF_NODE_TYPE
 }
 
+type FieldNode interface {
+	Field() string
+}
+
 type fieldNode struct {
 	lfNode
 	field string
@@ -250,8 +258,12 @@ func NewFieldNode(lfNode *lfNode, field string) *fieldNode {
 	}
 }
 
-func (n *fieldNode) NodeKey() string {
+func (n *fieldNode) Field() string {
 	return n.field
+}
+
+func (n *fieldNode) NodeKey() string {
+	return n.Field()
 }
 
 type ValueNode interface {
@@ -283,17 +295,39 @@ func (v *valueNode) toPrintValue() interface{} {
 	return leafValueToPrintValue(v.value, v.mType)
 }
 
+type KVNode interface {
+	Field() FieldNode
+	Value() ValueNode
+}
+
 // Key value node
 type kvNode struct {
 	fieldNode
 	valueNode
 }
 
-func NewKVNode(fieldNode *fieldNode, value *valueNode) *kvNode {
+func NewKVNode(field *fieldNode, value *valueNode) *kvNode {
 	return &kvNode{
-		fieldNode: *fieldNode,
+		fieldNode: *field,
 		valueNode: *value,
 	}
+}
+
+func (k *kvNode) Field() FieldNode {
+	return &k.fieldNode
+}
+
+func (k *kvNode) Value() ValueNode {
+	return &k.valueNode
+}
+
+type RGNode interface {
+	Field() FieldNode
+	ValueType() ValueType
+	RValue() LeafValue
+	LValue() LeafValue
+	LCmpSym() CompareType
+	RCmpSym() CompareType
 }
 
 type rgNode struct {
@@ -314,6 +348,30 @@ func NewRgNode(fieldNode *fieldNode, valueType *valueType, lValue, rValue LeafVa
 		lCmpSym:   lCmpSym,
 		rCmpSym:   rCmpSym,
 	}
+}
+
+func (r *rgNode) Field() FieldNode {
+	return &r.fieldNode
+}
+
+func (r *rgNode) ValueType() ValueType {
+	return &r.valueType
+}
+
+func (r *rgNode) RValue() LeafValue {
+	return r.rValue
+}
+
+func (r *rgNode) LValue() LeafValue {
+	return r.lValue
+}
+
+func (r *rgNode) LCmpSym() CompareType {
+	return r.lCmpSym
+}
+
+func (r *rgNode) RCmpSym() CompareType {
+	return r.lCmpSym
 }
 
 type PatternNode interface {

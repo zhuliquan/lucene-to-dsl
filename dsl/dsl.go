@@ -25,8 +25,13 @@ type LeafValue interface{}
 
 // indicate whether is node array data type
 type ArrayTypeNode interface {
-	isArrayType() bool
-	setArrayType(arrayType bool)
+	IsArrayType() bool
+	SetArrayType(arrayType bool)
+}
+
+type ValueType interface {
+	ArrayTypeNode
+	FieldTypeNode() mapping.FieldType
 }
 
 type valueType struct {
@@ -36,7 +41,7 @@ type valueType struct {
 
 func WithArrayType(isArrayType bool) func(ArrayTypeNode) {
 	return func(n ArrayTypeNode) {
-		n.setArrayType(isArrayType)
+		n.SetArrayType(isArrayType)
 	}
 }
 
@@ -47,12 +52,16 @@ func NewValueType(mType mapping.FieldType, isArrayType bool) *valueType {
 	}
 }
 
-func (v *valueType) isArrayType() bool {
+func (v *valueType) IsArrayType() bool {
 	return v.aType
 }
 
-func (v *valueType) setArrayType(isArrayType bool) {
+func (v *valueType) SetArrayType(isArrayType bool) {
 	v.aType = isArrayType
+}
+
+func (v *valueType) FieldTypeNode() mapping.FieldType {
+	return v.mType
 }
 
 var EmptyValue LeafValue = nil

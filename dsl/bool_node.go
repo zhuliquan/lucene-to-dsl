@@ -37,7 +37,7 @@ func NewBoolNode(node AstNode, opType OpType) AstNode {
 	boolNode := newDefaultBoolNode(opType)
 	switch opType {
 	case AND:
-		if filterCtxNode, ok := node.(FilterCtxNode); ok && filterCtxNode.getFilterCtx() {
+		if filterCtxNode, ok := node.(FilterCtxNode); ok && filterCtxNode.GetFilterCtx() {
 			boolNode.Filter = map[string][]AstNode{node.NodeKey(): {node}}
 		} else {
 			boolNode.Must = map[string][]AstNode{node.NodeKey(): {node}}
@@ -304,7 +304,7 @@ func boolNodeIntersectOrNode(n, o *BoolNode) (AstNode, error) {
 
 func boolNodeIntersectLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 	n.opType |= AND
-	if filterNode, ok := x.(FilterCtxNode); ok && filterNode.getFilterCtx() {
+	if filterNode, ok := x.(FilterCtxNode); ok && filterNode.GetFilterCtx() {
 		return boolNodeIntersectFilterLeafNode(n, x)
 	} else {
 		return boolNodeIntersectMustLeafNode(n, x)
