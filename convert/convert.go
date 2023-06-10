@@ -8,6 +8,7 @@ import (
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	"github.com/zhuliquan/lucene_parser"
 	lucene "github.com/zhuliquan/lucene_parser"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
@@ -125,10 +126,15 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 	} else if q.Field == nil || q.Term == nil {
 		return nil, ErrEmptyFieldQuery
 	}
+
 	var field = q.Field.String()
 	if q.Field.String() == EXIST_FIELD {
 		field = q.Term.String()
 	}
+	if field == "*" && q.Term.String() == "*" {
+		return &dsl.MatchAllNode{}, nil
+	}
+
 	var props []*mapping.Property
 	if len(pp) == 0 {
 		props := c.mp.GetProperty(field)
@@ -141,12 +147,12 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 
 	var res dsl.AstNode = &dsl.EmptyNode{}
 	for _, prop := range props {
-		if node, err := c.fieldQueryToAstNodeByProp(q, prop); err != nil {
+		node, err := c.fieldQueryToAstNodeByProp(q, prop)
+		if err != nil {
 			return nil, err
-		} else {
-			if res, err = res.UnionJoin(node); err != nil {
-				return nil, err
-			}
+		}
+		if res, err = res.UnionJoin(node); err != nil {
+			return nil, err
 		}
 	}
 	return res, nil
@@ -220,9 +226,6 @@ func (c *converter) convertToRange(field *term.Field, termV *term.Term, property
 
 func (c *converter) convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
-	if strVal.(string) == "*" && field.String() == "*" {
-		return &dsl.MatchAllNode{}, nil
-	}
 	if strVal.(string) == "*" {
 		return dsl.NewExistsNode(
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
@@ -243,16 +246,12 @@ func (c *converter) convertToPhrase(field *term.Field, termV *term.Term, propert
 
 func (c *converter) convertToNormal(field *term.Field, termV *term.Term, property *mapping.Property, strVal string) (dsl.AstNode, error) {
 	// trick for id
-	if field.String() == "_id" {
-		if strLst, err := termV.Value(toStrLst); err != nil {
-			return nil, err
-		} else {
-			return dsl.NewIdsNode(
-				dsl.NewLfNode(), strLst.([]string),
-			), nil
-		}
+	if field.String() == ID_FIELD {
+		strLst, _ := termV.Value(toStrLst)
+		return dsl.NewIdsNode(
+			dsl.NewLfNode(), strLst.([]string),
+		), nil
 	}
-	// trick for _exist_
 
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE,
@@ -272,6 +271,7 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 				dsl.WithBoost(termV.Boost()),
 			), nil
 		}
+
 	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
 		if dr, err := termV.Value(convertToDateRange(property)); err != nil {
 			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
@@ -340,163 +340,7 @@ func (c *converter) convertToRegexp(field *term.Field, termV *term.Term, propert
 }
 
 func (c *converter) convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
-	return c.luceneToAstNode(convertTermGroupToLucene(field, termV.TermGroup), property)
-}
-
-func convertTermGroupToLucene(field *term.Field, termGroup *term.TermGroup) *lucene.Lucene {
-	if termGroup == nil {
-		return nil
-	} else {
-		return convertLogicTermGroupToLucene(field, termGroup.LogicTermGroup, termGroup.BoostSymbol)
-	}
-}
-
-func convertLogicTermGroupToLucene(field *term.Field, termGroup *term.LogicTermGroup, boostSymbol string) *lucene.Lucene {
-	if termGroup == nil {
-		return nil
-	} else {
-		var q = &lucene.Lucene{}
-		q.OrQuery = convertOrGroupToOrQuery(field, termGroup.OrTermGroup, boostSymbol)
-		if q.OrQuery == nil {
-			return nil
-		}
-		for _, osGroup := range termGroup.OSTermGroup {
-			if t := convertOsGroupToOsQuery(field, osGroup, boostSymbol); t != nil {
-				q.OSQuery = append(q.OSQuery, t)
-			}
-		}
-		return q
-	}
-}
-
-func convertOsGroupToOsQuery(field *term.Field, osGroup *term.OSTermGroup, boostSymbol string) *lucene.OSQuery {
-	if osGroup == nil {
-		return nil
-	} else {
-		if t := convertOrGroupToOrQuery(field, osGroup.OrTermGroup, boostSymbol); t != nil {
-			return &lucene.OSQuery{
-				OrSymbol: osGroup.OrSymbol,
-				OrQuery:  t,
-			}
-		} else {
-			return nil
-		}
-	}
-}
-
-func convertOrGroupToOrQuery(field *term.Field, orGroup *term.OrTermGroup, boostSymbol string) *lucene.OrQuery {
-	if orGroup == nil {
-		return nil
-	} else {
-		var q = &lucene.OrQuery{}
-		q.AndQuery = convertAndGroupToAndQuery(field, orGroup.AndTermGroup, boostSymbol)
-		if q.AndQuery == nil {
-			return nil
-		}
-
-		for _, ansGroup := range orGroup.AnSTermGroup {
-			if t := convertAnsGroupToAnsQuery(field, ansGroup, boostSymbol); t != nil {
-				q.AnSQuery = append(q.AnSQuery, t)
-			}
-		}
-		return q
-	}
-}
-
-func convertAnsGroupToAnsQuery(field *term.Field, ansGroup *term.AnSTermGroup, boostSymbol string) *lucene.AnSQuery {
-	if ansGroup == nil {
-		return nil
-	} else {
-		if t := convertAndGroupToAndQuery(field, ansGroup.AndTermGroup, boostSymbol); t != nil {
-			return &lucene.AnSQuery{
-				AndSymbol: ansGroup.AndSymbol,
-				AndQuery:  t,
-			}
-		} else {
-			return nil
-		}
-	}
-}
-
-func convertAndGroupToAndQuery(field *term.Field, andGroup *term.AndTermGroup, boostSymbol string) *lucene.AndQuery {
-	if andGroup == nil {
-		return nil
-	} else if andGroup.TermGroupElem != nil {
-		if t := convertGroupElemToFieldTerm(field, andGroup.TermGroupElem, boostSymbol); t != nil {
-			return &lucene.AndQuery{
-				NotSymbol:  andGroup.NotSymbol,
-				FieldQuery: t,
-			}
-		} else {
-			return nil
-		}
-	} else if andGroup.ParenTermGroup != nil {
-		if t := convertParenTermGroupToParentTerm(field, andGroup.ParenTermGroup, boostSymbol); t != nil {
-			return &lucene.AndQuery{
-				NotSymbol:  andGroup.NotSymbol,
-				ParenQuery: t,
-			}
-		} else {
-			return nil
-		}
-	} else {
-		return nil
-	}
-}
-
-func convertParenTermGroupToParentTerm(field *term.Field, parentTermGroup *term.ParenTermGroup, boostSymbol string) *lucene.ParenQuery {
-	if t := convertLogicTermGroupToLucene(field, parentTermGroup.SubTermGroup, boostSymbol); t != nil {
-		return &lucene.ParenQuery{SubQuery: t}
-	} else {
-		return nil
-	}
-}
-
-func convertGroupElemToFieldTerm(field *term.Field, groupElem *term.TermGroupElem, boostSymbol string) *lucene.FieldQuery {
-	// it's impossible for groupElem is nil
-	if groupElem.SingleTerm != nil {
-		return &lucene.FieldQuery{
-			Field: field,
-			Term: &term.Term{
-				FuzzyTerm: &term.FuzzyTerm{
-					SingleTerm:  groupElem.SingleTerm,
-					BoostSymbol: boostSymbol,
-				},
-			},
-		}
-	} else if groupElem.PhraseTerm != nil {
-		return &lucene.FieldQuery{
-			Field: field,
-			Term: &term.Term{
-				FuzzyTerm: &term.FuzzyTerm{
-					PhraseTerm:  groupElem.PhraseTerm,
-					BoostSymbol: boostSymbol,
-				},
-			},
-		}
-	} else if groupElem.SRangeTerm != nil {
-		return &lucene.FieldQuery{
-			Field: field,
-			Term: &term.Term{
-				RangeTerm: &term.RangeTerm{
-					SRangeTerm:  groupElem.SRangeTerm,
-					BoostSymbol: boostSymbol,
-				},
-			},
-		}
-	} else if groupElem.DRangeTerm != nil {
-		return &lucene.FieldQuery{
-			Field: field,
-			Term: &term.Term{
-				RangeTerm: &term.RangeTerm{
-					DRangeTerm:  groupElem.DRangeTerm,
-					BoostSymbol: boostSymbol,
-				},
-			},
-		}
-	} else {
-		return nil
-	}
+	return c.luceneToAstNode(lucene_parser.TermGroupToLucene(field, termV.TermGroup), property)
 }
 
 func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.LeafValue, error) {

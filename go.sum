@@ -34,8 +34,8 @@ github.com/zhuliquan/datemath_parser v0.0.9 h1:9Rn67ByjZhfVWdFgZX7spGsH6uJhE6fQZ
 github.com/zhuliquan/datemath_parser v0.0.9/go.mod h1:GYI3tJu799jNhsHXk7dBcmg/tZvUSfRtlnwgAuZdr7o=
 github.com/zhuliquan/go_tools v0.0.1 h1:8BcMk/g149E0PvSy22sU6z/Jx9l4f9O0go9xBjuhmKQ=
 github.com/zhuliquan/go_tools v0.0.1/go.mod h1:/Qd2LGMjBVRAQcBdy39PXxKNpRYt/NHFeP0HCPMWfCg=
-github.com/zhuliquan/lucene_parser v0.0.5 h1:q8MKHTMhShZO0Hm+zLmRcGG0q2zmRdWtrxwWZxucmcA=
-github.com/zhuliquan/lucene_parser v0.0.5/go.mod h1:fhUtDAAhQarNHOiWYVG6LYMzEYz4EcQ+FJXh7/fi6L4=
+github.com/zhuliquan/lucene_parser v0.3.0 h1:DIUK7lCnqIjwJJ4wMnhNjGMEq3+xLP35vEXMH39N/60=
+github.com/zhuliquan/lucene_parser v0.3.0/go.mod h1:fhUtDAAhQarNHOiWYVG6LYMzEYz4EcQ+FJXh7/fi6L4=
 github.com/zhuliquan/scaled_float v0.0.2 h1:O5ht6/Ck1TGzV8jYiEoBqWOql+DEhewBD500zx6jZTU=
 github.com/zhuliquan/scaled_float v0.0.2/go.mod h1:iRz+gaUzIV63myaq5fk5ByetDXlEnWI5CMxAMk+HhYQ=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=

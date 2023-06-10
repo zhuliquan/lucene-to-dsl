@@ -8,6 +8,6 @@ require (
 	github.com/x448/float16 v0.8.4
 	github.com/zhuliquan/datemath_parser v0.0.9
 	github.com/zhuliquan/go_tools v0.0.1
-	github.com/zhuliquan/lucene_parser v0.0.5
+	github.com/zhuliquan/lucene_parser v0.3.0
 	github.com/zhuliquan/scaled_float v0.0.2
 )

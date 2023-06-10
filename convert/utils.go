@@ -48,27 +48,29 @@ func convertToUInt(bits int) convertFunc {
 // convert to float value
 func convertToFloat(bits int, scalingFactor float64) convertFunc {
 	return func(floatValue string) (interface{}, error) {
-		if bits == 16 {
-			if f, err := strconv.ParseFloat(floatValue, 32); err != nil {
-				return nil, err
-			} else if f32 := float32(f); dsl.MinFloat16.Float32() > f32 || dsl.MaxFloat16.Float32() < f32 {
-				return nil, strconv.ErrRange
-			} else {
-				return float16.Fromfloat32(f32), nil
-			}
-		} else if bits == 128 {
-			if f, err := scaled_float.NewFromString(floatValue, scalingFactor); err != nil {
-				return nil, err
-			} else {
-				return f, nil
-			}
+		if v, err := strconv.ParseFloat(floatValue, bits); err != nil {
+			return nil, err
 		} else {
-			if v, err := strconv.ParseFloat(floatValue, bits); err != nil {
-				return nil, err
-			} else {
-				return v, nil
-			}
+			return v, nil
 		}
+	}
+}
+
+func convertToFloat16(floatValue string) (interface{}, error) {
+	if f, err := strconv.ParseFloat(floatValue, 32); err != nil {
+		return nil, err
+	} else if f32 := float32(f); dsl.MinFloat16.Float32() > f32 || dsl.MaxFloat16.Float32() < f32 {
+		return nil, strconv.ErrRange
+	} else {
+		return float16.Fromfloat32(f32), nil
+	}
+}
+
+func convertToFloat128(floatValue string, scalingFactor float64) (interface{}, error) {
+	if f, err := scaled_float.NewFromString(floatValue, scalingFactor); err != nil {
+		return nil, err
+	} else {
+		return f, nil
 	}
 }
 

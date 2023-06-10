@@ -111,7 +111,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{},
+								FieldTermGroup: &term.FieldTermGroup{},
 							},
 						},
 					},
@@ -187,7 +187,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									PhraseTerm: &term.PhraseTerm{Chars: []string{"78"}},
 								},
 							},
@@ -195,7 +195,7 @@ func TestConvertToGroup(t *testing.T) {
 								{
 									AndSymbol: &op.AndSymbol{Symbol: "AND"},
 									AndTermGroup: &term.AndTermGroup{
-										TermGroupElem: nil,
+										FieldTermGroup: nil,
 									},
 								},
 								nil,
@@ -226,7 +226,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									SingleTerm: &term.SingleTerm{Begin: "78"},
 								},
 							},
@@ -263,7 +263,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									PhraseTerm: &term.PhraseTerm{Chars: []string{"78"}},
 								},
 							},
@@ -300,7 +300,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									SRangeTerm: &term.SRangeTerm{
 										Symbol: ">",
 										Value: &term.RangeValue{
@@ -343,7 +343,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									DRangeTerm: &term.DRangeTerm{
 										LBRACKET: "{",
 										LValue:   &term.RangeValue{InfinityVal: "*"},
@@ -386,7 +386,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									SRangeTerm: &term.SRangeTerm{
 										Symbol: ">",
 										Value: &term.RangeValue{
@@ -399,7 +399,7 @@ func TestConvertToGroup(t *testing.T) {
 								{
 									AndSymbol: &op.AndSymbol{Symbol: "&&"},
 									AndTermGroup: &term.AndTermGroup{
-										TermGroupElem: &term.TermGroupElem{
+										FieldTermGroup: &term.FieldTermGroup{
 											SRangeTerm: &term.SRangeTerm{
 												Symbol: "<",
 												Value: &term.RangeValue{
@@ -444,7 +444,7 @@ func TestConvertToGroup(t *testing.T) {
 					LogicTermGroup: &term.LogicTermGroup{
 						OrTermGroup: &term.OrTermGroup{
 							AndTermGroup: &term.AndTermGroup{
-								TermGroupElem: &term.TermGroupElem{
+								FieldTermGroup: &term.FieldTermGroup{
 									SRangeTerm: &term.SRangeTerm{
 										Symbol: ">",
 										Value: &term.RangeValue{
@@ -457,7 +457,7 @@ func TestConvertToGroup(t *testing.T) {
 								{
 									AndSymbol: &op.AndSymbol{Symbol: "&&"},
 									AndTermGroup: &term.AndTermGroup{
-										TermGroupElem: &term.TermGroupElem{
+										FieldTermGroup: &term.FieldTermGroup{
 											SRangeTerm: &term.SRangeTerm{
 												Symbol: "<",
 												Value: &term.RangeValue{
@@ -476,7 +476,7 @@ func TestConvertToGroup(t *testing.T) {
 								},
 								OrTermGroup: &term.OrTermGroup{
 									AndTermGroup: &term.AndTermGroup{
-										TermGroupElem: &term.TermGroupElem{
+										FieldTermGroup: &term.FieldTermGroup{
 											SRangeTerm: &term.SRangeTerm{
 												Symbol: ">",
 												Value: &term.RangeValue{
@@ -497,7 +497,7 @@ func TestConvertToGroup(t *testing.T) {
 											SubTermGroup: &term.LogicTermGroup{
 												OrTermGroup: &term.OrTermGroup{
 													AndTermGroup: &term.AndTermGroup{
-														TermGroupElem: &term.TermGroupElem{
+														FieldTermGroup: &term.FieldTermGroup{
 															SRangeTerm: &term.SRangeTerm{
 																Symbol: ">",
 																Value: &term.RangeValue{
@@ -510,7 +510,7 @@ func TestConvertToGroup(t *testing.T) {
 														{
 															AndSymbol: &op.AndSymbol{Symbol: " AND "},
 															AndTermGroup: &term.AndTermGroup{
-																TermGroupElem: &term.TermGroupElem{
+																FieldTermGroup: &term.FieldTermGroup{
 																	SRangeTerm: &term.SRangeTerm{
 																		Symbol: "<",
 																		Value: &term.RangeValue{
@@ -538,7 +538,7 @@ func TestConvertToGroup(t *testing.T) {
 											SubTermGroup: &term.LogicTermGroup{
 												OrTermGroup: &term.OrTermGroup{
 													AndTermGroup: &term.AndTermGroup{
-														TermGroupElem: &term.TermGroupElem{
+														FieldTermGroup: &term.FieldTermGroup{
 															SRangeTerm: &term.SRangeTerm{
 																Symbol: ">",
 																Value: &term.RangeValue{
@@ -551,7 +551,7 @@ func TestConvertToGroup(t *testing.T) {
 														{
 															AndSymbol: &op.AndSymbol{Symbol: " AND "},
 															AndTermGroup: &term.AndTermGroup{
-																TermGroupElem: &term.TermGroupElem{
+																FieldTermGroup: &term.FieldTermGroup{
 																	SRangeTerm: &term.SRangeTerm{
 																		Symbol: "<",
 																		Value: &term.RangeValue{
