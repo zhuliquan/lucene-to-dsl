@@ -2,6 +2,7 @@
   "_source": {
     "enabled": true
   },
+  "dynamic": "true",
   "properties": {
     "host_name": {
       "type": "keyword"

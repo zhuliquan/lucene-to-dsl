@@ -137,7 +137,10 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 
 	var props []*mapping.Property
 	if len(pp) == 0 {
-		props := c.mp.GetProperty(field)
+		props, err := c.mp.GetProperty(field)
+		if err != nil {
+			return nil, err
+		}
 		if len(props) == 0 {
 			return nil, fmt.Errorf("field: %s don't match any es mapping", field)
 		}
@@ -215,7 +218,7 @@ func (c *converter) convertToRange(field *term.Field, termV *term.Term, property
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 			dsl.NewValueType(property.Type, true),
 			leftValue, rightValue, leftCmp, rightCmp,
-		), dsl.WithBoost(termV.Boost()),
+		), dsl.WithBoost(termV.Boost().Float()),
 	)
 	if err := dsl.CheckValidRangeNode(node); err != nil {
 		return nil, fmt.Errorf("field: %s value: %s is invalid, err: %s", field, termV.String(), err)
@@ -268,7 +271,7 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 		} else {
 			return dsl.NewTermNode(
 				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(val, dsl.NewValueType(property.Type, true))),
-				dsl.WithBoost(termV.Boost()),
+				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
 
@@ -283,14 +286,14 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 					dsl.NewValueType(property.Type, true),
 					dateRange.from, dateRange.to, dsl.GTE, dsl.LTE,
 				),
-				dsl.WithBoost(termV.Boost()),
+				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {
 			return dsl.NewTermNode(
 				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(ip, dsl.NewValueType(property.Type, true))),
-				dsl.WithBoost(termV.Boost()),
+				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
 		if ip1, ip2, err := ip_tools.GetRangeIpByIpCidr(termV.String()); err == nil {
@@ -298,7 +301,7 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 				dsl.NewValueType(property.Type, true),
 				net.IP(ip1), net.IP(ip2), dsl.GTE, dsl.LTE,
-			), dsl.WithBoost(termV.Boost())), nil
+			), dsl.WithBoost(termV.Boost().Float())), nil
 		}
 		return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s",
 			field, termV.String(), property.Type)
@@ -307,12 +310,12 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 		if termV.GetTermType()&term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 			return dsl.NewQueryStringNode(
 				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
-				dsl.WithBoost(termV.Boost()),
+				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		} else {
 			return dsl.NewMatchPhraseNode(
 				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
-				dsl.WithBoost(termV.Boost()),
+				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
 	default:

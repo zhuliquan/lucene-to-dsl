@@ -205,9 +205,10 @@ func TestFetchProperty(t *testing.T) {
 		target string
 	}
 	tests := []struct {
-		name string
-		args args
-		want map[string]*Property
+		name    string
+		args    args
+		want    map[string]*Property
+		wantErr bool
 	}{
 		{
 			name: "test_error_01",
@@ -338,11 +339,7 @@ func TestFetchProperty(t *testing.T) {
 				},
 				target: "x.y",
 			},
-			want: map[string]*Property{
-				"x.y": {
-					Type: FLATTENED_FIELD_TYPE,
-				},
-			},
+			want: map[string]*Property{"x.y": {Type: KEYWORD_FIELD_TYPE}},
 		},
 		{
 			name: "test_ok_02",
@@ -421,14 +418,95 @@ func TestFetchProperty(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test_err_05",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: FLATTENED_FIELD_TYPE,
+						},
+					},
+				},
+				target: "x.*",
+			},
+			want: map[string]*Property{},
+		},
+		{
+			name: "test_err_06",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: OBJECT_FIELD_TYPE,
+							Mapping: Mapping{
+								Properties: map[string]*Property{
+									"y.z": {Type: KEYWORD_FIELD_TYPE},
+									"y":   {Type: FLATTENED_FIELD_TYPE},
+								},
+							},
+						},
+					},
+				},
+				target: "x.y.z",
+			},
+			want: map[string]*Property{
+				"x.y.z": {Type: KEYWORD_FIELD_TYPE},
+			},
+		},
+		{
+			name: "test_err_07",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: OBJECT_FIELD_TYPE,
+							Mapping: Mapping{
+								Properties: map[string]*Property{
+									"y.z": {Type: DATE_FIELD_TYPE},
+									"y":   {Type: FLATTENED_FIELD_TYPE},
+								},
+							},
+						},
+					},
+				},
+				target: "x.y.z",
+			},
+			want:    map[string]*Property{},
+			wantErr: true,
+		},
+		{
+			name: "test_err_08",
+			args: args{
+				m: &Mapping{
+					Properties: map[string]*Property{
+						"x": {
+							Type: OBJECT_FIELD_TYPE,
+							Mapping: Mapping{
+								Properties: map[string]*Property{
+									"y":   {Type: FLATTENED_FIELD_TYPE},
+									"y.z": {Type: DATE_FIELD_TYPE},
+								},
+							},
+						},
+					},
+				},
+				target: "x.y.z",
+			},
+			want:    map[string]*Property{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var m = &PropertyMapping{
 				fieldMapping: tt.args.m,
 			}
-			got := getProperty(m, tt.args.target)
-			assert.Equal(t, tt.want, got)
+			got, err := getProperty(m, tt.args.target)
+			assert.Equal(t, tt.wantErr, err != nil)
+			if err == nil {
+				assert.Equal(t, tt.want, got)
+			}
 		})
 	}
 }
@@ -859,7 +937,7 @@ func TestFillDefaultParameter(t *testing.T) {
 			}},
 			want: &PropertyMapping{
 				fieldMapping: &Mapping{
-					MappingType: DYNAMIC_MAPPING,
+					Dynamic: BoolDynamic(true),
 					Properties: map[string]*Property{
 						"date1": {
 							Type:   DATE_FIELD_TYPE,
@@ -880,7 +958,7 @@ func TestFillDefaultParameter(t *testing.T) {
 						"nest1": {
 							Type: OBJECT_FIELD_TYPE,
 							Mapping: Mapping{
-								MappingType: DYNAMIC_MAPPING,
+								Dynamic: BoolDynamic(true),
 								Properties: map[string]*Property{
 									"date1": {
 										Type:   DATE_FIELD_TYPE,

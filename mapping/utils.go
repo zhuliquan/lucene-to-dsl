@@ -3,10 +3,37 @@ package mapping
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/zhuliquan/lucene-to-dsl/utils"
 )
+
+type BoolOrString interface {
+	GetBool() bool
+	GetString() string
+}
+
+type BoolValue bool
+
+func (b BoolValue) GetBool() bool {
+	return bool(b)
+}
+
+func (b BoolValue) GetString() string {
+	return strconv.FormatBool(bool(b))
+}
+
+type StringValue string
+
+func (s StringValue) GetBool() bool {
+	b, _ := strconv.ParseBool(string(s))
+	return b
+}
+
+func (s StringValue) GetString() string {
+	return string(s)
+}
 
 func checkTypeSupportLucene(typ FieldType) bool {
 	_, ok := luceneSupportFieldType[typ]
@@ -26,49 +53,64 @@ func matchFieldPath(partialPath []string, patternPath []string, index int) bool 
 	return true
 }
 
-func checkRestPathFlattenOk(path []string) bool {
+func checkWildcard(path []string) bool {
+	wildcard := false
 	for _, p := range path {
-		// flatten path can't contain any wildcard char.
 		if strings.Contains(p, "*") || strings.Contains(p, "?") {
-			return false
+			return true
 		}
 	}
-	return true
+	return wildcard
 }
 
-func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath []string, wildcard bool) map[string]*Property {
-	res := map[string]*Property{}
+func addProperty(res map[string]*Property, key string, prop *Property) error {
+	if pre, ok := res[key]; ok {
+		if pre.Type != prop.Type {
+			return fmt.Errorf("field: %s have conflict type with %s and %s", key, pre.Type, prop.Type)
+		}
+	} else {
+		res[key] = prop
+	}
+	return nil
+}
+
+func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath []string, res map[string]*Property) error {
 	for cf, cp := range mpp {
-
-		if !wildcard && len(res) > 0 { // normal field (no wildcard) find property need return
-			break
-		}
-
-		if cp.Type == ALIAS_FIELD_TYPE {
+		if cp.Type == ALIAS_FIELD_TYPE { // skip alias
 			continue
 		}
 
-		partialPath := strings.Split(cf, ".")
-		if !matchFieldPath(partialPath, patternPath, index) {
+		currFieldPath := strings.Split(cf, ".")
+		if !matchFieldPath(currFieldPath, patternPath, index) {
 			continue
 		}
 
-		idxInc := len(partialPath)
-		matchingPath := append(matchedPath, cf)
+		idxInc := len(currFieldPath)
+		tempMatchedPath := make([]string, len(matchedPath))
+		copy(tempMatchedPath, matchedPath)
+		tempMatchedPath = append(tempMatchedPath, cf)
 		if index+idxInc == len(patternPath) {
 			switch cp.Type {
 			case OBJECT_FIELD_TYPE, NESTED_FIELD_TYPE, FLATTENED_FIELD_TYPE:
-				// do nothing
+				// expect not terminated here, so do nothing
 			default:
-				res[strings.Join(matchingPath, ".")] = cp
+				key := strings.Join(tempMatchedPath, ".")
+				err := addProperty(res, key, cp)
+				if err != nil {
+					return err
+				}
 			}
 			continue
 		}
 
-		if cp.Type == FLATTENED_FIELD_TYPE { // support flattened type
-			// pattern path must be specific, can't be fuzzy (i.g. \*.x, x.\*)
-			if checkRestPathFlattenOk(patternPath) {
-				res[strings.Join(patternPath, ".")] = cp
+		if cp.Type == FLATTENED_FIELD_TYPE { // in flattened type, every leaf node is keyword type
+			// flattened type doesn't support have wildcard
+			if !checkWildcard(patternPath[index+idxInc:]) {
+				key := strings.Join(patternPath, ".")
+				err := addProperty(res, key, &Property{Type: KEYWORD_FIELD_TYPE})
+				if err != nil {
+					return err
+				}
 			}
 			continue
 		}
@@ -76,23 +118,20 @@ func _getProperty(mpp map[string]*Property, index int, matchedPath, patternPath 
 		for _, subProperties := range []map[string]*Property{
 			cp.Properties, cp.Fields,
 		} {
-			for p, subRes := range _getProperty(subProperties, index+idxInc, matchingPath, patternPath, wildcard) {
-				res[p] = subRes
+			err := _getProperty(subProperties, index+idxInc, tempMatchedPath, patternPath, res)
+			if err != nil {
+				return err
 			}
 		}
-
-		if cp.Type == OBJECT_FIELD_TYPE || cp.Type == NESTED_FIELD_TYPE {
-			// object / nested
-			res[strings.Join(patternPath, ".")] = cp
-		}
 	}
-	return res
+	return nil
 }
 
-func getProperty(m *PropertyMapping, target string) map[string]*Property {
+func getProperty(m *PropertyMapping, target string) (map[string]*Property, error) {
 	patternPath := strings.Split(target, ".")
-	isWildcardField := !checkRestPathFlattenOk(patternPath)
-	return _getProperty(m.fieldMapping.Properties, 0, []string{}, patternPath, isWildcardField)
+	var res = map[string]*Property{}
+	err := _getProperty(m.fieldMapping.Properties, 0, []string{}, patternPath, res)
+	return res, err
 }
 
 func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *PropertyMapping) error {
@@ -110,8 +149,10 @@ func flattenAlias(pt map[string]*Property, pf string, am map[string]string, pp *
 			} else if cp.Path == fd {
 				return fmt.Errorf("field: %s is alias, but path is same", fd)
 			}
-			if property := getProperty(pp, cp.Path); len(property) == 0 {
+			if property, err := getProperty(pp, cp.Path); len(property) == 0 {
 				return fmt.Errorf("filed: %s is alias, but can't find property for path: %s", fd, cp.Path)
+			} else if err != nil {
+				return err
 			} else {
 				pp.propertyCache[cp.Path] = property[cp.Path]
 			}
@@ -139,7 +180,7 @@ func extractFieldAliasMap(pm *PropertyMapping) (map[string]string, error) {
 	}
 }
 
-func _fillDefaultParameter(pt map[string]*Property, pmt MappingType) {
+func _fillDefaultParameter(pt map[string]*Property, pmt Dynamic) {
 	for cf := range pt {
 		if (pt[cf].Type == DATE_FIELD_TYPE || pt[cf].Type == DATE_RANGE_FIELD_TYPE) &&
 			pt[cf].Format == "" {
@@ -152,15 +193,15 @@ func _fillDefaultParameter(pt map[string]*Property, pmt MappingType) {
 			pt[cf].ScalingFactor = 1.0
 		}
 		if len(pt[cf].Properties) != 0 {
-			if pt[cf].MappingType == "" {
-				pt[cf].MappingType = pmt
+			if pt[cf].Dynamic == nil {
+				pt[cf].Dynamic = pmt
 			}
 			if pt[cf].Type == "" {
 				pt[cf].Type = OBJECT_FIELD_TYPE
 			}
 			_fillDefaultParameter(
 				pt[cf].Properties,
-				pt[cf].MappingType,
+				pt[cf].Dynamic,
 			)
 		}
 	}
@@ -168,12 +209,12 @@ func _fillDefaultParameter(pt map[string]*Property, pmt MappingType) {
 
 // updating mapping type recursively
 func fillDefaultParameter(pm *PropertyMapping) {
-	if pm.fieldMapping.MappingType == "" {
-		pm.fieldMapping.MappingType = DYNAMIC_MAPPING
+	if pm.fieldMapping.Dynamic == nil {
+		pm.fieldMapping.Dynamic = BoolDynamic(true)
 	}
 	_fillDefaultParameter(
 		pm.fieldMapping.Properties,
-		pm.fieldMapping.MappingType,
+		pm.fieldMapping.Dynamic,
 	)
 }
 

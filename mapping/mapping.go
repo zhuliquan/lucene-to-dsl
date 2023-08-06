@@ -3,10 +3,78 @@ package mapping
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
+	"unsafe"
 
-	"log"
+	jsoniter "github.com/json-iterator/go"
 )
+
+func init() {
+	// decode
+	jsoniter.RegisterTypeDecoderFunc("mapping.BoolOrString", func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+		switch iter.WhatIsNext() {
+		case jsoniter.BoolValue:
+			*(*BoolOrString)(ptr) = BoolValue(iter.Read().(bool))
+		case jsoniter.StringValue:
+			*(*BoolOrString)(ptr) = StringValue(iter.Read().(string))
+		default:
+			iter.ReportError("ParseBoolOrString", "BoolOrString only support bool/string")
+		}
+	})
+	jsoniter.RegisterTypeDecoderFunc("mapping.Dynamic", func(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
+		switch iter.WhatIsNext() {
+		case jsoniter.BoolValue:
+			*(*Dynamic)(ptr) = BoolDynamic(iter.Read().(bool))
+		case jsoniter.StringValue:
+			*(*Dynamic)(ptr) = StringDynamic(iter.Read().(string))
+		default:
+			iter.ReportError("ParseDynamic", "Dynamic only support bool/string")
+		}
+	})
+
+	// encode
+	jsoniter.RegisterTypeEncoderFunc("mapping.BoolOrString", func(ptr unsafe.Pointer, iter *jsoniter.Stream) {
+		pp := *(*BoolOrString)(ptr)
+		switch v := pp.(type) {
+		case BoolValue:
+			iter.WriteBool(bool(v))
+		case StringValue:
+			iter.WriteString(string(v))
+		}
+	}, func(ptr unsafe.Pointer) bool {
+		pp := *(*BoolOrString)(ptr)
+		if pp == nil {
+			return true
+		}
+		switch v := pp.(type) {
+		case StringValue:
+			return string(v) == ""
+		default:
+			return false
+		}
+	})
+	jsoniter.RegisterTypeEncoderFunc("mapping.Dynamic", func(ptr unsafe.Pointer, iter *jsoniter.Stream) {
+		pp := *(*Dynamic)(ptr)
+		switch v := pp.(type) {
+		case BoolDynamic:
+			iter.WriteBool(bool(v))
+		case StringDynamic:
+			iter.WriteString(string(v))
+		}
+	}, func(ptr unsafe.Pointer) bool {
+		pp := *(*Dynamic)(ptr)
+		if pp == nil {
+			return true
+		}
+		switch v := pp.(type) {
+		case StringDynamic:
+			return string(v) == ""
+		default:
+			return false
+		}
+	})
+
+}
 
 type Meta struct {
 	Unit        MetaUnitType    `json:"unit,omitempty"`
@@ -31,7 +99,7 @@ type Property struct {
 	Type FieldType `json:"type,omitempty"`
 	// The index option controls whether field values are indexed. It accepts true or false and defaults to true.
 	// Fields that are not indexed are not queryable.
-	Index bool `json:"index,omitempty"`
+	Index BoolOrString `json:"index,omitempty"`
 
 	// Scaling factor only for scaled_type.
 	ScalingFactor float64 `json:"scaling_factor"`
@@ -285,10 +353,10 @@ type Property struct {
 }
 
 type Mapping struct {
-	All         *All                 `json:"_all,omitempty"`
-	Source      *Source              `json:"_source,omitempty"`
-	MappingType MappingType          `json:"dynamic,omitempty"`
-	Properties  map[string]*Property `json:"properties,omitempty"`
+	All        *All                 `json:"_all,omitempty"`
+	Source     *Source              `json:"_source,omitempty"`
+	Dynamic    Dynamic              `json:"dynamic,omitempty"`
+	Properties map[string]*Property `json:"properties,omitempty"`
 }
 
 func (m *Mapping) String() string {
@@ -317,20 +385,22 @@ type PropertyMapping struct {
 	fieldExtFuncs map[string]ConvertFunc
 }
 
-func (m *PropertyMapping) GetProperty(field string) map[string]*Property {
+func (m *PropertyMapping) GetProperty(field string) (map[string]*Property, error) {
 	if target, have := m.fieldAliasMap[field]; have {
 		field = target
 	}
-	var res = map[string]*Property{}
 	// get property from mapping property
-	for key, prop := range getProperty(m, field) {
+	props, err := getProperty(m, field)
+	if err != nil {
+		return nil, err
+	}
+	var res = map[string]*Property{}
+	for key, prop := range props {
 		if checkTypeSupportLucene(prop.Type) {
 			res[key] = prop
-		} else {
-			log.Printf("filed: %s type: %s don't support lucene query", key, prop.Type)
 		}
 	}
-	return res
+	return res, nil
 }
 
 func (m *PropertyMapping) GetExtFuncs(field string) ConvertFunc {
@@ -342,7 +412,7 @@ func (m *PropertyMapping) GetExtFuncs(field string) ConvertFunc {
 
 func LoadMappingData(mappingData []byte, fieldExtFuncs map[string]ConvertFunc) (*PropertyMapping, error) {
 	var fieldMapping = &Mapping{}
-	if err := json.Unmarshal(mappingData, fieldMapping); err != nil {
+	if err := jsoniter.Unmarshal(mappingData, fieldMapping); err != nil {
 		return nil, fmt.Errorf("failed to parser mapping data: %s, err: %s", mappingData, err)
 	}
 	var pm = &PropertyMapping{
@@ -361,7 +431,7 @@ func LoadMappingData(mappingData []byte, fieldExtFuncs map[string]ConvertFunc) (
 }
 
 func LoadMappingFile(mappingPath string, fieldExtFuncs map[string]ConvertFunc) (*PropertyMapping, error) {
-	if mappingData, err := ioutil.ReadFile(mappingPath); err != nil {
+	if mappingData, err := os.ReadFile(mappingPath); err != nil {
 		return nil, fmt.Errorf("failed to read mapping file: %s, err: %+v", mappingPath, err)
 	} else {
 		return LoadMappingData(mappingData, fieldExtFuncs)

@@ -187,22 +187,60 @@ const (
 	SUMMARY MetaMetricsType = "summary"
 )
 
-type MappingType string
+type MappingType uint8
+
+type Dynamic interface {
+	GetMappingType() MappingType
+}
 
 const (
 	// New fields are added to the mapping (default).
-	DYNAMIC_MAPPING MappingType = "true"
+	DYNAMIC_MAPPING MappingType = 1 // true
 	// New fields are ignored. These fields will not be indexed or searchable,
 	// but will still appear in the _source field of returned hits.
 	// These fields will not be added to the mapping, and new fields must be added explicitly.
-	STATIC_MAPPING MappingType = "false"
+	STATIC_MAPPING MappingType = 2 // false
 	// If new fields are detected, an exception is thrown and the document is rejected.
 	// New fields must be explicitly added to the mapping.
-	STRICT_MAPPING MappingType = "strict"
+	STRICT_MAPPING MappingType = 3 // strict
 	// New fields are added to the mapping as runtime fields.
 	// These fields are not indexed, and are loaded from _source at query time.
-	RUNTIME_MAPPING MappingType = "runtime"
+	RUNTIME_MAPPING MappingType = 4 // runtime
 )
+
+var MappingTypeString = map[MappingType]string{
+	DYNAMIC_MAPPING: "true",
+	STATIC_MAPPING:  "false",
+	STRICT_MAPPING:  "strict",
+	RUNTIME_MAPPING: "runtime",
+}
+
+type BoolDynamic bool 
+
+func (b BoolDynamic) GetMappingType() MappingType {
+	if b {
+		return DYNAMIC_MAPPING
+	}
+	return STATIC_MAPPING
+}
+
+type StringDynamic string
+
+
+func (s StringDynamic) GetMappingType() MappingType {
+	switch s {
+	case "true":
+		return DYNAMIC_MAPPING
+	case "false":
+		return STATIC_MAPPING
+	case "strict":
+		return STRICT_MAPPING
+	case "runtime":
+		return RUNTIME_MAPPING
+	default:
+		return DYNAMIC_MAPPING				
+	}
+}
 
 type Similarity string
 

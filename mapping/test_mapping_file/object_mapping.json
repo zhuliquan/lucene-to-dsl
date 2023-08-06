@@ -1,4 +1,5 @@
 {
+  "dynamic": false,
   "properties": {
     "region": {
       "type": "keyword"
