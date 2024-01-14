@@ -11,7 +11,7 @@ import (
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 	"github.com/zhuliquan/scaled_float"
 )
 

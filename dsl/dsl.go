@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 )
 
 type DSL map[string]interface{}

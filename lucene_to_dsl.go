@@ -6,13 +6,13 @@ import (
 
 	"github.com/zhuliquan/lucene-to-dsl/convert"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 	lucene "github.com/zhuliquan/lucene_parser"
 )
 
 var (
 	mappingPath string
-	customFuncs map[string]mapping.ConvertFunc
+	customFuncs map[string]convert.ConvertFunc
 	onceInit    sync.Once
 	converter   convert.Converter
 )
@@ -21,17 +21,17 @@ func LoadMappingPath(path string) {
 	mappingPath = path
 }
 
-func LoadCustomFuncs(funcs map[string]mapping.ConvertFunc) {
+func LoadCustomFuncs(funcs map[string]convert.ConvertFunc) {
 	customFuncs = funcs
 }
 
 func LuceneToDSL(luceneQuery string) (dsl.DSL, error) {
 	onceInit.Do(
 		func() {
-			if pm, err := mapping.LoadMappingFile(mappingPath, customFuncs); err != nil {
+			if pm, err := mapping.LoadMappingFile(mappingPath); err != nil {
 				panic(err)
 			} else {
-				converter = convert.NewConverter(pm)
+				converter = convert.NewConverter(pm, customFuncs)
 			}
 		},
 	)

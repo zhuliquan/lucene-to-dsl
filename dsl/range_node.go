@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/zhuliquan/datemath_parser"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 )
 
 type RangeNode struct {

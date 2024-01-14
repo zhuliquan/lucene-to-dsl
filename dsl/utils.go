@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/x448/float16"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 	"github.com/zhuliquan/scaled_float"
 )
 

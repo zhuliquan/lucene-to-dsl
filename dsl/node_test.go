@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 )
 
 func TestOpNode(t *testing.T) {

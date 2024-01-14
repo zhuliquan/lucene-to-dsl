@@ -3,7 +3,7 @@ package dsl
 import (
 	"fmt"
 
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 )
 
 const _ID = "_id"

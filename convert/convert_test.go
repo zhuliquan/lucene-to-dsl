@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
+	mapping "github.com/zhuliquan/es-mapping"
 	op "github.com/zhuliquan/lucene_parser/operator"
 	term "github.com/zhuliquan/lucene_parser/term"
 )

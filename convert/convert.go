@@ -2,22 +2,29 @@ package convert
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"regexp"
 
+	mapping "github.com/zhuliquan/es-mapping"
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
-	"github.com/zhuliquan/lucene-to-dsl/mapping"
-	"github.com/zhuliquan/lucene_parser"
 	lucene "github.com/zhuliquan/lucene_parser"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
+
+// first parameter: the term value, e.g. lucene query "foo:bar", bar is term value
+// second parameter: is ExtProperties defined in Mapping struct
+// example:
+//
+//	using func("bar", map[string]interface{}{"only_upper": true}), you can convert "bar" to "BAR"
+type ConvertFunc = func(interface{}, mapping.ExtProperties) (interface{}, error)
 
 type Converter interface {
 	LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error)
 }
 
-func NewConverter(mp *mapping.PropertyMapping) Converter {
+func NewConverter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc) Converter {
 	return &converter{
 		mp: mp,
 	}
@@ -25,6 +32,8 @@ func NewConverter(mp *mapping.PropertyMapping) Converter {
 
 type converter struct {
 	mp *mapping.PropertyMapping
+	// mf specific customized convert func for specific field
+	mf map[string]ConvertFunc
 }
 
 func (c *converter) LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
@@ -137,10 +146,18 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 
 	var props []*mapping.Property
 	if len(pp) == 0 {
-		props, err := c.mp.GetProperty(field)
+		_props, err := c.mp.GetProperty(field)
 		if err != nil {
 			return nil, err
 		}
+		for key, prop := range _props {
+			if mapping.CheckTypeSupportLucene(prop.Type) {
+				log.Printf("field: %s, type: %s is not support lucene query", key, prop.Type)
+			} else {
+				props = append(props, prop)
+			}
+		}
+
 		if len(props) == 0 {
 			return nil, fmt.Errorf("field: %s don't match any es mapping", field)
 		}
@@ -343,7 +360,7 @@ func (c *converter) convertToRegexp(field *term.Field, termV *term.Term, propert
 }
 
 func (c *converter) convertToGroup(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
-	return c.luceneToAstNode(lucene_parser.TermGroupToLucene(field, termV.TermGroup), property)
+	return c.luceneToAstNode(lucene.TermGroupToLucene(field, termV.TermGroup), property)
 }
 
 func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.LeafValue, error) {
