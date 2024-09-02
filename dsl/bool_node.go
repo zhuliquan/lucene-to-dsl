@@ -70,8 +70,18 @@ func (n *BoolNode) UnionJoin(x AstNode) (AstNode, error) {
 //    (x1 and x2 and (x3 or x4) and not x5 and not x6) or
 //    (y1 and y2 and (y3 or y4) and not y5 and not y6)
 // -------------------------------------------------------
-// 1、 (x3 or x4) or (y3 or y4)
-// 2、 (not x5 and not x6) or (not y5 and not y6) => not (x5 or x6) or not (y5 or y6) => not ((x5 or x6) and (y5 or y6))
+// =>
+// 1. (x1 and x2) or (y1 and y2)
+//    (x3  or x4) or (y3  or y4) or
+//    (not x5 and not x6) or (not y5 and not y6)
+// =>
+// 2. (x1 and x2) or (y1 and y2)
+//    (x3  or x4) or (y3  or y4) or
+//    not (x5 or x6) or not (y5 or y6)
+// =>
+// 3. (x1 and x2) or (y1 and y2)
+//    (x3  or x4) or (y3  or y4) or
+//    not ((x5 or x6) and (y5 or y6))
 func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
 	if n.opType == OR && o.opType == OR {
 		var tmp AstNode = n
@@ -147,9 +157,10 @@ func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
 //    (x1 and x2 and (x3 or x4) and not x5 and not x6) and
 //    (y1 and y2 and (y3 or y4) and not y5 and not y6)
 // -------------------------------------------------------
-// => (x1 and x2 and y1 and y2) and
-// => (x3 or x4) and (y3 or y4) and
-// => and not x5 and not x6 and not y5 and not y6
+// =>
+//    (x1 and x2 and y1 and y2) and
+//    (x3 or x4) and (y3 or y4) and
+//    and not x5 and not x6 and not y5 and not y6
 func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 	var err error
 	var res AstNode = n
@@ -341,9 +352,12 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 	// rule1: make must_not clause fewer
 	switch n.opType {
 	case AND, AND | OR, AND | OR | NOT:
-		// not (x1 and x2) => #*:* -(#x1 #x2)
-		// not ((x1 and x2) and (x3 or x4)) => #*:* -(#x1 #x2 x3 x4)
-		// not ((x1 and x2) and (x3 or x4) and (not x5 and not x6)) => #*:* - (#1 #2 x3 x4 (#*:* -x5 -x6))
+		// case1:   not (x1 and x2) 
+		//       => #*:* -(#x1 #x2)
+		// case2:   not ((x1 and x2) and (x3 or x4))
+		//       => #*:* -(#x1 #x2 x3 x4)
+		// case3:   not ((x1 and x2) and (x3 or x4) and (not x5 and not x6))
+		//       => #*:* - (#1 #2 x3 x4 (#*:* -x5 -x6))
 		return inverseNode(n), nil
 	case OR:
 		//    not (x1 or x2)
@@ -357,7 +371,8 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 		// case1:   not (not x1 and not x2)
 		//       => not not x1 or not not x2
 		//       => x or y => should clause query
-		// case2:   not (not x1) => x1
+		// case2:   not (not x1) 
+		//       => x1
 		return ReduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,

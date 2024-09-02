@@ -10,20 +10,22 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
-	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	mapping "github.com/zhuliquan/es-mapping"
+	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/scaled_float"
 )
 
-// convert func tools
+// convertFunc is trait of convert func which convert string value
+// to specific type (i.g. int, float, bool)
 type convertFunc func(string) (interface{}, error)
 
-// convert to bool value
+// convertToInt parse bool string value to bool value
 func convertToBool(boolValue string) (interface{}, error) {
 	return strconv.ParseBool(boolValue)
 }
 
-// convert to int value
+// convertToInt parse int string value to int value
+// bits is the bit size of int value, which allows 8,16,32,64
 func convertToInt(bits int) convertFunc {
 	return func(intValue string) (interface{}, error) {
 		if v, err := strconv.ParseInt(intValue, 10, bits); err != nil {
@@ -34,7 +36,8 @@ func convertToInt(bits int) convertFunc {
 	}
 }
 
-// convert to uint value
+// convertToUInt parse uint string value to uint value
+// bits is the bit size of uint value, which allows 8,16,32,64
 func convertToUInt(bits int) convertFunc {
 	return func(intValue string) (interface{}, error) {
 		if v, err := strconv.ParseUint(intValue, 10, bits); err != nil {
@@ -45,17 +48,27 @@ func convertToUInt(bits int) convertFunc {
 	}
 }
 
-// convert to float value
+// convertToFloat parse float string value to float16/float32/float64/float128.
+// bits is the bit size of float value, which allows 16,32,64,128
+// scalingFactor is the scaling factor for float128.
 func convertToFloat(bits int, scalingFactor float64) convertFunc {
 	return func(floatValue string) (interface{}, error) {
-		if v, err := strconv.ParseFloat(floatValue, bits); err != nil {
-			return nil, err
-		} else {
-			return v, nil
+		switch bits {
+		case 16:
+			return convertToFloat16(floatValue)
+		case 128:
+			return convertToFloat128(floatValue, scalingFactor)
+		default:
+			if v, err := strconv.ParseFloat(floatValue, bits); err != nil {
+				return nil, err
+			} else {
+				return v, nil
+			}
 		}
 	}
 }
 
+// convertToFloat16 parse float string value to float16.
 func convertToFloat16(floatValue string) (interface{}, error) {
 	if f, err := strconv.ParseFloat(floatValue, 32); err != nil {
 		return nil, err
@@ -66,6 +79,7 @@ func convertToFloat16(floatValue string) (interface{}, error) {
 	}
 }
 
+// convertToFloat128 parse float string value to float128.
 func convertToFloat128(floatValue string, scalingFactor float64) (interface{}, error) {
 	if f, err := scaled_float.NewFromString(floatValue, scalingFactor); err != nil {
 		return nil, err
@@ -74,7 +88,7 @@ func convertToFloat128(floatValue string, scalingFactor float64) (interface{}, e
 	}
 }
 
-// parse date math expr
+// convertToDate parse date math expr.
 func convertToDate(property *mapping.Property) convertFunc {
 	return func(s string) (interface{}, error) {
 		var parser = getDateParserFromMapping(property)
@@ -87,7 +101,10 @@ type dateRange struct {
 	to   time.Time
 }
 
-// TODO: 需要考虑如何解决如何处理 日缺失想查一个月的锁有天的情况，月缺失想查整年的情况, 即：2019-02 / 2019。
+// convertToDateRange parse date math expr to `dateRange` object.
+// TODO: 需要考虑如何解决如何处理 日缺失想查年月中所有天，月缺失想查整年的情况,
+// 例如：field:2019-02 对应查询时间区间从2019-02-01 到 2019-02-28
+// 例如：field:2019 对应查询时间区间从2019-01-01 到 2019-12-31
 func convertToDateRange(property *mapping.Property) convertFunc {
 	return func(s string) (interface{}, error) {
 		var parser = getDateParserFromMapping(property)
@@ -102,7 +119,7 @@ func convertToDateRange(property *mapping.Property) convertFunc {
 	}
 }
 
-// parse version
+// convertToVersion parse string version value to `Version` object.
 func convertToVersion(versionValue string) (interface{}, error) {
 	if v, err := version.NewVersion(versionValue); err != nil {
 		return nil, err
@@ -111,7 +128,8 @@ func convertToVersion(versionValue string) (interface{}, error) {
 	}
 }
 
-// convert to ip value， example: {"term": {"ip_field": "172.168.1.1"}}
+// convertToIp parse string ip value to ip object.
+// example: {"term": {"ip_field": "172.168.1.1"}}
 func convertToIp(ipValue string) (interface{}, error) {
 	if ip := net.ParseIP(ipValue); ip == nil {
 		return nil, fmt.Errorf("ip value: %s is invalid", ipValue)
@@ -120,7 +138,8 @@ func convertToIp(ipValue string) (interface{}, error) {
 	}
 }
 
-// convert to ip value， example: {"term": {"ip_field": "172.168.1.0/24"}}
+// convertToCidr parse string IpCidr value to `IpCidr` object.
+// example: {"term": {"ip_field": "172.168.1.0/24"}}
 func convertToCidr(ipValue string) (interface{}, error) {
 	if _, cidr, err := net.ParseCIDR(ipValue); err != nil {
 		return nil, err
@@ -129,7 +148,10 @@ func convertToCidr(ipValue string) (interface{}, error) {
 	}
 }
 
-var convertToString = func(s string) (interface{}, error) { return s, nil }
+// convertToString return input string value.
+var convertToString = func(s string) (interface{}, error) {
+	return s, nil
+}
 
 var monthDay = map[time.Month]int{
 	time.January:  31,
@@ -146,6 +168,10 @@ var monthDay = map[time.Month]int{
 	time.November:  30,
 }
 
+// getMonthDay get number of day in this month
+// example: January has 31 days
+// this func consider leap year
+// example: 2000 year is leap year and February has 29 days
 func getMonthDay(year int, month time.Month) int {
 	if month == time.February {
 		// check year is leap year
@@ -165,7 +191,8 @@ const maxMinute = 59
 const maxSecond = 59
 const maxNano = 999999999
 
-// get date range for prefix date, i.g. given 2021-01-01, we can get [2021-01-01 00:00:00 2021-01-01 23:59:59]
+// getDateRange get date range for prefix date.
+// example: given 2021-01-01, we can get [2021-01-01 00:00:00 2021-01-01 23:59:59]
 func getDateRange(t time.Time) (time.Time, time.Time) {
 	var month = t.Month()
 	var dateArr = []int{t.Year(), int(month), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond()}
