@@ -8,550 +8,740 @@ import (
 )
 
 func TestBoolNodeUnionJoinLeafNode(t *testing.T) {
-	n := &BoolNode{
-		opNode: opNode{opType: AND},
-		Must: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
-						},
-					},
-				},
+	t.Run("test and node union join different leaf node", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		term2 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueNode("bar1", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		left := NewBoolNode(term1, AND)
+		right := term2
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
 			},
-		},
-	}
+			Should: map[string][]AstNode{
+				"foo1": {term2},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	// test node union join leaf node
-	x1 := &TermNode{
-		kvNode: kvNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueNode: valueNode{
-				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-				value:     "bar1",
+	t.Run("test or node union join different leaf node", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		term2 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueNode("bar1", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		left := NewBoolNode(term1, OR)
+		right := term2
+		expect := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo":  {term1},
+				"foo1": {term2},
 			},
-		},
-	}
-	n1, _ := n.UnionJoin(x1)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Must: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
-						},
-					},
-				},
-			},
-		},
-		Should: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar1",
-						},
-					},
-				},
-			},
-		},
-		MinimumShouldMatch: 1,
-	}, n1)
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	// test node union join leaf node and compact
-	x3 := &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-			rValue:    "bar5",
-			lValue:    "bar2",
-			rCmpSym:   LT,
-			lCmpSym:   GTE,
-		},
-	}
-	n3, _ := n.UnionJoin(x3)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Must: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
-						},
-					},
-				},
+	t.Run("test and node union join same leaf node", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		left := NewBoolNode(term1, AND)
+		right := term1
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
 			},
-		},
-		Should: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar1",
-						},
-					},
-				},
-				&RangeNode{
-					rgNode: rgNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-						rValue:    "bar5",
-						lValue:    "bar2",
-						rCmpSym:   LT,
-						lCmpSym:   GTE,
-					},
-				},
+			Should: map[string][]AstNode{
+				"foo": {term1},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}, n3)
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	// test node union join leaf node and compact
-	x4 := &TermNode{
-		kvNode: kvNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueNode: valueNode{
-				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-				value:     "bar5",
-			},
-		},
-	}
-	n4, _ := n3.UnionJoin(x4)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Must: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
-						},
-					},
-				},
-			},
-		},
-		Should: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar1",
-						},
-					},
-				},
-				&RangeNode{
-					rgNode: rgNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-						rValue:    "bar5",
-						lValue:    "bar2",
-						rCmpSym:   LTE,
-						lCmpSym:   GTE,
-					},
-				},
-			},
-		},
-		MinimumShouldMatch: 1,
-	}, n4)
+	t.Run("test or node union join same leaf node", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		left := NewBoolNode(term1, OR)
+		right := term1
+		expect := term1
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	// test node union join leaf node and compact
-	x5 := &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-			rValue:    "bar3",
-			lValue:    "bar0",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-	}
-	n5, _ := n4.UnionJoin(x5)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Must: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
-						},
-					},
-				},
-			},
-		},
-		Should: map[string][]AstNode{
-			"foo1": {
-				&RangeNode{
-					rgNode: rgNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-						rValue:    "bar5",
-						lValue:    "bar0",
-						rCmpSym:   LTE,
-						lCmpSym:   GTE,
-					},
-				},
-			},
-		},
-		MinimumShouldMatch: 1,
-	}, n5)
+	t.Run("test and node union join different leaf and union join range node", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		term2 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueNode("bar1", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		range1 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar2", "bar5",
+				GTE, LT,
+			),
+		)
 
+		left := NewBoolNode(term1, AND)
+		left, _ = left.UnionJoin(term2)
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {term2, range1},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(range1)
+		assert.Equal(t, expect, actual)
+	})
+
+	t.Run("test node union join same leaf node and reduce lt op", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		term2 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueNode("bar5", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		range1 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar2", "bar5",
+				GTE, LT,
+			),
+		)
+		range2 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar2", "bar5",
+				GTE, LTE,
+			),
+		)
+
+		left := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {range1},
+			},
+			MinimumShouldMatch: 1,
+		}
+		right := term2
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {range2},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
+
+	t.Run("test node union join same leaf node and reduce gt op", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		term2 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueNode("bar2", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		range1 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar2", "bar5",
+				GT, LT,
+			),
+		)
+		range2 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar2", "bar5",
+				GTE, LT,
+			),
+		)
+
+		left := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {range1},
+			},
+			MinimumShouldMatch: 1,
+		}
+		right := term2
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {range2},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
+
+	t.Run("test node union join different range node and range compact", func(t *testing.T) {
+		term1 := NewTermNode(
+			NewKVNode(
+				NewFieldNode(NewLfNode(), "foo"),
+				NewValueNode("bar", NewValueType(mapping.KEYWORD_FIELD_TYPE, false)),
+			),
+		)
+		range1 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar2", "bar5",
+				GTE, LTE,
+			),
+		)
+		range2 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar0", "bar3",
+				GTE, LTE,
+			),
+		)
+		range3 := NewRangeNode(
+			NewRgNode(
+				NewFieldNode(NewLfNode(), "foo1"),
+				NewValueType(mapping.KEYWORD_FIELD_TYPE, false),
+				"bar0", "bar5",
+				GTE, LTE,
+			),
+		)
+		left := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {range1},
+			},
+			MinimumShouldMatch: 1,
+		}
+		right := range2
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Must: map[string][]AstNode{
+				"foo": {term1},
+			},
+			Should: map[string][]AstNode{
+				"foo1": {range3},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.UnionJoin(right)
+		assert.Equal(t, expect, actual)
+	})
 }
 
+// TODO: 明儿继续处理此case
 func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
-	n := &BoolNode{
-		opNode: opNode{opType: OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+	t.Run("test or bool node intersect new leaf node", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}
+			MinimumShouldMatch: 1,
+		}
+		right := &TermNode{
+			kvNode: kvNode{
+				fieldNode: fieldNode{field: "foo1"},
+				valueNode: valueNode{
+					valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+					value:     "bar1",
+				},
+			},
+		}
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			Must: map[string][]AstNode{
+				"foo1": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar1",
+							},
+						},
+					},
+				},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	// test bool node intersect new leaf node
-	x1 := &TermNode{
-		kvNode: kvNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueNode: valueNode{
+	t.Run("test or bool node intersect leaf node and error return", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			MinimumShouldMatch: 1,
+		}
+		right := &RangeNode{
+			rgNode: rgNode{
+				fieldNode: fieldNode{field: "foo1"},
 				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-				value:     "bar1",
+				rValue:    "bar4",
+				lValue:    "bar2",
+				rCmpSym:   LTE,
+				lCmpSym:   GTE,
 			},
-		},
-	}
-	n1, _ := n.InterSect(x1)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
-						},
-					},
-				},
-			},
-		},
-		Must: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar1",
-						},
-					},
-				},
-			},
-		},
-		MinimumShouldMatch: 1,
-	}, n1)
+		}
+		n2, err := left.InterSect(right)
+		assert.NotNil(t, err)
+		assert.Nil(t, n2)
+	})
 
-	// test bool node intersect leaf node and error return
-	x2 := &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-			rValue:    "bar4",
-			lValue:    "bar2",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-	}
-	n2, err := n.InterSect(x2)
-	assert.NotNil(t, err)
-	assert.Nil(t, n2)
-
-	// test bool node intersect leaf node and compact
-	x3 := &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-			rValue:    "bar4",
-			lValue:    "bar1",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-	}
-	n3, _ := n.InterSect(x3)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+	t.Run("test or bool node intersect range node and compact", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		Must: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar1",
+			MinimumShouldMatch: 1,
+		}
+		right := &RangeNode{
+			rgNode: rgNode{
+				fieldNode: fieldNode{field: "foo1"},
+				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+				rValue:    "bar4",
+				lValue:    "bar1",
+				rCmpSym:   LTE,
+				lCmpSym:   GTE,
+			},
+		}
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}, n3)
-
-	// test bool node intersect leaf node and compact
-	n = &BoolNode{
-		opNode: opNode{opType: OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+			Must: map[string][]AstNode{
+				"foo1": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar1",
+							},
 						},
 					},
 				},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	x1 = &TermNode{
-		kvNode: kvNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueNode: valueNode{
+	t.Run("test or bool node intersect leaf node and compact", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			MinimumShouldMatch: 1,
+		}
+
+		right := &TermNode{
+			kvNode: kvNode{
+				fieldNode: fieldNode{field: "foo1"},
+				valueNode: valueNode{
+					valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+					value:     "bar1",
+				},
+			},
+		}
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			Must: map[string][]AstNode{
+				"foo1": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+								value:     "bar1",
+							},
+						},
+					},
+				},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
+	})
+
+	t.Run("test or bool node intersect range node and compact", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			MinimumShouldMatch: 1,
+		}
+		right := &RangeNode{
+			rgNode: rgNode{
+				fieldNode: fieldNode{field: "foo1"},
 				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-				value:     "bar1",
+				rValue:    "bar4",
+				lValue:    "bar2",
+				rCmpSym:   LTE,
+				lCmpSym:   GTE,
 			},
-		},
-	}
-	n1, _ = n.InterSect(x1)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+		}
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		Must: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
+			Must: map[string][]AstNode{
+				"foo1": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+								value:     "bar1",
+							},
+						},
+					},
+					&RangeNode{
+						rgNode: rgNode{
+							fieldNode: fieldNode{field: "foo1"},
 							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-							value:     "bar1",
+							rValue:    "bar4",
+							lValue:    "bar2",
+							rCmpSym:   LTE,
+							lCmpSym:   GTE,
 						},
 					},
 				},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}, n1)
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	x2 = &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-			rValue:    "bar4",
-			lValue:    "bar2",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-	}
-	n2, _ = n.InterSect(x2)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+	t.Run("", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		Must: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-							value:     "bar1",
-						},
-					},
-				},
-				&RangeNode{
-					rgNode: rgNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-						rValue:    "bar4",
-						lValue:    "bar2",
-						rCmpSym:   LTE,
-						lCmpSym:   GTE,
-					},
-				},
-			},
-		},
-		MinimumShouldMatch: 1,
-	}, n2)
+			MinimumShouldMatch: 1,
+		}
 
-	x3 = &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-			rValue:    "bar4",
-			lValue:    "bar1",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-	}
-	n3, _ = n.InterSect(x3)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+		right := &RangeNode{
+			rgNode: rgNode{
+				fieldNode: fieldNode{field: "foo1"},
+				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+				rValue:    "bar4",
+				lValue:    "bar1",
+				rCmpSym:   LTE,
+				lCmpSym:   GTE,
+			},
+		}
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		Must: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
+			Must: map[string][]AstNode{
+				"foo1": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+								value:     "bar1",
+							},
+						},
+					},
+					&RangeNode{
+						rgNode: rgNode{
+							fieldNode: fieldNode{field: "foo1"},
 							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-							value:     "bar1",
+							rValue:    "bar4",
+							lValue:    "bar2",
+							rCmpSym:   LTE,
+							lCmpSym:   GTE,
 						},
 					},
 				},
-				&RangeNode{
-					rgNode: rgNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-						rValue:    "bar4",
-						lValue:    "bar2",
-						rCmpSym:   LTE,
-						lCmpSym:   GTE,
-					},
-				},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}, n3)
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
+	})
 
-	x4 := &RangeNode{
-		rgNode: rgNode{
-			fieldNode: fieldNode{field: "foo1"},
-			valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-			rValue:    "bar5",
-			lValue:    "bar3",
-			rCmpSym:   LTE,
-			lCmpSym:   GTE,
-		},
-	}
-	n4, _ := n.InterSect(x4)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND | OR},
-		Should: map[string][]AstNode{
-			"foo": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo"},
-						valueNode: valueNode{
-							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-							value:     "bar",
+	t.Run("", func(t *testing.T) {
+		left := &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
 						},
 					},
 				},
 			},
-		},
-		Must: map[string][]AstNode{
-			"foo1": {
-				&TermNode{
-					kvNode: kvNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueNode: valueNode{
+			MinimumShouldMatch: 1,
+		}
+		right := &RangeNode{
+			rgNode: rgNode{
+				fieldNode: fieldNode{field: "foo1"},
+				valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+				rValue:    "bar5",
+				lValue:    "bar3",
+				rCmpSym:   LTE,
+				lCmpSym:   GTE,
+			},
+		}
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			Must: map[string][]AstNode{
+				"foo1": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
+								value:     "bar1",
+							},
+						},
+					},
+					&RangeNode{
+						rgNode: rgNode{
+							fieldNode: fieldNode{field: "foo1"},
 							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-							value:     "bar1",
+							rValue:    "bar4",
+							lValue:    "bar3",
+							rCmpSym:   LTE,
+							lCmpSym:   GTE,
 						},
 					},
 				},
-				&RangeNode{
-					rgNode: rgNode{
-						fieldNode: fieldNode{field: "foo1"},
-						valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-						rValue:    "bar4",
-						lValue:    "bar3",
-						rCmpSym:   LTE,
-						lCmpSym:   GTE,
-					},
-				},
 			},
-		},
-		MinimumShouldMatch: 1,
-	}, n4)
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
+	})
 }
 
 func TestBoolNodeIntersectFilterLeafNode(t *testing.T) {
