@@ -165,12 +165,17 @@ var compareFunc = map[mapping.FieldType]func(LeafValue, LeafValue) int{
 	mapping.VERSION_FIELD_TYPE:          compareVersion,
 }
 
+// compareIp compare two ip value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareIp(a, b LeafValue) int {
 	var ai = []byte(a.(net.IP))
 	var bi = []byte(b.(net.IP))
 	return bytes.Compare(ai, bi)
 }
 
+// castUInt cast x to uint64
 func castUInt(x LeafValue) uint64 {
 	switch x.(interface{}).(type) {
 	case int:
@@ -182,6 +187,7 @@ func castUInt(x LeafValue) uint64 {
 	}
 }
 
+// castInt cast x to int64
 func castInt(x LeafValue) int64 {
 	switch x.(interface{}).(type) {
 	case int:
@@ -193,6 +199,10 @@ func castInt(x LeafValue) int64 {
 	}
 }
 
+// compareInt compare two int value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareInt(a, b LeafValue) int {
 	var ai = castInt(a)
 	var bi = castInt(b)
@@ -205,6 +215,10 @@ func compareInt(a, b LeafValue) int {
 	}
 }
 
+//	compareUint compare two date value
+//	return -1 if a < b
+//	return  0 if a == b
+//	return  1 if a > b
 func compareDate(a, b LeafValue) int {
 	var at = a.(time.Time)
 	var bt = b.(time.Time)
@@ -217,6 +231,10 @@ func compareDate(a, b LeafValue) int {
 	}
 }
 
+// compareUint compare two uint value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareUint(a, b LeafValue) int {
 	var au = castUInt(a)
 	var bu = castUInt(b)
@@ -229,6 +247,10 @@ func compareUint(a, b LeafValue) int {
 	}
 }
 
+// compareFloat compare two float value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareFloat(a, b LeafValue) int {
 	var af = a.(float64)
 	var bf = b.(float64)
@@ -241,6 +263,10 @@ func compareFloat(a, b LeafValue) int {
 	}
 }
 
+// compareFloat16 compare two float16 value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareFloat16(a, b LeafValue) int {
 	var af = a.(float16.Float16).Float32()
 	var bf = b.(float16.Float16).Float32()
@@ -253,12 +279,20 @@ func compareFloat16(a, b LeafValue) int {
 	}
 }
 
+// compareDecimal compare two decimal value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareDecimal(a, b LeafValue) int {
 	var ad = a.(*scaled_float.ScaledFloat)
 	var bd = b.(*scaled_float.ScaledFloat)
 	return ad.Compare(bd)
 }
 
+// compareString compare two string value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareString(a, b LeafValue) int {
 	var as = a.(string)
 	var bs = b.(string)
@@ -271,12 +305,18 @@ func compareString(a, b LeafValue) int {
 	}
 }
 
+// compareVersion compare two version value
+// return -1 if a < b
+// return  0 if a == b
+// return  1 if a > b
 func compareVersion(a, b LeafValue) int {
 	var av = a.(*version.Version)
 	var bv = b.(*version.Version)
 	return av.Compare(bv)
 }
 
+// CheckValidRangeNode check if range node is valid
+// return error if range is conflict (left > right or left == right and left cmp sym is GT or right cmp sym is LT)
 func CheckValidRangeNode(node *RangeNode) error {
 	var cmp = CompareAny(node.lValue, node.rValue, node.mType)
 	if cmp > 0 || (cmp == 0 && (node.lCmpSym == GT || node.rCmpSym == LT)) {
@@ -285,10 +325,12 @@ func CheckValidRangeNode(node *RangeNode) error {
 	return nil
 }
 
+// isMinInf return true if a is min inf
 func isMinInf(a LeafValue, t mapping.FieldType) bool {
 	return CompareAny(a, minInf[t], t) == 0
 }
 
+// isMaxInf return true if a is max inf
 func isMaxInf(a LeafValue, t mapping.FieldType) bool {
 	return CompareAny(a, maxInf[t], t) == 0
 }
@@ -345,14 +387,14 @@ var maxInf = map[mapping.FieldType]LeafValue{
 	mapping.CONSTANT_KEYWORD_FIELD_TYPE: MaxString,
 }
 
-// union join two leaf node
+// lfNodeUnionJoinLfNode union join two leaf node
 func lfNodeUnionJoinLfNode(key string, a, b AstNode) (AstNode, error) {
 	orNode := newDefaultBoolNode(OR)
 	orNode.Should = map[string][]AstNode{key: {a, b}}
 	return orNode, nil
 }
 
-// intersect two leaf node
+// lfNodeIntersectLfNode intersect two leaf node
 func lfNodeIntersectLfNode(key string, a, b AstNode) (AstNode, error) {
 	af := a.(FilterCtxNode)
 	bf := b.(FilterCtxNode)
@@ -379,21 +421,23 @@ func lfNodeIntersectLfNode(key string, a, b AstNode) (AstNode, error) {
 	return andNode, nil
 }
 
-func flattenNodes(nodesMap map[string][]AstNode) []AstNode {
-	var nodes = []AstNode{}
+// flattenAstNodes flatten nodes map to nodes list
+func flattenAstNodes(nodesMap map[string][]AstNode) []AstNode {
+	var nodes []AstNode
 	for _, nodeList := range nodesMap {
 		nodes = append(nodes, nodeList...)
 	}
 	return nodes
 }
 
-func ReduceAstNode(x AstNode) AstNode {
+// reduceAstNode reduce AstNode to smallest possible AstNode
+func reduceAstNode(x AstNode) AstNode {
 	if x.AstType() == OP_NODE_TYPE {
 		n := x.(*BoolNode)
 		switch n.opType {
 		case AND:
 			if len(n.Must) == 1 && len(n.Filter) == 0 {
-				nodes := flattenNodes(n.Must)
+				nodes := flattenAstNodes(n.Must)
 				if len(nodes) == 1 {
 					return nodes[0]
 				}
@@ -401,7 +445,7 @@ func ReduceAstNode(x AstNode) AstNode {
 			return n
 		case OR:
 			if len(n.Should) == 1 {
-				nodes := flattenNodes(n.Should)
+				nodes := flattenAstNodes(n.Should)
 				if len(nodes) == 1 {
 					return nodes[0]
 				}
@@ -415,7 +459,12 @@ func ReduceAstNode(x AstNode) AstNode {
 	}
 }
 
-func reduceAstNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc MergeMethodFunc) ([]AstNode, error) {
+// reduceAstNodes reduce AstNode list to smallest possible AstNode list
+func reduceAstNodes(
+	nodes []AstNode,
+	reduceMethodName string,
+	reduceMethodFunc func(AstNode, AstNode) (AstNode, error),
+) ([]AstNode, error) {
 	for before, first := nodes, true; ; {
 		var join bool
 		var node AstNode
@@ -427,14 +476,14 @@ func reduceAstNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc Mer
 		for k := up; k >= lo; k-- {
 			node, rest = restAstNodes(before, k)
 			for i, n1 := range rest {
-				if n2, err := mergeMethodFunc(n1, node); err == nil {
+				if n2, err := reduceMethodFunc(n1, node); err == nil {
 					if n2.AstType() != OP_NODE_TYPE { // merge two nodes into a single node as soon as possible
 						rest[i] = n2
 						join = true
 						goto check
 					}
 				} else {
-					return nil, fmt.Errorf("failed to %s node: %v, err: %+v", mergeMethodName, node, err)
+					return nil, fmt.Errorf("failed to %s node: %v, err: %+v", reduceMethodName, node, err)
 				}
 			}
 		}
@@ -448,7 +497,7 @@ func reduceAstNodes(nodes []AstNode, mergeMethodName string, mergeMethodFunc Mer
 	}
 }
 
-// split node[i] from nodes
+// restAstNodes split node[i] from nodes
 func restAstNodes(nodes []AstNode, index int) (AstNode, []AstNode) {
 	if len(nodes) == 0 {
 		return nil, nil
@@ -469,14 +518,16 @@ func restAstNodes(nodes []AstNode, index int) (AstNode, []AstNode) {
 	}
 }
 
+// nodesToDSLList convert AstNode list to DSL list
 func nodesToDSLList(nodes []AstNode) []DSL {
-	var dslList = []DSL{}
+	var dslList []DSL
 	for _, node := range nodes {
 		dslList = append(dslList, node.ToDSL())
 	}
 	return dslList
 }
 
+// reduceDSLList reduce DSL list to a single DSL or DSL list
 func reduceDSLList(dslList []DSL) interface{} {
 	if len(dslList) == 0 {
 		return nil

@@ -1,6 +1,7 @@
 package dsl
 
-// bool node
+// BoolNode represents a bool node
+// example:
 // must = [a, b]
 // must_not = [c, d]
 // should = [e, f, g]
@@ -67,26 +68,32 @@ func (n *BoolNode) UnionJoin(x AstNode) (AstNode, error) {
 	}
 }
 
-//    (x1 and x2 and (x3 or x4) and not x5 and not x6) or
-//    (y1 and y2 and (y3 or y4) and not y5 and not y6)
+// boolNodeUnionJoinLeafNode union join two bool nodes
+// example:
+//
+//	(x1 and x2 and (x3 or x4) and not x5 and not x6) or
+//	(y1 and y2 and (y3 or y4) and not y5 and not y6)
+//
 // -------------------------------------------------------
 // =>
-// 1. (x1 and x2) or (y1 and y2)
-//    (x3  or x4) or (y3  or y4) or
-//    (not x5 and not x6) or (not y5 and not y6)
+//  1. (x1 and x2) or (y1 and y2)
+//     (x3  or x4) or (y3  or y4) or
+//     (not x5 and not x6) or (not y5 and not y6)
+//
 // =>
-// 2. (x1 and x2) or (y1 and y2)
-//    (x3  or x4) or (y3  or y4) or
-//    not (x5 or x6) or not (y5 or y6)
+//  2. (x1 and x2) or (y1 and y2)
+//     (x3  or x4) or (y3  or y4) or
+//     not (x5 or x6) or not (y5 or y6)
+//
 // =>
-// 3. (x1 and x2) or (y1 and y2)
-//    (x3  or x4) or (y3  or y4) or
-//    not ((x5 or x6) and (y5 or y6))
+//  3. (x1 and x2) or (y1 and y2)
+//     (x3  or x4) or (y3  or y4) or
+//     not ((x5 or x6) and (y5 or y6))
 func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
 	if n.opType == OR && o.opType == OR {
 		var tmp AstNode = n
 		var err error
-		for _, node := range flattenNodes(o.Should) {
+		for _, node := range flattenAstNodes(o.Should) {
 			tmp, err = tmp.UnionJoin(node)
 			if err != nil {
 				return nil, err
@@ -131,19 +138,26 @@ func boolNodeUnionJoinBoolNode(n, o *BoolNode) (AstNode, error) {
 
 }
 
+// boolNodeUnionJoinLeafNode union join a leaf node to a bool node
 func boolNodeUnionJoinLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 	n.opType |= OR
 	if n.Should == nil {
 		n.Should = make(map[string][]AstNode, 0)
 	}
 	key := x.NodeKey()
-	if nodes, err := reduceAstNodes(append(n.Should[key], x), UNION_JOIN, UnionJoin); err != nil {
+	if nodes, err := reduceAstNodes(
+		append(n.Should[key], x),
+		"union_join",
+		func(x, y AstNode) (AstNode, error) {
+			return x.UnionJoin(y)
+		},
+	); err != nil {
 		return nil, err
 	} else {
 		n.Should[key] = nodes
 		n.MinimumShouldMatch = 1
 	}
-	return ReduceAstNode(n), nil
+	return reduceAstNode(n), nil
 }
 
 func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
@@ -154,13 +168,20 @@ func (n *BoolNode) InterSect(x AstNode) (AstNode, error) {
 	}
 }
 
-//    (x1 and x2 and (x3 or x4) and not x5 and not x6) and
-//    (y1 and y2 and (y3 or y4) and not y5 and not y6)
+// boolNodeIntersectBoolNode intersect two bool nodes
+// example:
+//
+//	(x1 and x2 and (x3 or x4) and not x5 and not x6) and
+//	(x1 and x2 and (x3 or x4) and not x5 and not x6) and
+//	(x1 and x2 and (x3 or x4) and not x5 and not x6) and
+//	(y1 and y2 and (y3 or y4) and not y5 and not y6)
+//
 // -------------------------------------------------------
 // =>
-//    (x1 and x2 and y1 and y2) and
-//    (x3 or x4) and (y3 or y4) and
-//    and not x5 and not x6 and not y5 and not y6
+//
+//	(x1 and x2 and y1 and y2) and
+//	(x3 or x4) and (y3 or y4) and
+//	and not x5 and not x6 and not y5 and not y6
 func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 	var err error
 	var res AstNode = n
@@ -191,7 +212,7 @@ func boolNodeIntersectBoolNode(n, o *BoolNode) (AstNode, error) {
 			res = NewBoolNode(res, AND).(*BoolNode)
 		}
 	}
-	return ReduceAstNode(res), nil
+	return reduceAstNode(res), nil
 }
 
 // (x1 and x2 and y1 and y2)
@@ -230,7 +251,7 @@ func boolNodeIntersectAndNode(n, o *BoolNode) (AstNode, error) {
 func boolNodeIntersectAndNodes(n *BoolNode, nodesMap map[string][]AstNode) (AstNode, error) {
 	var tmp AstNode = n
 	var err error
-	for _, node := range flattenNodes(nodesMap) {
+	for _, node := range flattenAstNodes(nodesMap) {
 		tmp, err = tmp.InterSect(node)
 		if err != nil {
 			return nil, err
@@ -285,13 +306,13 @@ func boolNodeIntersectOrNode(n, o *BoolNode) (AstNode, error) {
 		n.MinimumShouldMatch = 1
 		return n, nil
 	} else {
-		orNode1 := ReduceAstNode(&BoolNode{
+		orNode1 := reduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.Should,
 
 			MinimumShouldMatch: 1,
 		})
-		orNode2 := ReduceAstNode(&BoolNode{
+		orNode2 := reduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: o.Should,
 
@@ -327,32 +348,44 @@ func boolNodeIntersectFilterLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 		n.Filter = make(map[string][]AstNode, 0)
 	}
 	key := x.NodeKey()
-	if nodes, err := reduceAstNodes(append(n.Filter[key], x), INTERSECT, Intersect); err != nil {
+	if nodes, err := reduceAstNodes(
+		append(n.Filter[key], x),
+		"intersect",
+		func(x, y AstNode) (AstNode, error) {
+			return x.InterSect(y)
+		},
+	); err != nil {
 		return nil, err
 	} else {
 		n.Filter[key] = nodes
 	}
 	return n, nil
 }
-
+  
 func boolNodeIntersectMustLeafNode(n *BoolNode, x AstNode) (AstNode, error) {
 	if n.Must == nil {
 		n.Must = make(map[string][]AstNode, 0)
 	}
 	key := x.NodeKey()
-	if nodes, err := reduceAstNodes(append(n.Must[key], x), INTERSECT, Intersect); err != nil {
+	if nodes, err := reduceAstNodes(
+		append(n.Must[key], x),
+		"intersect",
+		func(x, y AstNode) (AstNode, error) {
+			return x.InterSect(y)
+		},
+	); err != nil {
 		return nil, err
 	} else {
 		n.Must[key] = nodes
 	}
-	return ReduceAstNode(n), nil
+	return reduceAstNode(n), nil
 }
 
 func (n *BoolNode) Inverse() (AstNode, error) {
 	// rule1: make must_not clause fewer
 	switch n.opType {
 	case AND, AND | OR, AND | OR | NOT:
-		// case1:   not (x1 and x2) 
+		// case1:   not (x1 and x2)
 		//       => #*:* -(#x1 #x2)
 		// case2:   not ((x1 and x2) and (x3 or x4))
 		//       => #*:* -(#x1 #x2 x3 x4)
@@ -371,9 +404,9 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 		// case1:   not (not x1 and not x2)
 		//       => not not x1 or not not x2
 		//       => x or y => should clause query
-		// case2:   not (not x1) 
+		// case2:   not (not x1)
 		//       => x1
-		return ReduceAstNode(&BoolNode{
+		return reduceAstNode(&BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,
 
@@ -392,7 +425,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		notNode = ReduceAstNode(notNode)
+		notNode = reduceAstNode(notNode)
 
 		orNode := &BoolNode{
 			opNode: opNode{opType: OR},
@@ -415,7 +448,7 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		notNode = ReduceAstNode(notNode)
+		notNode = reduceAstNode(notNode)
 		orNode := &BoolNode{
 			opNode: opNode{opType: OR},
 			Should: n.MustNot,
@@ -430,16 +463,16 @@ func (n *BoolNode) Inverse() (AstNode, error) {
 
 func (n *BoolNode) ToDSL() DSL {
 	var res = DSL{}
-	if nodes := flattenNodes(n.Must); len(nodes) != 0 {
+	if nodes := flattenAstNodes(n.Must); len(nodes) != 0 {
 		res[MUST_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
-	if nodes := flattenNodes(n.Filter); len(nodes) != 0 {
+	if nodes := flattenAstNodes(n.Filter); len(nodes) != 0 {
 		res[FILTER_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
-	if nodes := flattenNodes(n.Should); len(nodes) != 0 {
+	if nodes := flattenAstNodes(n.Should); len(nodes) != 0 {
 		res[SHOULD_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
-	if nodes := flattenNodes(n.MustNot); len(nodes) != 0 {
+	if nodes := flattenAstNodes(n.MustNot); len(nodes) != 0 {
 		res[MUST_NOT_KEY] = reduceDSLList(nodesToDSLList(nodes))
 	}
 	if len(res) == 0 {
