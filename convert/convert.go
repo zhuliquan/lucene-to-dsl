@@ -151,7 +151,7 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 			return nil, err
 		}
 		for key, prop := range _props {
-			if mapping.CheckTypeSupportLucene(prop.Type) {
+			if !mapping.CheckTypeSupportLucene(prop.Type) {
 				log.Printf("field: %s, type: %s is not support lucene query", key, prop.Type)
 			} else {
 				props = append(props, prop)
