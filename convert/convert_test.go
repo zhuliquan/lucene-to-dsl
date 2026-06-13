@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	mapping "github.com/zhuliquan/es-mapping"
+	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	op "github.com/zhuliquan/lucene_parser/operator"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
@@ -246,7 +246,7 @@ func TestConvertToGroup(t *testing.T) {
 					Type: mapping.TEXT_FIELD_TYPE,
 				},
 			},
-			want: dsl.NewQueryStringNode(
+			want: dsl.NewMatchNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), "x"),
 					dsl.NewValueNode("78", dsl.NewValueType(mapping.TEXT_FIELD_TYPE, true)),

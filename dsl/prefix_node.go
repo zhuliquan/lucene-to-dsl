@@ -33,6 +33,9 @@ func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 	if checkCommonDslType(o.DslType()) {
 		return o.UnionJoin(n)
 	}
+	if n.NodeKey() != o.NodeKey() {
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
+	}
 	switch o.DslType() {
 	case TERM_DSL_TYPE:
 		return patternNodeUnionJoinTermNode(n, o.(*TermNode))
@@ -46,6 +49,9 @@ func (n *PrefixNode) UnionJoin(o AstNode) (AstNode, error) {
 func (n *PrefixNode) InterSect(o AstNode) (AstNode, error) {
 	if checkCommonDslType(o.DslType()) {
 		return o.InterSect(n)
+	}
+	if n.NodeKey() != o.NodeKey() {
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
 	}
 	switch o.DslType() {
 	case TERM_DSL_TYPE:

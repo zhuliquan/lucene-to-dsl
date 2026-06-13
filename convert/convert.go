@@ -5,10 +5,12 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"strings"
 
 	mapping "github.com/zhuliquan/es-mapping"
 	"github.com/zhuliquan/go_tools/ip_tools"
 	"github.com/zhuliquan/lucene-to-dsl/dsl"
+	"github.com/zhuliquan/lucene-to-dsl/utils"
 	lucene "github.com/zhuliquan/lucene_parser"
 	term "github.com/zhuliquan/lucene_parser/term"
 )
@@ -35,16 +37,47 @@ func NewConverter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc, inferT
 	return c
 }
 
+func NewConverterWithFilter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc, filterPatterns []string, inferTypes ...bool) Converter {
+	c := &converter{
+		mp:             mp,
+		mf:             mf,
+		filterPatterns: filterPatterns,
+	}
+	if len(inferTypes) > 0 {
+		c.inferTypes = inferTypes[0]
+	}
+	return c
+}
+
 type converter struct {
 	mp *mapping.PropertyMapping
 	// mf specific customized convert func for specific field
 	mf map[string]ConvertFunc
 	// inferTypes enables type inference when field is not in mapping
 	inferTypes bool
+	// filterPatterns fields matching these patterns use filter context
+	filterPatterns []string
 }
 
 func (c *converter) LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
 	return c.luceneToAstNode(q)
+}
+
+func (c *converter) shouldUseFilter(field string) bool {
+	for _, pattern := range c.filterPatterns {
+		if pattern == field {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *converter) applyFilterCtx(node dsl.AstNode, field string) {
+	if c.shouldUseFilter(field) {
+		if fc, ok := node.(dsl.FilterCtxNode); ok {
+			fc.SetFilterCtx(true)
+		}
+	}
 }
 
 // inferTypeFromQuery infers field type from the query, handling different term types
@@ -166,7 +199,9 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 
 	var field = q.Field.String()
 	if q.Field.String() == EXIST_FIELD {
-		field = q.Term.String()
+		return dsl.NewExistsNode(
+			dsl.NewFieldNode(dsl.NewLfNode(), q.Term.String()),
+		), nil
 	}
 	if field == "*" && q.Term.String() == "*" {
 		return &dsl.MatchAllNode{}, nil
@@ -290,14 +325,48 @@ func (c *converter) convertToRange(field *term.Field, termV *term.Term, property
 func (c *converter) convertToSingle(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
 	strVal, _ := termV.Value(convertToString)
 	if strVal.(string) == "*" {
-		return dsl.NewExistsNode(
+		node := dsl.NewExistsNode(
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
-		), nil
+		)
+		c.applyFilterCtx(node, field.String())
+		return node, nil
 	}
 	if property.NullValue == strVal {
-		return dsl.NewExistsNode(
+		node, err := dsl.NewExistsNode(
 			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 		).Inverse()
+		if err != nil {
+			return nil, err
+		}
+		return node, nil
+	}
+	if mapping.CheckStringType(property.Type) {
+		str := strVal.(string)
+		if idx := strings.IndexByte(str, '*'); idx >= 0 {
+			if strings.HasSuffix(str, "*") && !strings.Contains(str[:len(str)-1], "*") {
+				prefix := str[:len(str)-1]
+				node := dsl.NewPrefixNode(
+					dsl.NewKVNode(
+						dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+						dsl.NewValueNode(prefix, dsl.NewValueType(property.Type, true)),
+					),
+					utils.NewPrefixPattern(prefix),
+					dsl.WithBoost(termV.Boost().Float()),
+				)
+				c.applyFilterCtx(node, field.String())
+				return node, nil
+			}
+			node := dsl.NewWildCardNode(
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+					dsl.NewValueNode(str, dsl.NewValueType(property.Type, true)),
+				),
+				utils.NewWildCardPattern(str),
+				dsl.WithBoost(termV.Boost().Float()),
+			)
+			c.applyFilterCtx(node, field.String())
+			return node, nil
+		}
 	}
 	return c.convertToNormal(field, termV, property, strVal.(string))
 }
@@ -316,6 +385,7 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 		), nil
 	}
 
+	var node dsl.AstNode
 	switch property.Type {
 	case mapping.BOOLEAN_FIELD_TYPE,
 		mapping.BYTE_FIELD_TYPE, mapping.SHORT_FIELD_TYPE,
@@ -329,13 +399,13 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 			return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s, err: %s",
 				field, termV.String(), property.Type, err)
 		} else {
-			return dsl.NewTermNode(
+			node = dsl.NewTermNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 					dsl.NewValueNode(val, dsl.NewValueType(property.Type, true)),
 				),
 				dsl.WithBoost(termV.Boost().Float()),
-			), nil
+			)
 		}
 
 	case mapping.DATE_FIELD_TYPE, mapping.DATE_RANGE_FIELD_TYPE, mapping.DATE_NANOS_FIELD_TYPE:
@@ -343,56 +413,58 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 			return nil, fmt.Errorf("field: %s value: %s is invalid, expect to date math expr", field, termV.String())
 		} else {
 			var dateRange = dr.(*dateRange)
-			return dsl.NewRangeNode(
+			node = dsl.NewRangeNode(
 				dsl.NewRgNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 					dsl.NewValueType(property.Type, true),
 					dateRange.from, dateRange.to, dsl.GTE, dsl.LTE,
 				),
 				dsl.WithBoost(termV.Boost().Float()),
-			), nil
+			)
 		}
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {
-			return dsl.NewTermNode(
+			node = dsl.NewTermNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 					dsl.NewValueNode(ip, dsl.NewValueType(property.Type, true)),
 				),
 				dsl.WithBoost(termV.Boost().Float()),
-			), nil
-		}
-		if ip1, ip2, err := ip_tools.GetRangeIpByIpCidr(termV.String()); err == nil {
-			return dsl.NewRangeNode(dsl.NewRgNode(
+			)
+		} else if ip1, ip2, err := ip_tools.GetRangeIpByIpCidr(termV.String()); err == nil {
+			node = dsl.NewRangeNode(dsl.NewRgNode(
 				dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 				dsl.NewValueType(property.Type, true),
 				net.IP(ip1), net.IP(ip2), dsl.GTE, dsl.LTE,
-			), dsl.WithBoost(termV.Boost().Float())), nil
+			), dsl.WithBoost(termV.Boost().Float()))
+		} else {
+			return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s",
+				field, termV.String(), property.Type)
 		}
-		return nil, fmt.Errorf("field: %s value: %s is invalid, type: %s",
-			field, termV.String(), property.Type)
 
 	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
 		if termV.GetTermType()&term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
-			return dsl.NewQueryStringNode(
+			node = dsl.NewMatchNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 					dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true)),
 				),
 				dsl.WithBoost(termV.Boost().Float()),
-			), nil
+			)
 		} else {
-			return dsl.NewMatchPhraseNode(
+			node = dsl.NewMatchPhraseNode(
 				dsl.NewKVNode(
 					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
 					dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true)),
 				),
 				dsl.WithBoost(termV.Boost().Float()),
-			), nil
+			)
 		}
 	default:
 		return nil, fmt.Errorf("field: %s mapping type: %s don't support lucene", field, property.Type)
 	}
+	c.applyFilterCtx(node, field.String())
+	return node, nil
 }
 
 func (c *converter) convertToRegexp(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {

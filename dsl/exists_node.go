@@ -17,6 +17,13 @@ func NewExistsNode(fieldNode *fieldNode) *ExistsNode {
 // if union same field node, you can return exist node, for example {"exists": {"field" : "x"}} union {"match": {"x": "foo bar"}}
 // "exists": {"field": "x"} > "match": {"x": "foo bar"}
 func (n *ExistsNode) UnionJoin(o AstNode) (AstNode, error) {
+	if o.DslType() == EXISTS_DSL_TYPE {
+		oExists := o.(*ExistsNode)
+		if n.field == oExists.field {
+			return n, nil
+		}
+		return lfNodeUnionJoinLfNode(n.NodeKey(), n, o)
+	}
 	if checkCommonDslType(o.DslType()) {
 		return o.UnionJoin(n)
 	}
@@ -27,6 +34,13 @@ func (n *ExistsNode) UnionJoin(o AstNode) (AstNode, error) {
 }
 
 func (n *ExistsNode) InterSect(o AstNode) (AstNode, error) {
+	if o.DslType() == EXISTS_DSL_TYPE {
+		oExists := o.(*ExistsNode)
+		if n.field == oExists.field {
+			return n, nil
+		}
+		return lfNodeIntersectLfNode(n.NodeKey(), n, o)
+	}
 	if checkCommonDslType(o.DslType()) {
 		return o.InterSect(n)
 	}

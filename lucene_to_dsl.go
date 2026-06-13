@@ -12,8 +12,9 @@ import (
 var defaultMappingData = []byte(`{"mappings":{"properties":{}}}`)
 
 type Config struct {
-	mappingData []byte
-	customFuncs map[string]convert.ConvertFunc
+	mappingData    []byte
+	customFuncs    map[string]convert.ConvertFunc
+	filterPatterns []string
 }
 
 type Option func(*Config)
@@ -27,6 +28,12 @@ func WithMappingData(data []byte) Option {
 func WithCustomConvertFunc(funcs map[string]convert.ConvertFunc) Option {
 	return func(o *Config) {
 		o.customFuncs = funcs
+	}
+}
+
+func WithFilterContext(patterns []string) Option {
+	return func(o *Config) {
+		o.filterPatterns = patterns
 	}
 }
 
@@ -49,7 +56,12 @@ func LuceneToDSL(
 		return nil, fmt.Errorf("failed to load mapping data, err: %v", err)
 	}
 
-	var cvt = convert.NewConverter(pm, cfg.customFuncs, inferTypes)
+	var cvt convert.Converter
+	if len(cfg.filterPatterns) > 0 {
+		cvt = convert.NewConverterWithFilter(pm, cfg.customFuncs, cfg.filterPatterns, inferTypes)
+	} else {
+		cvt = convert.NewConverter(pm, cfg.customFuncs, inferTypes)
+	}
 	var qry *lucene.Lucene
 	var nod dsl.AstNode
 	defer func() {
