@@ -120,9 +120,158 @@ type DSL map[string]interface{}
 - 4、will ignore `boost` parameter in field mapping which using in index time boosting.
 - 5、don't support alias field type (a kind of filed mapping type).
 
-### mapping of field
+## Field Mapping Configuration
 
-In order to convert more accurately, you need the configuration of a given field, such as mapping of field.
+In order to convert more accurately, you need the configuration of a given field, such as mapping of field. The mapping file defines the types of fields in your Elasticsearch index. This is essential for accurate query conversion because different field types generate different DSL queries.
+
+### Mapping File Format
+
+The mapping file follows the Elasticsearch mapping format. Here's an example:
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "views": {
+        "type": "integer"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "price": {
+        "type": "float"
+      },
+      "ip_address": {
+        "type": "ip"
+      },
+      "version": {
+        "type": "version"
+      }
+    }
+  }
+}
+```
+
+### Usage Examples
+
+#### 1. Load Mapping and Convert Query
+
+```go
+package main
+
+import (
+    "fmt"
+    lucenedsl "github.com/zhuliquan/lucene-to-dsl"
+)
+
+func main() {
+    // Load mapping file
+    lucenedsl.LoadMappingPath("/path/to/mapping.json")
+    
+    // Convert lucene query
+    dsl, err := lucenedsl.LuceneToDSL(`status:active AND views:>100`)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(dsl.String())
+    // Output: {"bool":{"must":[{"term":{"status":{"value":"active","boost":1.0}}},{"range":{"views":{"gt":100,"boost":1.0,"relation":"INTERSECTS"}}}]}}
+}
+```
+
+#### 2. How Field Types Affect Conversion
+
+| Field Type | Lucene Query | Generated DSL |
+|------------|--------------|---------------|
+| keyword | `status:active` | `{"term":{"status":{"value":"active"}}}` |
+| text | `title:hello` | `{"query_string":{"query":"hello","fields":["title"]}}` |
+| text (phrase) | `title:"hello world"` | `{"match_phrase":{"title":{"query":"hello world"}}}` |
+| integer | `views:100` | `{"term":{"views":{"value":100}}}` |
+| integer (range) | `views:>100` | `{"range":{"views":{"gt":100}}}` |
+| date | `created_at:2021-01-01` | `{"range":{"created_at":{"gte":"2021-01-01T00:00:00"}}}` |
+| ip | `ip_address:192.168.1.1` | `{"term":{"ip_address":{"value":"192.168.1.1"}}}` |
+| ip (CIDR) | `ip_address:192.168.0.0/24` | `{"range":{"ip_address":{"gte":"192.168.0.0","lte":"192.168.0.255"}}}` |
+
+### Custom Value Conversion
+
+You can also define custom conversion functions for specific fields:
+
+```go
+package main
+
+import (
+    "fmt"
+    "strings"
+    lucenedsl "github.com/zhuliquan/lucene-to-dsl"
+    "github.com/zhuliquan/lucene-to-dsl/convert"
+    "github.com/zhuliquan/es-mapping"
+)
+
+func main() {
+    // Load mapping file
+    lucenedsl.LoadMappingPath("/path/to/mapping.json")
+    
+    // Define custom conversion functions
+    customFuncs := map[string]convert.ConvertFunc{
+        "title": func(val interface{}, props mapping.ExtProperties) (interface{}, error) {
+            // Convert value to uppercase
+            if str, ok := val.(string); ok {
+                return strings.ToUpper(str), nil
+            }
+            return val, nil
+        },
+    }
+    
+    // Load custom functions (must be called before LuceneToDSL)
+    lucenedsl.LoadCustomFuncs(customFuncs)
+    
+    // Convert query
+    dsl, err := lucenedsl.LuceneToDSL(`title:hello`)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(dsl.String())
+}
+```
+
+### Using ExtProperties
+
+The `ExtProperties` field in mapping allows you to define custom properties that can be used in conversion functions:
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "ext_properties": {
+          "only_lower": true
+        }
+      }
+    }
+  }
+}
+```
+
+Then in your custom function:
+
+```go
+customFuncs := map[string]convert.ConvertFunc{
+    "title": func(val interface{}, props mapping.ExtProperties) (interface{}, error) {
+        if onlyLower, ok := props["only_lower"].(bool); ok && onlyLower {
+            if str, ok := val.(string); ok {
+                return strings.ToLower(str), nil
+            }
+        }
+        return val, nil
+    },
+}
+```
 
 ## Dependencies
 
