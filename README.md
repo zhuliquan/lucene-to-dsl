@@ -17,15 +17,22 @@ package main
 
 import (
     "fmt"
-    lucenedsl "github.com/zhuliquan/lucene-to-dsl"
+    "os"
+    luceneDsl "github.com/zhuliquan/lucene-to-dsl"
 )
 
 func main() {
-    // Load ES mapping file
-    lucenedsl.LoadMappingPath("/path/to/mapping.json")
+    // Load ES mapping file data
+    mappingData, err := os.ReadFile("/path/to/mapping.json")
+    if err != nil {
+        panic(err)
+    }
 
     // Convert lucene query to DSL
-    dsl, err := lucenedsl.LuceneToDSL(`foo:bar AND baz:[1 TO 10]`)
+    dsl, err := luceneDsl.LuceneToDSL(
+        `foo:bar AND baz:[1 TO 10]`,
+        luceneDsl.WithMappingData(mappingData),
+    )
     if err != nil {
         panic(err)
     }
@@ -81,14 +88,14 @@ func main() {
 ### Functions
 
 ```go
-// LoadMappingPath loads ES mapping file path
-func LoadMappingPath(path string)
+// WithMappingData provides mapping data as []byte for the converter
+func WithMappingData(data []byte) func(*Option)
 
-// LoadCustomFuncs loads custom field value conversion functions
-func LoadCustomFuncs(funcs map[string]convert.ConvertFunc)
+// WithCustomConvertFunc provides custom field value conversion functions
+func WithCustomConvertFunc(funcs map[string]convert.ConvertFunc) func(*Option)
 
 // LuceneToDSL converts lucene query string to ES DSL
-func LuceneToDSL(luceneQuery string) (dsl.DSL, error)
+func LuceneToDSL(query string, opts ...func(*Option)) (dsl.DSL, error)
 ```
 
 ### DSL Type
@@ -167,15 +174,19 @@ package main
 
 import (
     "fmt"
+    "os"
     lucenedsl "github.com/zhuliquan/lucene-to-dsl"
 )
 
 func main() {
     // Load mapping file
-    lucenedsl.LoadMappingPath("/path/to/mapping.json")
+    mappingData, _ := os.ReadFile("/path/to/mapping.json")
     
     // Convert lucene query
-    dsl, err := lucenedsl.LuceneToDSL(`status:active AND views:>100`)
+    dsl, err := lucenedsl.LuceneToDSL(
+        `status:active AND views:>100`,
+        lucenedsl.WithMappingData(mappingData),
+    )
     if err != nil {
         panic(err)
     }
@@ -206,6 +217,7 @@ package main
 
 import (
     "fmt"
+    "os"
     "strings"
     lucenedsl "github.com/zhuliquan/lucene-to-dsl"
     "github.com/zhuliquan/lucene-to-dsl/convert"
@@ -214,7 +226,7 @@ import (
 
 func main() {
     // Load mapping file
-    lucenedsl.LoadMappingPath("/path/to/mapping.json")
+    mappingData, _ := os.ReadFile("/path/to/mapping.json")
     
     // Define custom conversion functions
     customFuncs := map[string]convert.ConvertFunc{
@@ -227,11 +239,12 @@ func main() {
         },
     }
     
-    // Load custom functions (must be called before LuceneToDSL)
-    lucenedsl.LoadCustomFuncs(customFuncs)
-    
-    // Convert query
-    dsl, err := lucenedsl.LuceneToDSL(`title:hello`)
+    // Convert query with mapping data and custom functions
+    dsl, err := lucenedsl.LuceneToDSL(
+        `title:hello`,
+        lucenedsl.WithMappingData(mappingData),
+        lucenedsl.WithCustomConvertFunc(customFuncs),
+    )
     if err != nil {
         panic(err)
     }
@@ -271,6 +284,12 @@ customFuncs := map[string]convert.ConvertFunc{
         return val, nil
     },
 }
+
+dsl, err := lucenedsl.LuceneToDSL(
+    `title:hello`,
+    lucenedsl.WithMappingData(mappingData),
+    lucenedsl.WithCustomConvertFunc(customFuncs),
+)
 ```
 
 ## Dependencies
