@@ -24,16 +24,23 @@ type Converter interface {
 	LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error)
 }
 
-func NewConverter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc) Converter {
-	return &converter{
+func NewConverter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc, inferTypes ...bool) Converter {
+	c := &converter{
 		mp: mp,
+		mf: mf,
 	}
+	if len(inferTypes) > 0 {
+		c.inferTypes = inferTypes[0]
+	}
+	return c
 }
 
 type converter struct {
 	mp *mapping.PropertyMapping
 	// mf specific customized convert func for specific field
 	mf map[string]ConvertFunc
+	// inferTypes enables type inference when field is not in mapping
+	inferTypes bool
 }
 
 func (c *converter) LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
@@ -148,18 +155,31 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 	if len(pp) == 0 {
 		_props, err := c.mp.GetProperty(field)
 		if err != nil {
-			return nil, err
-		}
-		for key, prop := range _props {
-			if !mapping.CheckTypeSupportLucene(prop.Type) {
-				log.Printf("field: %s, type: %s is not support lucene query", key, prop.Type)
-			} else {
+			if c.inferTypes {
+				inferredType := InferFieldType(q.Term.String())
+				prop := CreateDefaultProperty(inferredType)
 				props = append(props, prop)
+			} else {
+				return nil, err
 			}
-		}
+		} else {
+			for key, prop := range _props {
+				if !mapping.CheckTypeSupportLucene(prop.Type) {
+					log.Printf("field: %s, type: %s is not support lucene query", key, prop.Type)
+				} else {
+					props = append(props, prop)
+				}
+			}
 
-		if len(props) == 0 {
-			return nil, fmt.Errorf("field: %s don't match any es mapping", field)
+			if len(props) == 0 {
+				if c.inferTypes {
+					inferredType := InferFieldType(q.Term.String())
+					prop := CreateDefaultProperty(inferredType)
+					props = append(props, prop)
+				} else {
+					return nil, fmt.Errorf("field: %s don't match any es mapping", field)
+				}
+			}
 		}
 	} else {
 		props = append(props, pp...)

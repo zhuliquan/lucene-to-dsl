@@ -9,6 +9,8 @@ import (
 	lucene "github.com/zhuliquan/lucene_parser"
 )
 
+var defaultMappingData = []byte(`{"mappings":{"properties":{}}}`)
+
 type Config struct {
 	mappingData []byte
 	customFuncs map[string]convert.ConvertFunc
@@ -37,12 +39,17 @@ func LuceneToDSL(
 		opt(cfg)
 	}
 
+	inferTypes := len(cfg.mappingData) == 0
+	if inferTypes {
+		cfg.mappingData = defaultMappingData
+	}
+
 	pm, err := mapping.LoadMappingData(cfg.mappingData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load mapping data, err: %v", err)
 	}
 
-	var cvt = convert.NewConverter(pm, cfg.customFuncs)
+	var cvt = convert.NewConverter(pm, cfg.customFuncs, inferTypes)
 	var qry *lucene.Lucene
 	var nod dsl.AstNode
 	defer func() {
