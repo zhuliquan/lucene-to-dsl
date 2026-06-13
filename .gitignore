@@ -1,5 +1,6 @@
 main
 .vscode
+.opencode
 lucene-to-dsl
 lucene-to-dsl.exe
 **/cover.txt
