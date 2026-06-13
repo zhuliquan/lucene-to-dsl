@@ -23,7 +23,7 @@ func addValueForDSL(d DSL, field string, value interface{}) {
 
 type LeafValue interface{}
 
-// indicate whether is node array data type
+// ArrayTypeNode indicate whether is node array data type
 type ArrayTypeNode interface {
 	IsArrayType() bool
 	SetArrayType(arrayType bool)

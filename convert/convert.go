@@ -190,6 +190,8 @@ func (c *converter) fieldQueryToAstNodeByProp(q *lucene.FieldQuery, property *ma
 		return c.convertToGroup(q.Field, q.Term, property)
 	} else if termType&term.REGEXP_TERM_TYPE == term.REGEXP_TERM_TYPE {
 		return c.convertToRegexp(q.Field, q.Term, property)
+	} else if termType&term.FUZZY_TERM_TYPE == term.FUZZY_TERM_TYPE {
+		return c.convertToFuzzy(q.Field, q.Term, property)
 	} else {
 		return nil, fmt.Errorf("con't convert term query: %s", q.String())
 	}
@@ -287,7 +289,10 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 				field, termV.String(), property.Type, err)
 		} else {
 			return dsl.NewTermNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(val, dsl.NewValueType(property.Type, true))),
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+					dsl.NewValueNode(val, dsl.NewValueType(property.Type, true)),
+				),
 				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
@@ -309,7 +314,10 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 	case mapping.IP_FIELD_TYPE, mapping.IP_RANGE_FIELD_TYPE:
 		if ip, err := termV.Value(convertToIp); err == nil {
 			return dsl.NewTermNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(ip, dsl.NewValueType(property.Type, true))),
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+					dsl.NewValueNode(ip, dsl.NewValueType(property.Type, true)),
+				),
 				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
@@ -326,12 +334,18 @@ func (c *converter) convertToNormal(field *term.Field, termV *term.Term, propert
 	case mapping.TEXT_FIELD_TYPE, mapping.MATCH_ONLY_TEXT_FIELD_TYPE:
 		if termV.GetTermType()&term.SINGLE_TERM_TYPE == term.SINGLE_TERM_TYPE {
 			return dsl.NewQueryStringNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+					dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true)),
+				),
 				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		} else {
 			return dsl.NewMatchPhraseNode(
-				dsl.NewKVNode(dsl.NewFieldNode(dsl.NewLfNode(), field.String()), dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true))),
+				dsl.NewKVNode(
+					dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+					dsl.NewValueNode(strVal, dsl.NewValueType(property.Type, true)),
+				),
 				dsl.WithBoost(termV.Boost().Float()),
 			), nil
 		}
@@ -471,4 +485,24 @@ func termValueToLeafValue(termV termValue, property *mapping.Property) (dsl.Leaf
 	}
 }
 
-// func termValueToFuzzyNode(field *term.Field, termV *term.Term, property *mapping.Property)
+func (c *converter) convertToFuzzy(field *term.Field, termV *term.Term, property *mapping.Property) (dsl.AstNode, error) {
+	if !mapping.CheckStringType(property.Type) {
+		return nil, fmt.Errorf("type: %s, don't support fuzzy query, expect text or keyword", property.Type)
+	}
+	var valStr, _ = termV.Value(convertToString)
+	fuzzyVal := termV.Fuzziness()
+	var fuzziness string
+	if fuzzyVal == term.AutoFuzzy {
+		fuzziness = "AUTO"
+	} else {
+		fuzziness = fmt.Sprintf("%d", int(fuzzyVal))
+	}
+	return dsl.NewFuzzyNode(
+		dsl.NewKVNode(
+			dsl.NewFieldNode(dsl.NewLfNode(), field.String()),
+			dsl.NewValueNode(valStr, dsl.NewValueType(property.Type, true)),
+		),
+		dsl.WithBoost(termV.Boost().Float()),
+		dsl.WithFuzziness(fuzziness),
+	), nil
+}

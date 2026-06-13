@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/x448/float16"
 	"github.com/zhuliquan/datemath_parser"
-	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	mapping "github.com/zhuliquan/es-mapping"
+	"github.com/zhuliquan/lucene-to-dsl/dsl"
 	"github.com/zhuliquan/scaled_float"
 )
 
@@ -679,6 +679,30 @@ func TestGetDateRange(t *testing.T) {
 			},
 			want1: time.Date(1900, time.February, 2, 0, 0, 0, 0, time.UTC),
 			want2: time.Date(1900, time.February, 2, 23, 59, 59, 999999999, time.UTC),
+		},
+		{
+			name: "split_year_month_01",
+			args: args{
+				t: time.Date(2019, time.February, 1, 0, 0, 0, 0, time.UTC),
+			},
+			want1: time.Date(2019, time.February, 1, 0, 0, 0, 0, time.UTC),
+			want2: time.Date(2019, time.February, 28, 23, 59, 59, 999999999, time.UTC),
+		},
+		{
+			name: "split_year_month_02_leap_year",
+			args: args{
+				t: time.Date(2020, time.February, 1, 0, 0, 0, 0, time.UTC),
+			},
+			want1: time.Date(2020, time.February, 1, 0, 0, 0, 0, time.UTC),
+			want2: time.Date(2020, time.February, 29, 23, 59, 59, 999999999, time.UTC),
+		},
+		{
+			name: "split_year_only_01",
+			args: args{
+				t: time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC),
+			},
+			want1: time.Date(2019, time.January, 1, 0, 0, 0, 0, time.UTC),
+			want2: time.Date(2019, time.December, 31, 23, 59, 59, 999999999, time.UTC),
 		},
 	}
 	for _, tt := range tests {

@@ -13,57 +13,83 @@ func TestWildcardNode(t *testing.T) {
 	node1 := NewWildCardNode(
 		NewKVNode(
 			NewFieldNode(NewLfNode(), "foo"),
-			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false))),
+			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
+		),
 		pattern, WithBoost(1.2),
 	)
-	node2, _ := node1.Inverse()
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: NOT},
-		MustNot: map[string][]AstNode{
-			"foo": {node1},
-		},
-	}, node2)
-	assert.Equal(t, WILDCARD_DSL_TYPE, node1.DslType())
-	assert.Equal(t, DSL{"wildcard": DSL{"foo": DSL{"value": "a?b*", "boost": 1.2, "rewrite": CONSTANT_SCORE}}}, node1.ToDSL())
-
-	node3 := NewWildCardNode(
+	node2 := NewWildCardNode(
 		NewKVNode(
 			NewFieldNode(NewLfNode(), "foo"),
-			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false))),
+			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
+		),
 		pattern, WithBoost(1.5),
 	)
-	node, err := node1.InterSect(node3)
-	assert.Nil(t, err)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: AND},
-		Must: map[string][]AstNode{
-			"foo": {node1, node3},
-		},
-	}, node)
 
-	node, err = node1.UnionJoin(node3)
-	assert.Nil(t, err)
-	assert.Equal(t, &BoolNode{
-		opNode: opNode{opType: OR},
-		Should: map[string][]AstNode{
-			"foo": {node1, node3},
-		},
-		MinimumShouldMatch: 1,
-	}, node)
+	t.Run("test_wildcard_node", func(t *testing.T) {
+		assert.Equal(t, WILDCARD_DSL_TYPE, node1.DslType())
+		assert.Equal(t, DSL{
+			WILDCARD_KEY: DSL{
+				"foo": DSL{
+					VALUE_KEY:   "a?b*",
+					BOOST_KEY:   1.2,
+					REWRITE_KEY: CONSTANT_SCORE,
+				},
+			},
+		}, node1.ToDSL())
+	})
 
+	t.Run("test_inverse_wildcard_node", func(t *testing.T) {
+		res, err := node1.Inverse()
+		assert.Nil(t, err)
+		assert.Equal(t, &BoolNode{
+			opNode: opNode{opType: NOT},
+			MustNot: map[string][]AstNode{
+				"foo": {node1},
+			},
+		}, res)
+	})
+
+	t.Run("test_intersect_wildcard_node", func(t *testing.T) {
+		res, err := node1.InterSect(node2)
+		assert.Nil(t, err)
+		assert.Equal(t, &BoolNode{
+			opNode: opNode{opType: AND},
+			Must: map[string][]AstNode{
+				"foo": {node1, node2},
+			},
+		}, res)
+	})
+
+	t.Run("test_union_join_wildcard_node", func(t *testing.T) {
+		res, err := node1.UnionJoin(node2)
+		assert.Nil(t, err)
+		assert.Equal(t, &BoolNode{
+			opNode: opNode{opType: OR},
+			Should: map[string][]AstNode{
+				"foo": {node1, node2},
+			},
+			MinimumShouldMatch: 1,
+		}, res)
+	})
 }
 
 func TestWildcardNodeMergeTermNode(t *testing.T) {
 	var pattern = utils.NewWildCardPattern("a?b*")
-	var n1 = NewPrefixNode(NewKVNode(
-		NewFieldNode(NewLfNode(), "foo"),
-		NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
-	), pattern)
+	var n1 = NewWildCardNode(
+		NewKVNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, false)),
+		),
+		pattern,
+	)
 
-	var n2 = NewPrefixNode(NewKVNode(
-		NewFieldNode(NewLfNode(), "foo"),
-		NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
-	), pattern)
+	var n2 = NewWildCardNode(
+		NewKVNode(
+			NewFieldNode(NewLfNode(), "foo"),
+			NewValueNode("a?b*", NewValueType(mapping.TEXT_FIELD_TYPE, true)),
+		),
+		pattern,
+	)
 
 	var n3 = NewTermNode(NewKVNode(
 		NewFieldNode(NewLfNode(), "foo"),

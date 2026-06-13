@@ -369,7 +369,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 		assert.Equal(t, expect, actual)
 	})
 
-	t.Run("test or bool node intersect leaf node and error return", func(t *testing.T) {
+	t.Run("test or bool node intersect leaf node", func(t *testing.T) {
 		left := &BoolNode{
 			opNode: opNode{opType: OR},
 			Should: map[string][]AstNode{
@@ -397,12 +397,42 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 				lCmpSym:   GTE,
 			},
 		}
-		n2, err := left.InterSect(right)
-		assert.NotNil(t, err)
-		assert.Nil(t, n2)
+		expect := &BoolNode{
+			opNode: opNode{opType: AND | OR},
+			Should: map[string][]AstNode{
+				"foo": {
+					&TermNode{
+						kvNode: kvNode{
+							fieldNode: fieldNode{field: "foo"},
+							valueNode: valueNode{
+								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+								value:     "bar",
+							},
+						},
+					},
+				},
+			},
+			Must: map[string][]AstNode{
+				"foo1": {
+					&RangeNode{
+						rgNode: rgNode{
+							fieldNode: fieldNode{field: "foo1"},
+							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+							rValue:    "bar4",
+							lValue:    "bar2",
+							rCmpSym:   LTE,
+							lCmpSym:   GTE,
+						},
+					},
+				},
+			},
+			MinimumShouldMatch: 1,
+		}
+		actual, _ := left.InterSect(right)
+		assert.Equal(t, expect, actual)
 	})
 
-	t.Run("test or bool node intersect range node and compact", func(t *testing.T) {
+	t.Run("test or bool node intersect range node", func(t *testing.T) {
 		left := &BoolNode{
 			opNode: opNode{opType: OR},
 			Should: map[string][]AstNode{
@@ -447,13 +477,14 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 			},
 			Must: map[string][]AstNode{
 				"foo1": {
-					&TermNode{
-						kvNode: kvNode{
+					&RangeNode{
+						rgNode: rgNode{
 							fieldNode: fieldNode{field: "foo1"},
-							valueNode: valueNode{
-								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
-								value:     "bar1",
-							},
+							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: false},
+							rValue:    "bar4",
+							lValue:    "bar1",
+							rCmpSym:   LTE,
+							lCmpSym:   GTE,
 						},
 					},
 				},
@@ -526,7 +557,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 		assert.Equal(t, expect, actual)
 	})
 
-	t.Run("test or bool node intersect range node and compact", func(t *testing.T) {
+	t.Run("test or bool node intersect range node", func(t *testing.T) {
 		left := &BoolNode{
 			opNode: opNode{opType: OR},
 			Should: map[string][]AstNode{
@@ -571,15 +602,6 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 			},
 			Must: map[string][]AstNode{
 				"foo1": {
-					&TermNode{
-						kvNode: kvNode{
-							fieldNode: fieldNode{field: "foo1"},
-							valueNode: valueNode{
-								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-								value:     "bar1",
-							},
-						},
-					},
 					&RangeNode{
 						rgNode: rgNode{
 							fieldNode: fieldNode{field: "foo1"},
@@ -598,7 +620,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 		assert.Equal(t, expect, actual)
 	})
 
-	t.Run("", func(t *testing.T) {
+	t.Run("test or bool node intersect array range node", func(t *testing.T) {
 		left := &BoolNode{
 			opNode: opNode{opType: OR},
 			Should: map[string][]AstNode{
@@ -644,21 +666,12 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 			},
 			Must: map[string][]AstNode{
 				"foo1": {
-					&TermNode{
-						kvNode: kvNode{
-							fieldNode: fieldNode{field: "foo1"},
-							valueNode: valueNode{
-								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-								value:     "bar1",
-							},
-						},
-					},
 					&RangeNode{
 						rgNode: rgNode{
 							fieldNode: fieldNode{field: "foo1"},
 							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
 							rValue:    "bar4",
-							lValue:    "bar2",
+							lValue:    "bar1",
 							rCmpSym:   LTE,
 							lCmpSym:   GTE,
 						},
@@ -671,7 +684,7 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 		assert.Equal(t, expect, actual)
 	})
 
-	t.Run("", func(t *testing.T) {
+	t.Run("test or bool node intersect array range node 2", func(t *testing.T) {
 		left := &BoolNode{
 			opNode: opNode{opType: OR},
 			Should: map[string][]AstNode{
@@ -716,20 +729,11 @@ func TestBoolNodeIntersectMustLeafNode(t *testing.T) {
 			},
 			Must: map[string][]AstNode{
 				"foo1": {
-					&TermNode{
-						kvNode: kvNode{
-							fieldNode: fieldNode{field: "foo1"},
-							valueNode: valueNode{
-								valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-								value:     "bar1",
-							},
-						},
-					},
 					&RangeNode{
 						rgNode: rgNode{
 							fieldNode: fieldNode{field: "foo1"},
 							valueType: valueType{mType: mapping.KEYWORD_FIELD_TYPE, aType: true},
-							rValue:    "bar4",
+							rValue:    "bar5",
 							lValue:    "bar3",
 							rCmpSym:   LTE,
 							lCmpSym:   GTE,

@@ -212,10 +212,10 @@ func getDateRange(t time.Time) (time.Time, time.Time) {
 	if dateArr[2] != 1 {
 		return t, time.Date(dateArr[0], month, dateArr[2], maxHour, maxMinute, maxSecond, maxNano, location)
 	}
-	// if dateArr[1] != 1 {
-	// 	return t, time.Date(dateArr[0], time.December, getMonthDay(dateArr[0], time.December), maxHour, maxMinute, maxSecond, maxNano, location)
-	// }
-	return t, t
+	if dateArr[1] != 1 {
+		return t, time.Date(dateArr[0], month, getMonthDay(dateArr[0], month), maxHour, maxMinute, maxSecond, maxNano, location)
+	}
+	return t, time.Date(dateArr[0], time.December, getMonthDay(dateArr[0], time.December), maxHour, maxMinute, maxSecond, maxNano, location)
 }
 
 func getDateParserFromMapping(property *mapping.Property) *datemath_parser.DateMathParser {
