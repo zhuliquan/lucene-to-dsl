@@ -47,6 +47,27 @@ func (c *converter) LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error) {
 	return c.luceneToAstNode(q)
 }
 
+// inferTypeFromQuery infers field type from the query, handling different term types
+func (c *converter) inferTypeFromQuery(q *lucene.FieldQuery) mapping.FieldType {
+	if q == nil || q.Term == nil {
+		return mapping.KEYWORD_FIELD_TYPE
+	}
+
+	termType := q.Term.GetTermType()
+
+	// For range queries, try to extract a value from the bound
+	if termType&term.RANGE_TERM_TYPE == term.RANGE_TERM_TYPE {
+		bound := q.Term.GetBound()
+		if bound != nil && bound.LeftValue != nil {
+			return InferFieldType(bound.LeftValue.String())
+		}
+		return mapping.KEYWORD_FIELD_TYPE
+	}
+
+	// For other term types, use the string value
+	return InferFieldType(q.Term.String())
+}
+
 func (c *converter) luceneToAstNode(q *lucene.Lucene, pp ...*mapping.Property) (dsl.AstNode, error) {
 	if q == nil {
 		return nil, ErrEmptyAndQuery
@@ -156,7 +177,7 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 		_props, err := c.mp.GetProperty(field)
 		if err != nil {
 			if c.inferTypes {
-				inferredType := InferFieldType(q.Term.String())
+				inferredType := c.inferTypeFromQuery(q)
 				prop := CreateDefaultProperty(inferredType)
 				props = append(props, prop)
 			} else {
@@ -173,7 +194,7 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 
 			if len(props) == 0 {
 				if c.inferTypes {
-					inferredType := InferFieldType(q.Term.String())
+					inferredType := c.inferTypeFromQuery(q)
 					prop := CreateDefaultProperty(inferredType)
 					props = append(props, prop)
 				} else {
