@@ -12,6 +12,30 @@ go get github.com/zhuliquan/lucene-to-dsl
 
 ## Quick Start
 
+### Without Mapping (Auto Type Inference)
+
+```go
+package main
+
+import (
+    "fmt"
+    luceneDsl "github.com/zhuliquan/lucene-to-dsl"
+)
+
+func main() {
+    // Convert lucene query without providing mapping
+    // The library will automatically infer field types based on values
+    dsl, err := luceneDsl.LuceneToDSL(`status:active AND views:>100`)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(dsl.String())
+    // Output: {"bool":{"must":[{"term":{"status":{"value":"active","boost":1.0}}},{"range":{"views":{"gt":100,"boost":1.0,"relation":"INTERSECTS"}}}]}}
+}
+```
+
+### With Mapping (Recommended for Production)
+
 ```go
 package main
 
@@ -45,7 +69,42 @@ func main() {
 - 1、This package can convert lucene query to dsl which is used by ES.
 - 2、This package can compact many leaf nodes to fewer leaf nodes (i.g. `x:>1 AND x:<10` => `{"range": {"x": {"gt": 1, "lt": 10}}}` instead of `{"bool": {"must": [{"range": {"x": {"gt": 1}}}, {"range": {"x": {"lt": 10}}}]}}`). compact dsl will be serached more faster than uncompact dsl. for example two range dsl compact to single range dsl, which can reduce a range query and two bitsect intersect.
 - 3、This package can filter some wrong lucene query (i.g. `x:>1 AND x:<-1` is wrong lucene query).
-- 4、This package can process wildcard field (i.e. `_exist_:fo\?bar\*`, `foo\?bar\*:bar`)
+- 4、This package can process wildcard field (i.e. `_exist_:fo\?bar\*`, `foo\?bar*:bar`).
+- 5、**No mapping required** - This package supports automatic type inference. When no mapping is provided, it will infer field types based on values (e.g., integers, dates, IP addresses).
+
+## Auto Type Inference
+
+When no mapping is provided, the library automatically infers field types based on the query values:
+
+| Value Pattern | Inferred Type | DSL Generated |
+|---------------|---------------|---------------|
+| `true` / `false` | `boolean` | `term` |
+| `123`, `-456` | `keyword` | `term` |
+| `3.14`, `-2.5` | `keyword` | `term` |
+| `2021-01-01`, `2021-01-01T12:00:00` | `date` | `range` |
+| `192.168.1.1`, `2001:db8::1` | `ip` | `term` |
+| `192.168.0.0/24` | `ip` | `range` (CIDR) |
+| Other strings | `keyword` | `term` |
+
+### Examples Without Mapping
+
+```go
+// Boolean field
+dsl, _ := luceneDsl.LuceneToDSL(`active:true`)
+// Output: {"term":{"active":{"value":true,"boost":1.0}}}
+
+// Numeric field
+dsl, _ := luceneDsl.LuceneToDSL(`count:100`)
+// Output: {"term":{"count":{"value":100,"boost":1.0}}}
+
+// Date field
+dsl, _ := luceneDsl.LuceneToDSL(`created_at:2021-01-01`)
+// Output: {"range":{"created_at":{"gte":"2021-01-01T00:00:00","lte":"2021-01-01T23:59:59.999999999","boost":1.0,"relation":"INTERSECTS"}}}
+
+// IP field
+dsl, _ := luceneDsl.LuceneToDSL(`ip_address:192.168.1.1`)
+// Output: {"term":{"ip_address":{"value":"192.168.1.1","boost":1.0}}}
+```
 
 ## Supported Lucene Query Syntax
 
@@ -123,13 +182,15 @@ type DSL map[string]interface{}
 
 - 1、only support lucene query with **field name**, instead of query without **field name** (i.e. this project can't parse query like `foo OR bar`, `foo AND bar`).
 - 2、don't support prefix operator `'+'` / `'-'`, for instance `+foo -bar`.
-- 3、should give [index mapping of field](https://www.elastic.co/guide/en/elasticsearch/reference/7.15/mapping.html).
+- 3、without mapping, type inference is based on value patterns (may not match actual field type in ES).
 - 4、will ignore `boost` parameter in field mapping which using in index time boosting.
 - 5、don't support alias field type (a kind of filed mapping type).
 
 ## Field Mapping Configuration
 
-In order to convert more accurately, you need the configuration of a given field, such as mapping of field. The mapping file defines the types of fields in your Elasticsearch index. This is essential for accurate query conversion because different field types generate different DSL queries.
+For more accurate conversion, you can provide the configuration of a given field, such as mapping of field. The mapping file defines the types of fields in your Elasticsearch index. This is essential for accurate query conversion because different field types generate different DSL queries.
+
+**Note:** Mapping is optional. When not provided, the library will automatically infer field types based on values.
 
 ### Mapping File Format
 
@@ -219,7 +280,7 @@ import (
     "fmt"
     "os"
     "strings"
-    lucenedsl "github.com/zhuliquan/lucene-to-dsl"
+    luceneDsl "github.com/zhuliquan/lucene-to-dsl"
     "github.com/zhuliquan/lucene-to-dsl/convert"
     "github.com/zhuliquan/es-mapping"
 )
@@ -240,10 +301,10 @@ func main() {
     }
     
     // Convert query with mapping data and custom functions
-    dsl, err := lucenedsl.LuceneToDSL(
+    dsl, err := luceneDsl.LuceneToDSL(
         `title:hello`,
-        lucenedsl.WithMappingData(mappingData),
-        lucenedsl.WithCustomConvertFunc(customFuncs),
+        luceneDsl.WithMappingData(mappingData),
+        luceneDsl.WithCustomConvertFunc(customFuncs),
     )
     if err != nil {
         panic(err)
@@ -285,10 +346,10 @@ customFuncs := map[string]convert.ConvertFunc{
     },
 }
 
-dsl, err := lucenedsl.LuceneToDSL(
+dsl, err := luceneDsl.LuceneToDSL(
     `title:hello`,
-    lucenedsl.WithMappingData(mappingData),
-    lucenedsl.WithCustomConvertFunc(customFuncs),
+    luceneDsl.WithMappingData(mappingData),
+    luceneDsl.WithCustomConvertFunc(customFuncs),
 )
 ```
 
