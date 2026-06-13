@@ -1,22 +1,28 @@
 APP_NAME := lucene-to-dsl
-BUILD_DIR := bin
-MAIN_FILE := ./cmd/main.go
+BUILD_DIR := dist
 
-ifeq ($(OS),Windows_NT)
-    EXT := .exe
-    MKDIR_CMD := if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
-    RM_CMD := if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
+# Detect OS
+UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
+IS_WINDOWS := $(findstring MINGW,$(UNAME_S))$(findstring MSYS,$(UNAME_S))$(findstring CYGWIN,$(UNAME_S))$(findstring Windows,$(UNAME_S))
+
+ifneq ($(IS_WINDOWS),)
+    APP_EXT := .exe
 else
-    EXT :=
-    MKDIR_CMD := mkdir -p $(BUILD_DIR)
-    RM_CMD := rm -rf $(BUILD_DIR)
+    APP_EXT :=
 endif
 
-.PHONY: build clean
+APP_NAME_WITH_EXT := $(APP_NAME)$(APP_EXT)
+
+.PHONY: build run test clean
 
 build:
-	$(MKDIR_CMD)
-	go build -o $(BUILD_DIR)/$(APP_NAME)$(EXT) $(MAIN_FILE)
+	go build -o $(BUILD_DIR)/$(APP_NAME_WITH_EXT) ./cmd
+
+run: build
+	./$(BUILD_DIR)/$(APP_NAME_WITH_EXT)
+
+test:
+	go test ./...
 
 clean:
-	$(RM_CMD)
+	rm -rf $(BUILD_DIR)

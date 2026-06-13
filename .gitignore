@@ -7,3 +7,4 @@ lucene-to-dsl.exe
 TODOLIST
 dos2unix-*
 bin/*
+dist/*
