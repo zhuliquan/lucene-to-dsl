@@ -201,30 +201,19 @@ The mapping file follows the Elasticsearch mapping format. Here's an example:
 
 ```json
 {
-  "mappings": {
-    "properties": {
-      "title": {
-        "type": "text"
-      },
-      "status": {
-        "type": "keyword"
-      },
-      "views": {
-        "type": "integer"
-      },
-      "created_at": {
-        "type": "date"
-      },
-      "price": {
-        "type": "float"
-      },
-      "ip_address": {
-        "type": "ip"
-      },
-      "version": {
-        "type": "version"
-      }
-    }
+  "properties": {
+    "status": {"type": "keyword"},
+    "title": {"type": "text"},
+    "count": {"type": "integer"},
+    "price": {"type": "float"},
+    "is_active": {"type": "boolean"},
+    "created_at": {"type": "date"},
+    "ip_address": {"type": "ip"},
+    "tags": {"type": "keyword"},
+    "description": {"type": "text"},
+    "level": {"type": "byte"},
+    "weight": {"type": "half_float"},
+    "uuid": {"type": "wildcard"}
   }
 }
 ```
@@ -239,7 +228,7 @@ package main
 import (
     "fmt"
     "os"
-    lucenedsl "github.com/zhuliquan/lucene-to-dsl"
+    luceneDsl "github.com/zhuliquan/lucene-to-dsl"
 )
 
 func main() {
@@ -247,9 +236,9 @@ func main() {
     mappingData, _ := os.ReadFile("/path/to/mapping.json")
     
     // Convert lucene query
-    dsl, err := lucenedsl.LuceneToDSL(
+    dsl, err := luceneDsl.LuceneToDSL(
         `status:active AND views:>100`,
-        lucenedsl.WithMappingData(mappingData),
+        luceneDsl.WithMappingData(mappingData),
     )
     if err != nil {
         panic(err)
