@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This package can parse lucene query and convert to dsl used by ES (ElasticSearch), this package is pure go package.
+This package can parse lucene query and convert it to more efficient DSL queries used by ES (ElasticSearch). It automatically optimizes the generated DSL, such as compacting multiple range conditions into a single range query, which significantly improves search performance.
 
 ## Installation
 
