@@ -67,7 +67,7 @@ func main() {
 ## Features
 
 - 1、This package can convert lucene query to dsl which is used by ES.
-- 2、This package can compact many leaf nodes to fewer leaf nodes (i.g. `x:>1 AND x:<10` => `{"range": {"x": {"gt": 1, "lt": 10}}}` instead of `{"bool": {"must": [{"range": {"x": {"gt": 1}}}, {"range": {"x": {"lt": 10}}}]}}`). compact dsl will be serached more faster than uncompact dsl. for example two range dsl compact to single range dsl, which can reduce a range query and two bitsect intersect.
+- 2、This package can compact many leaf nodes to fewer leaf nodes (i.g. `x:>1 AND x:<10` => `{"range": {"x": {"gt": 1, "lt": 10}}}` instead of `{"bool": {"must": [{"range": {"x": {"gt": 1}}}, {"range": {"x": {"lt": 10}}}]}}`). compact dsl will be searched more faster than not fusion dsl. for example two range dsl without fusion to single range dsl, which can reduce a range query and two bitset intersect.
 - 3、This package can filter some wrong lucene query (i.g. `x:>1 AND x:<-1` is wrong lucene query).
 - 4、This package can process wildcard field (i.e. `_exist_:fo\?bar\*`, `foo\?bar*:bar`).
 - 5、**No mapping required** - This package supports automatic type inference. When no mapping is provided, it will infer field types based on values (e.g., integers, dates, IP addresses).
