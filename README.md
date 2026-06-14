@@ -147,14 +147,17 @@ dsl, _ := luceneDsl.LuceneToDSL(`ip_address:192.168.1.1`)
 ### Functions
 
 ```go
-// WithMappingData provides mapping data as []byte for the converter
-func WithMappingData(data []byte) func(*Option)
+// WithMappingData provides es mapping data as []byte for the converter
+func WithMappingData(data []byte) func(*Config)
 
 // WithCustomConvertFunc provides custom field value conversion functions
-func WithCustomConvertFunc(funcs map[string]convert.ConvertFunc) func(*Option)
+func WithCustomConvertFunc(funcs map[string]convert.ConvertFunc) func(*Config)
+
+// WithFilterContext provides convert some pattern fields with filter mode query instead must bool query
+func WithFilterContext(patterns []string) func(*Config)
 
 // LuceneToDSL converts lucene query string to ES DSL
-func LuceneToDSL(query string, opts ...func(*Option)) (dsl.DSL, error)
+func LuceneToDSL(query string, opts ...func(*Config)) (dsl.DSL, error)
 ```
 
 ### DSL Type

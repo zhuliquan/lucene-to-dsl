@@ -17,24 +17,29 @@ type Config struct {
 
 type Option func(*Config)
 
+
+// WithMappingData provides es mapping data as []byte for the converter
 func WithMappingData(data []byte) Option {
 	return func(o *Config) {
 		o.mappingData = data
 	}
 }
 
+// WithCustomConvertFunc provides custom field value conversion functions
 func WithCustomConvertFunc(funcs map[string]convert.ConvertFunc) Option {
 	return func(o *Config) {
 		o.customFuncs = funcs
 	}
 }
 
+// WithFilterContext provides convert some pattern field with filter mode query instead must bool query
 func WithFilterContext(patterns []string) Option {
 	return func(o *Config) {
 		o.filterPatterns = patterns
 	}
 }
 
+// LuceneToDSL converts lucene query string to ES DSL
 func LuceneToDSL(
 	query string,
 	opts ...Option,
