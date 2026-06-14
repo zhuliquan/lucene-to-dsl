@@ -67,10 +67,13 @@ func main() {
 ## Features
 
 - 1、This package can convert lucene query to dsl which is used by ES.
-- 2、This package can compact many leaf nodes to fewer leaf nodes (i.g. `x:>1 AND x:<10` => `{"range": {"x": {"gt": 1, "lt": 10}}}` instead of `{"bool": {"must": [{"range": {"x": {"gt": 1}}}, {"range": {"x": {"lt": 10}}}]}}`). compact dsl will be searched more faster than not fusion dsl. for example two range dsl without fusion to single range dsl, which can reduce a range query and two bitset intersect.
-- 3、This package can filter some wrong lucene query (i.g. `x:>1 AND x:<-1` is wrong lucene query).
-- 4、This package can process wildcard field (i.e. `_exist_:fo\?bar\*`, `foo\?bar*:bar`).
-- 5、**No mapping required** - This package supports automatic type inference. When no mapping is provided, it will infer field types based on values (e.g., integers, dates, IP addresses).
+- 2、**Query optimization** - This package can compact many leaf nodes to fewer leaf nodes (i.e. `x:>1 AND x:<10` => `{"range": {"x": {"gt": 1, "lt": 10}}}` instead of `{"bool": {"must": [{"range": {"x": {"gt": 1}}}, {"range": {"x": {"lt": 10}}}]}}`). This optimization reduces the number of range queries and bitset intersections, significantly improving search performance.
+- 3、**Node simplification** - Automatically simplifies complex boolean structures by removing unnecessary wrapper nodes, reducing the complexity of generated DSL queries.
+- 4、**Smart deduplication** - Merges duplicate or overlapping conditions to avoid redundant queries, further optimizing search performance.
+- 5、**Wildcard field support** - Handles wildcard fields (i.e. `_exist_:fo\?bar\*`, `foo\?bar*:bar`).
+- 6、**No mapping required** - This package supports automatic type inference. When no mapping is provided, it will infer field types based on values (e.g., integers, dates, IP addresses).
+- 7、**Filter context optimization** - Supports using filter context for non-scoring queries, which can be cached by Elasticsearch for better performance.
+- 8、**Intelligent NOT operation handling** - Optimizes NOT operations by reducing the number of must_not clauses, making negation queries more efficient.
 
 ## Auto Type Inference
 
