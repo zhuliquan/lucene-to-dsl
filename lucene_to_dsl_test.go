@@ -583,3 +583,88 @@ func TestLuceneToDSL_FilterContext(t *testing.T) {
 		assert.NotNil(t, got)
 	})
 }
+
+func TestLuceneToDSL_SubQueryCombinations(t *testing.T) {
+	tests := []struct {
+		name    string
+		query   string
+		want    dsl.DSL
+		wantErr bool
+	}{
+		// ========== Same field combinations ==========
+		{"same_field_or", `status:active OR status:pending`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"term":{"status":{"boost":1,"value":"pending"}}}]}}`), false},
+		{"same_field_and", `status:active AND status:pending`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"term":{"status":{"boost":1,"value":"pending"}}}]}}`), false},
+		{"same_field_and_not", `status:active AND NOT status:pending`, mustDSL(`{"bool":{"minimum_should_match":0,"must":{"term":{"status":{"boost":1,"value":"active"}}},"must_not":{"term":{"status":{"boost":1,"value":"pending"}}}}}`), false},
+		{"same_field_or_not", `status:active OR NOT status:pending`, mustDSL(`{"bool":{"minimum_should_match":1,"must_not":{"term":{"status":{"boost":1,"value":"pending"}}},"should":{"term":{"status":{"boost":1,"value":"active"}}}}}`), false},
+
+		// ========== Different field combinations ==========
+		{"diff_field_or", `status:active OR count:>100`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}]}}`), false},
+		{"diff_field_and", `status:active AND count:>100`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}]}}`), false},
+		{"diff_field_and_not", `status:active AND NOT count:>100`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":-2147483648,"lte":100,"relation":"INTERSECTS"}}}]}}`), false},
+		{"diff_field_or_not", `status:active OR NOT count:>100`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":-2147483648,"lte":100,"relation":"INTERSECTS"}}}]}}`), false},
+
+		// ========== Text + keyword combinations ==========
+		{"text_and_keyword", `title:hello AND status:active`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}},{"term":{"status":{"boost":1,"value":"active"}}}]}}`), false},
+		{"text_or_keyword", `title:hello OR status:active`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}},{"term":{"status":{"boost":1,"value":"active"}}}]}}`), false},
+		{"text_and_not_keyword", `title:hello AND NOT status:active`, mustDSL(`{"bool":{"minimum_should_match":0,"must":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}},"must_not":{"term":{"status":{"boost":1,"value":"active"}}}}}`), false},
+		{"text_or_not_keyword", `title:hello OR NOT status:active`, mustDSL(`{"bool":{"minimum_should_match":1,"must_not":{"term":{"status":{"boost":1,"value":"active"}}},"should":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}}}`), false},
+
+		// ========== Range + range combinations ==========
+		{"range_or_range", `count:[10 TO 50] OR count:[60 TO 100]`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"range":{"count":{"boost":1,"gte":10,"lte":50,"relation":"INTERSECTS"}}},{"range":{"count":{"boost":1,"gte":60,"lte":100,"relation":"INTERSECTS"}}}]}}`), false},
+		{"range_and_range", `count:[10 TO 50] AND count:[60 TO 100]`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"range":{"count":{"boost":1,"gte":10,"lte":50,"relation":"INTERSECTS"}}},{"range":{"count":{"boost":1,"gte":60,"lte":100,"relation":"INTERSECTS"}}}]}}`), false},
+
+		// ========== Exists combinations ==========
+		{"exists_and_exists", `_exists_:status AND _exists_:title`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"exists":{"field":"status"}},{"exists":{"field":"title"}}]}}`), false},
+		{"exists_or_exists", `_exists_:status OR _exists_:title`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"exists":{"field":"status"}},{"exists":{"field":"title"}}]}}`), false},
+
+		// ========== Prefix + term combinations ==========
+		{"prefix_or_term", `status:act* OR status:pending`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"prefix":{"status":{"rewrite":"constant_score","value":"act"}}},{"term":{"status":{"boost":1,"value":"pending"}}}]}}`), false},
+
+		// ========== Three-way combinations ==========
+		{"three_way_and", `status:active AND count:>100 AND title:hello`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}},{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}]}}`), false},
+		{"three_way_or", `status:active OR count:>100 OR title:hello`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}},{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}]}}`), false},
+
+		// ========== Parenthesized combinations ==========
+		{"paren_or_and", `(status:active OR status:pending) AND count:>100`, mustDSL(`{"bool":{"minimum_should_match":1,"must":{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}},"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"term":{"status":{"boost":1,"value":"pending"}}}]}}`), false},
+		{"paren_and_or", `(status:active AND count:>100) OR title:hello`, mustDSL(`{"bool":{"minimum_should_match":1,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}],"should":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}}}`), false},
+
+		// ========== AND NOT with different types ==========
+		{"and_not_text", `status:active AND NOT title:hello`, mustDSL(`{"bool":{"minimum_should_match":0,"must":{"term":{"status":{"boost":1,"value":"active"}}},"must_not":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}}}`), false},
+		{"and_not_range", `count:>100 AND NOT status:inactive`, mustDSL(`{"bool":{"minimum_should_match":0,"must":{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}},"must_not":{"term":{"status":{"boost":1,"value":"inactive"}}}}}`), false},
+
+		// ========== OR NOT with different types ==========
+		{"or_not_text", `status:active OR NOT title:hello`, mustDSL(`{"bool":{"minimum_should_match":1,"must_not":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}},"should":{"term":{"status":{"boost":1,"value":"active"}}}}}`), false},
+		{"or_not_range", `count:>100 OR NOT status:inactive`, mustDSL(`{"bool":{"minimum_should_match":1,"must_not":{"term":{"status":{"boost":1,"value":"inactive"}}},"should":{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}}}`), false},
+
+		// ========== Complex nested combinations ==========
+		{"nested_or_and", `(status:active OR status:pending) AND (count:>100 AND count:<200)`, mustDSL(`{"bool":{"minimum_should_match":1,"must":{"range":{"count":{"boost":1,"gt":100,"lt":200,"relation":"INTERSECTS"}}},"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"term":{"status":{"boost":1,"value":"pending"}}}]}}`), false},
+		{"nested_and_or", `(status:active AND count:>100) OR (title:hello AND title:world)`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"bool":{"minimum_should_match":0,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}]}},{"bool":{"minimum_should_match":0,"must":[{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}},{"match":{"title":{"boost":1,"max_expansions":50,"query":"world"}}}]}}]}}`), false},
+
+		// ========== IP field combinations ==========
+		{"ip_or_ip", `ip_address:192.168.1.1 OR ip_address:192.168.1.2`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"ip_address":{"boost":1,"value":"192.168.1.1"}}},{"term":{"ip_address":{"boost":1,"value":"192.168.1.2"}}}]}}`), false},
+		{"ip_and_ip", `ip_address:192.168.1.1 AND ip_address:192.168.1.2`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"ip_address":{"boost":1,"value":"192.168.1.1"}}},{"term":{"ip_address":{"boost":1,"value":"192.168.1.2"}}}]}}`), false},
+
+		// ========== Boolean + integer combinations ==========
+		{"bool_and_integer", `is_active:true AND count:>100`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"is_active":{"boost":1,"value":true}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}]}}`), false},
+		{"bool_or_integer", `is_active:true OR count:>100`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"is_active":{"boost":1,"value":true}}},{"range":{"count":{"boost":1,"gt":100,"lt":2147483647,"relation":"INTERSECTS"}}}]}}`), false},
+
+		// ========== Date + keyword combinations ==========
+		{"date_and_keyword", `created_at:[2021-01-01 TO 2021-12-31] AND status:active`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"range":{"created_at":{"boost":1,"format":"epoch_millis","gte":1609459200000,"lte":1640908800000,"relation":"INTERSECTS"}}},{"term":{"status":{"boost":1,"value":"active"}}}]}}`), false},
+
+		// ========== Multiple NOT combinations ==========
+		{"multiple_and_not", `status:active AND NOT count:<100 AND NOT title:hello`, mustDSL(`{"bool":{"minimum_should_match":0,"must":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gte":100,"lt":2147483647,"relation":"INTERSECTS"}}}],"must_not":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}}}`), false},
+		{"multiple_or_not", `status:active OR NOT count:<100 OR NOT title:hello`, mustDSL(`{"bool":{"minimum_should_match":1,"should":[{"term":{"status":{"boost":1,"value":"active"}}},{"range":{"count":{"boost":1,"gte":100,"lt":2147483647,"relation":"INTERSECTS"}}},{"bool":{"minimum_should_match":0,"must_not":{"match":{"title":{"boost":1,"max_expansions":50,"query":"hello"}}}}}]}}`), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := LuceneToDSL(tt.query, WithMappingData(mappingJSON))
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assertDSLEqual(t, tt.want, got)
+			}
+		})
+	}
+}
