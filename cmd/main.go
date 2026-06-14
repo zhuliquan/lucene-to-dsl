@@ -11,20 +11,18 @@ import (
 
 func main() {
 	var mappingPath string
+	var luceneQuery string
 
 	flag.StringVar(&mappingPath, "m", "", "mapping file path")
 	flag.StringVar(&mappingPath, "mapping", "", "mapping file path")
+	flag.StringVar(&luceneQuery, "q", "", "lucene query")
+	flag.StringVar(&luceneQuery, "query", "", "lucene query")
 	flag.Parse()
 
-	args := flag.Args()
-	if len(args) < 1 {
-		fmt.Fprintf(os.Stderr, "Usage: lucene-to-dsl [options] <lucene-query>\n")
-		fmt.Fprintf(os.Stderr, "Options:\n")
-		flag.PrintDefaults()
+	if luceneQuery == "" {
+		fmt.Fprintln(os.Stderr, "Error: lucene query is required")
 		os.Exit(1)
 	}
-
-	luceneQuery := args[0]
 
 	var opts []lucene_to_dsl.Option
 

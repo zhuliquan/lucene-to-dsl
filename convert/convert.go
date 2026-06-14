@@ -2,7 +2,6 @@ package convert
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"regexp"
 	"strings"
@@ -26,35 +25,30 @@ type Converter interface {
 	LuceneToAstNode(q *lucene.Lucene) (dsl.AstNode, error)
 }
 
-func NewConverter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc, inferTypes ...bool) Converter {
+func NewConverter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc) Converter {
 	c := &converter{
 		mp: mp,
 		mf: mf,
 	}
-	if len(inferTypes) > 0 {
-		c.inferTypes = inferTypes[0]
-	}
 	return c
 }
 
-func NewConverterWithFilter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc, filterPatterns []string, inferTypes ...bool) Converter {
+func NewConverterWithFilter(mp *mapping.PropertyMapping, mf map[string]ConvertFunc, filterPatterns []string) Converter {
 	c := &converter{
 		mp:             mp,
 		mf:             mf,
 		filterPatterns: filterPatterns,
 	}
-	if len(inferTypes) > 0 {
-		c.inferTypes = inferTypes[0]
-	}
 	return c
 }
 
 type converter struct {
+	// field mapping info, used for type inference and validating if the field exist in mapping
+	// mapping is not necessary for converting, if it's not provided,
+	// the converter will try to infer field type from query and use default mapping for converting
 	mp *mapping.PropertyMapping
 	// mf specific customized convert func for specific field
 	mf map[string]ConvertFunc
-	// inferTypes enables type inference when field is not in mapping
-	inferTypes bool
 	// filterPatterns fields matching these patterns use filter context
 	filterPatterns []string
 }
@@ -208,31 +202,32 @@ func (c *converter) fieldQueryToAstNode(q *lucene.FieldQuery, pp ...*mapping.Pro
 	}
 
 	var props []*mapping.Property
-	if len(pp) == 0 {
+	if len(pp) == 0 && c.mp == nil {
+		// 如果没有提供mapping，则尝试从查询中推断字段类型
+		inferredType := c.inferTypeFromQuery(q)
+		prop := CreateDefaultProperty(inferredType)
+		props = append(props, prop)
+	} else if len(pp) == 0 && c.mp != nil {
 		_props, err := c.mp.GetProperty(field)
 		if err != nil {
-			if c.inferTypes {
-				inferredType := c.inferTypeFromQuery(q)
-				prop := CreateDefaultProperty(inferredType)
-				props = append(props, prop)
-			} else {
-				return nil, err
-			}
+			// 如果什么数据也没有获取是不会报错的，只有mapping本身对于当前的查询存在问题才会报错
+			return nil, err
 		} else {
+			var notSupportErr error
 			for key, prop := range _props {
 				if !mapping.CheckTypeSupportLucene(prop.Type) {
-					log.Printf("field: %s, type: %s is not support lucene query", key, prop.Type)
+					notSupportErr = fmt.Errorf("field: %s, type: %s is not support lucene query", key, prop.Type)
 				} else {
 					props = append(props, prop)
 				}
 			}
 
 			if len(props) == 0 {
-				if c.inferTypes {
-					inferredType := c.inferTypeFromQuery(q)
-					prop := CreateDefaultProperty(inferredType)
-					props = append(props, prop)
+				if notSupportErr != nil {
+					// 如果是当前支持的类型但不支持lucene查询的类型，则返回不支持lucene查询的错误；
+					return nil, notSupportErr
 				} else {
+					// 如果是没有这个字段的映射，则返回找不到字段的错误
 					return nil, fmt.Errorf("field: %s don't match any es mapping", field)
 				}
 			}
