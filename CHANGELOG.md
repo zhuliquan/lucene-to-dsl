@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/).
 
+## [Unreleased]
+
+### Changed
+
+- CLI 将 lucene 查询参数从位置参数改为 `-q/--query` 命名参数，使用更清晰
+- 移除 `inferTypes` 参数，类型推断改为基于 mapping 是否提供自动判断
+- 改进字段类型不支持时的错误处理
+- 新增各种子查询组合的用例情景
+- 给暴露的函数新增文档注释
+
 ## [v0.1.1] - 2026-06-14
 
 ### Added
